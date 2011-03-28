@@ -14,23 +14,21 @@ class Oscilloscope extends JFrame implements
 	OscilloscopeCanvas cv;
 	Dimension winSize;
 	BufferedImage dbimage;
+	BufferedImage wfimage;
+	int last_lx;
+	double last_tx;
 	
 	Color bgColor, gridLineColor;
-	
-	// 1 pixel per time step makes this move at the same
-	// rate as Scope
-	static final int pixPerTimeStep = 1;
+
 	double timeScale;
 	
 	double voltageRange;
 	double currentRange;
 	
-	
 	MemoryImageSource imageSource;
 	Image image;
 	int[] pixels;
 	boolean[] dpixels;
-	int draw_ox, draw_oy;
 	
 	/* Menu items */
 	JMenuItem reset;
@@ -82,7 +80,6 @@ class Oscilloscope extends JFrame implements
 	}
 	
 	public void reset() {
-		draw_ox = draw_oy = 0;
 		timeScale = 64;
 		voltageRange = 5.0;
 		currentRange = 0.1;
@@ -114,24 +111,35 @@ class Oscilloscope extends JFrame implements
 		
 		double ts = sim.timeStep * timeScale;
 
-		// This makes the gridlines a constant distance apart
-		double gridStep = 50 / pixPerTimeStep * sim.timeStep * timeScale;
-		double tstart = sim.t - ts * (winSize.width / pixPerTimeStep);
+		// This makes the gridlines a constant distance (64 pixels) apart
+		double gridStep = 64  * sim.timeStep * timeScale;
+		double tstart = sim.t - ts * winSize.width;
 		double tx = sim.t - (sim.t % gridStep);
 		
-		// X axis
+		// last_lx is the pixel X coordinate of the rightmost gridline
+		// Thus, when a new gridline comes onto the scope, we must switch
+		// from the previous rightmost line to the new line
+		if ( tx != last_tx )
+			last_lx += 64; // this has to be changed if the grid step changes
+		
+		// Draw X axis
 		g.setColor(gridLineColor);
 		g.drawRect(0, winSize.height/2, winSize.width, 1);
 		
-		// Grid lines parallel to Y axis
+		// Draw grid lines parallel to Y axis
 		double t;
 		int lx, ln;
+		int ps = 0; // number of pixels scope has shifted left since last timestep
 		for ( int i = 0; ; i++ ) {
 			
 			t = tx - i * gridStep; // time at gridline
 			if ( t < tstart || t < 0 )
 				break;
-			lx = (int) Math.round((t - tstart) / ts * pixPerTimeStep); // pixel position of gridline
+			lx = (int) Math.round((t - tstart) / ts); // pixel position of gridline
+			if ( i == 0 ) {
+				ps = (last_lx - lx) % 64;
+				last_lx = lx;
+			}
 			
 			g.drawLine(lx, 30, lx, winSize.height);
 			
@@ -142,12 +150,31 @@ class Oscilloscope extends JFrame implements
 		}
 		
 		g.setColor(Color.BLACK);
-		g.drawString("Time: " + sim.t, 5, 15);
-		g.drawString("Val: " + val, 5, 30);
+		//g.drawString("Time: " + sim.t, 5, 15);
+		//g.drawString("Val: " + val, 5, 30);
 		
 		realg.drawImage(dbimage, 0, 0, null);
 		
-		realg.drawImage(image, 0, 0, null);
+		// Shift waveform image to the left according to the value of ps
+		// Set rightmost columns which were vacated by shift to transparent
+		// Thank you, StackOverflow
+		// http://stackoverflow.com/questions/2825837/java-how-to-do-fast-copy-of-a-bufferedimages-pixels-unit-test-included
+		wfimage.getRaster().setRect(-ps, 0, wfimage.getRaster());
+		Graphics2D g2d = (Graphics2D) wfimage.getGraphics();
+		Composite c = g2d.getComposite();
+		g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.CLEAR, 0.0f));
+		g2d.fill(new Rectangle(winSize.width-ps, 0, ps, winSize.height));
+		g2d.setComposite(c);
+		
+		// Calculate pixel Y coordinate of current value
+		int py = (int) Math.round(((voltageRange - val) / (2*voltageRange)) * winSize.height);
+		System.out.println("py: " + py);
+		g2d.setColor(Color.GREEN);
+		//g2d.fillOval(winSize.width-1, py, 2, 2);
+		g2d.drawLine(winSize.width-1, py, winSize.width-1, py);
+		
+		
+		realg.drawImage(wfimage, 0, 0, null);
 		
 		cv.repaint(); // This makes it actually show up
 	}
@@ -161,6 +188,12 @@ class Oscilloscope extends JFrame implements
 	public void createImage() {
 		winSize = cv.getSize();
 		dbimage = new BufferedImage(winSize.width, winSize.height, BufferedImage.TYPE_INT_ARGB);
+		wfimage = new BufferedImage(winSize.width, winSize.height, BufferedImage.TYPE_INT_ARGB);
+		Graphics g = wfimage.getGraphics();
+		g.setColor(Color.BLUE);
+		g.fillRect(0, 0, winSize.width, winSize.height);
+		last_lx = winSize.width-1;
+		last_tx = -1;
 		
 		int nPixels = winSize.width * winSize.height;
 		pixels = new int[nPixels];
