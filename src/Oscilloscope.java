@@ -11,24 +11,35 @@ class Oscilloscope extends JFrame implements
 	
 	CirSim sim;
 	Vector<CircuitElm> elements;
+	
 	OscilloscopeCanvas cv;
-	Dimension winSize;
-	BufferedImage dbimage;
-	BufferedImage wfimage;
-	int last_lx;
-	double last_tx;
-	
+	Dimension cvSize;
 	Color bgColor, gridLineColor;
-
-	double timeScale;
 	
+	BufferedImage gridImage; // Gridlines drawn on this
+	BufferedImage wfImage;   // Waveform drawn on this
+	// wfImage is transparent except for the waveform itself, so drawing it on
+	// top of gridImage allows the gridlines to show through.
+	
+	// Variables from the last call of drawScope
+	int last_lx;    // Used to determine how far the gridlines have moved and thus
+	double last_tx;	// how far to move the waveform image.
+	
+	int last_py;  // Keeps track of the last point drawn to draw a line between
+				  // it and the current point.
+	
+	boolean graph_reset;
+
+	double timeScale; // this is the 'speed' variable in the original Scope class
 	double voltageRange;
 	double currentRange;
 	
-	MemoryImageSource imageSource;
-	Image image;
-	int[] pixels;
-	boolean[] dpixels;
+	// The type of measurement that's currently displayed
+	static final int VOLTAGE = 1;
+	static final int CURRENT = 2;
+	static final int POWER = 3;
+	static final int V_VS_I = 4;
+	int showingValue;
 	
 	/* Menu items */
 	JMenuItem reset;
@@ -38,25 +49,21 @@ class Oscilloscope extends JFrame implements
 	JRadioButtonMenuItem showVoltage, showCurrent, showPower, showVvsI;
 	JCheckBoxMenuItem showPeak, showNPeak, showFreq;
 	
-	static final int VOLTAGE = 1;
-	static final int CURRENT = 2;
-	static final int POWER = 3;
-	static final int V_VS_I = 4;
-	int showingValue;
-	
-	DecimalFormat df;
+	// For displaying time increments on gridlines
+	// This is unacceptable.  Sure it works fine for the LRC, but it's useless for
+	// viewing scales smaller than 1ms.  It needs to be dynamically chosen based on
+	// the current time scale.  Put the code that reallocates it into the action
+	// listener that fires whenever the time scale is changed.
+	static final DecimalFormat df = new DecimalFormat("#0.0##"); 
 	
 	Oscilloscope(CirSim s) {
+		
 		sim = s;
-		elements = new Vector<CircuitElm>();
+		elements = new Vector<CircuitElm>(); // no elements to start with
 		
-		timeScale = 64; // this is the 'speed' variable in Scope
-		
-		bgColor = Color.white;
-		gridLineColor = new Color(0x66, 0x66, 0x66, 0xFF);
-		
-		df = new DecimalFormat("#0.0##");
-		
+		bgColor = Color.WHITE;
+		gridLineColor = Color.DARK_GRAY;
+
 		Point p = sim.getLocation();
 		this.setLocation( p.x+sim.getWidth(), p.y+50 );
 		this.setSize(350,450);
@@ -66,36 +73,54 @@ class Oscilloscope extends JFrame implements
 		this.setJMenuBar(buildMenu());
 		showingValue = VOLTAGE;
 		
+		graph_reset = false;
+		
 		this.setLayout(new OscilloscopeLayout());
+		
 		cv = new OscilloscopeCanvas(this);
 		this.add(cv);
 		cv.addComponentListener(this);
 		
-		reset();
+		resetScales();
 		
 		this.setVisible(true);
+		
 		createImage(); // Necessary to allocate dbimage before the first
 					   // call to drawScope
 		
 	}
 	
-	public void reset() {
+	// Reset to default time and amplitude scales
+	private void resetScales() {
 		timeScale = 64;
 		voltageRange = 5.0;
 		currentRange = 0.1;
 	}
 	
+	// Clear the waveform image when changing time or amplitude scales
+	private void resetGraph() {
+		graph_reset = true;
+	}
+	
 	// Where the magic happens
 	public void drawScope(Graphics realg) {
+		
+		// This will have to change to an array or vector of doubles.
+		// One value per element attached to the scope.
+		// Use array.  In addElement/removeElement, reallocate array to
+		// correct size.
 		double val = 0;
+		
+		// Adjust amplitude scale so that entire waveform always fits
+		// When I get around to adding support for multiple elements, the val
+		// used for this adjustment will have to be the maximum value of
+		// all the elements.
 		if ( elements.size() > 0 ) {
 			if ( showingValue == VOLTAGE ) {
 				val = elements.firstElement().getVoltageDiff();
 				if ( Math.abs(val) > voltageRange ) {
 					voltageRange *= 1.25;
 				}
-				
-				
 			} else if ( showingValue == CURRENT ) {
 				val = elements.firstElement().getCurrent();
 				if ( Math.abs(val) > currentRange ) {
@@ -104,16 +129,18 @@ class Oscilloscope extends JFrame implements
 			}
 		}
 		
-		Graphics g = dbimage.getGraphics();
+		Graphics g = gridImage.getGraphics();
 		
+		// Clear scope window
 		g.setColor(bgColor);
-		g.fillRect(0, 0, winSize.width, winSize.height);
+		g.fillRect(0, 0, cvSize.width, cvSize.height);
 		
+		// Timestep adjusted for current scale
 		double ts = sim.timeStep * timeScale;
 
 		// This makes the gridlines a constant distance (64 pixels) apart
 		double gridStep = 64  * sim.timeStep * timeScale;
-		double tstart = sim.t - ts * winSize.width;
+		double tstart = sim.t - ts * cvSize.width;
 		double tx = sim.t - (sim.t % gridStep);
 		
 		// last_lx is the pixel X coordinate of the rightmost gridline
@@ -124,57 +151,87 @@ class Oscilloscope extends JFrame implements
 		
 		// Draw X axis
 		g.setColor(gridLineColor);
-		g.drawRect(0, winSize.height/2, winSize.width, 1);
+		g.drawRect(0, cvSize.height/2, cvSize.width, 1);
 		
 		// Draw grid lines parallel to Y axis
 		double t;
-		int lx, ln;
+		int lx = cvSize.width, ln;
 		int ps = 0; // number of pixels scope has shifted left since last timestep
+		boolean zero_visible = false;
+		int zero_lx = 0;
 		for ( int i = 0; ; i++ ) {
 			
 			t = tx - i * gridStep; // time at gridline
-			if ( t < tstart || t < 0 )
+			
+			if ( t < 0 ) {				// If the gridline at t = 0 is visible, store
+				zero_visible = true;	// its position so we can go back and clear
+										// everything to the left of it.
+				zero_lx = lx;		// Since t here is less than 0, we want the position
+									// of the previous gridline, which should have been at
+									// t=0.  So use lx from the last time through the loop
 				break;
+			}
+			if ( t < tstart )
+				break;
+			
 			lx = (int) Math.round((t - tstart) / ts); // pixel position of gridline
+			
+			// Calculate how many pixels the rightmost gridline has moved
+			// since the last timestep.  Also, update its position.
 			if ( i == 0 ) {
 				ps = (last_lx - lx) % 64;
 				last_lx = lx;
 			}
 			
-			g.drawLine(lx, 30, lx, winSize.height);
+			g.drawLine(lx, 0, lx, cvSize.height);
 			
 			// Mark time every other gridline
 			ln = (int) Math.round(t / gridStep ); // gridline number (since beginning of time)
 			if ( ln % 2 == 0 )
-				g.drawString(df.format(t), lx, winSize.height - 15);
+				g.drawString(Oscilloscope.df.format(t), lx+2, cvSize.height - 15);
 		}
 		
-		g.setColor(Color.BLACK);
-		//g.drawString("Time: " + sim.t, 5, 15);
-		//g.drawString("Val: " + val, 5, 30);
-		
-		realg.drawImage(dbimage, 0, 0, null);
+		realg.drawImage(gridImage, 0, 0, null);
 		
 		// Shift waveform image to the left according to the value of ps
 		// Set rightmost columns which were vacated by shift to transparent
 		// Thank you, StackOverflow
 		// http://stackoverflow.com/questions/2825837/java-how-to-do-fast-copy-of-a-bufferedimages-pixels-unit-test-included
-		wfimage.getRaster().setRect(-ps, 0, wfimage.getRaster());
-		Graphics2D g2d = (Graphics2D) wfimage.getGraphics();
+		wfImage.getRaster().setRect(-ps, 0, wfImage.getRaster());
+		Graphics2D g2d = (Graphics2D) wfImage.getGraphics();
 		Composite c = g2d.getComposite();
 		g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.CLEAR, 0.0f));
-		g2d.fill(new Rectangle(winSize.width-ps, 0, ps, winSize.height));
+		g2d.fill(new Rectangle(cvSize.width-ps, 0, ps, cvSize.height));
 		g2d.setComposite(c);
 		
 		// Calculate pixel Y coordinate of current value
-		int py = (int) Math.round(((voltageRange - val) / (2*voltageRange)) * winSize.height);
-		System.out.println("py: " + py);
-		g2d.setColor(Color.GREEN);
-		//g2d.fillOval(winSize.width-1, py, 2, 2);
-		g2d.drawLine(winSize.width-1, py, winSize.width-1, py);
+		int py = (int) Math.round(((voltageRange/2 - val) / (voltageRange)) * cvSize.height);
 		
+		// Draw a line from the previous point (which has now been moved ps pixels from the right of the image)
+		// to the current point (which is at the right of the image)
+		g = wfImage.getGraphics();
+		g.setColor(Color.GREEN);
+		CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py, cvSize.width-2, py);
+		last_py = py;
 		
-		realg.drawImage(wfimage, 0, 0, null);
+		// Clear the waveform image after a reset.  Must be done here after drawing the line to the current
+		// point.  Changing the time scale will result in the point (cvSize.width-ps, last_py) being in the
+		// wrong place since that point will be positioned according to the old time scale.  Thus, when the
+		// graph is reset, we must remove the line between (cvSize.width-ps, last_py) and (cvSize.width, py)
+		if ( graph_reset == true ) {
+			c = g2d.getComposite();
+			g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.CLEAR, 0.0f));
+			g2d.fill(new Rectangle(0, 0, cvSize.width, cvSize.height));
+			g2d.setComposite(c);
+			graph_reset = false;
+		}
+		
+		realg.drawImage(wfImage, 0, 0, null);
+		
+		if ( zero_visible ) {
+			realg.setColor( bgColor );
+			realg.fillRect(0, 0, zero_lx, cvSize.height);
+		}
 		
 		cv.repaint(); // This makes it actually show up
 	}
@@ -185,25 +242,14 @@ class Oscilloscope extends JFrame implements
 	
 	// Called whenever the canvas is resized and also during Oscilloscope's
 	// constructor
-	public void createImage() {
-		winSize = cv.getSize();
-		dbimage = new BufferedImage(winSize.width, winSize.height, BufferedImage.TYPE_INT_ARGB);
-		wfimage = new BufferedImage(winSize.width, winSize.height, BufferedImage.TYPE_INT_ARGB);
-		Graphics g = wfimage.getGraphics();
-		g.setColor(Color.BLUE);
-		g.fillRect(0, 0, winSize.width, winSize.height);
-		last_lx = winSize.width-1;
+	private void createImage() {
+		cvSize = cv.getSize();
+		System.out.println("Canvas size: " + cvSize);
+		gridImage = new BufferedImage(cvSize.width, cvSize.height, BufferedImage.TYPE_INT_ARGB);
+		wfImage = new BufferedImage(cvSize.width, cvSize.height, BufferedImage.TYPE_INT_ARGB);
+		last_lx = cvSize.width-1;
 		last_tx = -1;
-		
-		int nPixels = winSize.width * winSize.height;
-		pixels = new int[nPixels];
-		for ( int i = 0; i != nPixels; i++ )
-			pixels[i] = 0x00000000;
-		imageSource = new MemoryImageSource( winSize.width, winSize.height, pixels, 0, winSize.width );
-		imageSource.setAnimated(true);
-		imageSource.setFullBufferUpdates(true);
-		if ( cv != null )
-			image = createImage(imageSource);
+		last_py = cvSize.height/2;
 	}
 	
 	/* ********************************************************* */
@@ -212,11 +258,28 @@ class Oscilloscope extends JFrame implements
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if ( e.getSource() == reset ) {
-			reset();
+			resetScales();
+			resetGraph();
 		} else if ( e.getSource() == timeScaleUp ) {
 			timeScale *= 2;
+			resetGraph();
 		} else if ( e.getSource() == timeScaleDown ) {
 			timeScale /= 2;
+			resetGraph();
+		} else if ( e.getSource() == scaleUp ) {
+			if ( showingValue == VOLTAGE ) {
+				voltageRange *= 2;
+			} else if ( showingValue == CURRENT ) {
+				currentRange *= 2;
+			}
+			resetGraph();
+		} else if ( e.getSource() == scaleDown ) {
+			if ( showingValue == VOLTAGE ) {
+				voltageRange /= 2;
+			} else if ( showingValue == CURRENT ) {
+				currentRange /= 2;
+			}
+			resetGraph();
 		} else if ( e.getSource() instanceof JRadioButtonMenuItem ) {
 			System.out.println("Radio: " + e.getActionCommand());
 			String cmd = e.getActionCommand();
@@ -229,6 +292,7 @@ class Oscilloscope extends JFrame implements
 			} else if ( cmd.equals("SHOW_V_VS_I") ) {
 				showingValue = V_VS_I;
 			}
+			resetGraph();
 		}
 	}
 	
@@ -255,15 +319,17 @@ class Oscilloscope extends JFrame implements
 	/* ********************************************************* */
 	/* Create menu bar                                           */
 	/* ********************************************************* */
-	JMenuBar buildMenu() {
+	private JMenuBar buildMenu() {
 		
 		JMenuBar mb = new JMenuBar();
 		
+		/* */
 		JMenu m = new JMenu("Reset");
 		mb.add(m);
 		m.add(reset = new JMenuItem("Reset"));
 		reset.addActionListener(this);
 		
+		/* */
 		m = new JMenu("Time Scale");
 		mb.add(m);
 		m.add(timeScaleUp = new JMenuItem("Time Scale 2x"));
@@ -271,6 +337,7 @@ class Oscilloscope extends JFrame implements
 		for ( int i = 0; i < m.getItemCount(); i++ )
 			((JMenuItem) m.getMenuComponent(i)).addActionListener(this);
 		
+		/* */
 		m = new JMenu("Amplitude Scale");
 		mb.add(m);
 		m.add(scaleUp = new JMenuItem("Scale 2x"));
@@ -279,9 +346,9 @@ class Oscilloscope extends JFrame implements
 		for ( int i = 0; i < m.getItemCount(); i++ )
 			((JMenuItem) m.getMenuComponent(i)).addActionListener(this);
 		
+		/* */
 		m = new JMenu("Show");
 		mb.add(m);
-		
 		showOptions = new ButtonGroup();
 		m.add(showVoltage = new JRadioButtonMenuItem("Voltage"));
 		showVoltage.setActionCommand("SHOW_VOLTAGE");
@@ -299,6 +366,7 @@ class Oscilloscope extends JFrame implements
 		for ( int i = 0; i < 4; i++ )
 			((JRadioButtonMenuItem) m.getMenuComponent(i)).addActionListener(this);
 		
+		/* */
 		m.addSeparator();
 		m.add(showPeak = new JCheckBoxMenuItem("Peak Value"));
 		m.add(showNPeak = new JCheckBoxMenuItem("Negative Peak Value"));
