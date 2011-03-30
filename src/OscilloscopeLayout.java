@@ -1,5 +1,4 @@
 import java.awt.*;
-import javax.swing.*;
 
 class OscilloscopeLayout implements LayoutManager {
 	public OscilloscopeLayout() {}
