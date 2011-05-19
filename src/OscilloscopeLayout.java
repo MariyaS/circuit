@@ -1,4 +1,5 @@
 import java.awt.*;
+import javax.swing.*;
 
 class OscilloscopeLayout implements LayoutManager {
 	public OscilloscopeLayout() {}
@@ -18,8 +19,21 @@ class OscilloscopeLayout implements LayoutManager {
 		int targeth = target.getHeight() - (insets.top + insets.bottom);
 		
 		Component canvas = target.getComponent(0);
-		canvas.setLocation(insets.left, insets.top);
-		canvas.setSize(targetw, targeth);
+		canvas.setLocation(insets.left, insets.top+40);
+		canvas.setSize(targetw, targeth-40);
+		
+		for ( int i = 1; i < target.getComponentCount(); i++ ) {
+			Component c = target.getComponent(i);
+			if ( c instanceof JLabel ) {
+				if ( (i-1) % 2 == 0 ) {
+					Point p = new Point(insets.left+5, insets.top);
+					c.setLocation(p);
+				}
+				else
+					c.setLocation(5, insets.top+15);
+				c.setSize(c.getPreferredSize());
+			}
+		}
 	}
 	
 }
