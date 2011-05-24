@@ -25,6 +25,8 @@ class OscilloscopeLayout implements LayoutManager {
 		for ( int i = 1; i < target.getComponentCount(); i++ ) {
 			Component c = target.getComponent(i);
 			if ( c instanceof JLabel ) {
+				//c.setForeground(Color.BLACK);
+				//c.setLocation(insets.left+5, insets.top);
 				if ( (i-1) % 2 == 0 ) {
 					Point p = new Point(insets.left+5, insets.top);
 					c.setLocation(p);
