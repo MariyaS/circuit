@@ -12,7 +12,7 @@ class Oscilloscope extends JFrame implements
 	CirSim sim;
 	Vector<CircuitElm> elements;
 	Vector<Color> elementColors;
-	Vector<JLabel> elementLabels;
+	Vector<OscilloscopeElmLabel> elementLabels;
 	
 	OscilloscopeCanvas cv;
 	Dimension cvSize;
@@ -56,7 +56,7 @@ class Oscilloscope extends JFrame implements
 		
 		sim = s;
 		elements = new Vector<CircuitElm>(); // no elements to start with
-		elementLabels = new Vector<JLabel>();
+		elementLabels = new Vector<OscilloscopeElmLabel>();
 		elementColors = new Vector<Color>();
 		
 		bgColor = Color.WHITE;
@@ -248,10 +248,15 @@ class Oscilloscope extends JFrame implements
 	}
 	
 	public void addElement(CircuitElm elm) {
+		
+		// Add name of component to oscilloscope window
 		elm.getInfo(info);
-		elementLabels.add(new JLabel(info[0]));
-		this.add(elementLabels.lastElement());
+		OscilloscopeElmLabel lbl = new OscilloscopeElmLabel(info[0]); 
+		elementLabels.add(lbl);
+		this.add(lbl);
 		this.validate();
+		
+		// Add element to list to show values of
 		elements.add(elm);
 	}
 	
