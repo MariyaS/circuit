@@ -142,17 +142,18 @@ public class CirSim extends JFrame
     Vector<String> undoStack, redoStack;
 
     int getrand(int x) {
-	int q = random.nextInt();
-	if (q < 0) q = -q;
-	return q % x;
+		int q = random.nextInt();
+		if (q < 0) q = -q;
+		return q % x;
     }
+    
     CircuitCanvas cv;
     Circuit applet;
 
     CirSim(Circuit a) {
-	super("Circuit Simulator v1.5n");
-	applet = a;
-	useFrame = false;
+		super("Circuit Simulator v1.5n");
+		applet = a;
+		useFrame = false;
     }
 
     String startCircuit = null;
@@ -212,7 +213,9 @@ public class CirSim extends JFrame
 			Image bg = null;
 			try {
 				bg = ImageIO.read(f);
-			} catch (IOException e) { System.out.println(e.getMessage()); }
+			} catch (IOException e) {
+				System.out.println(e.getMessage());
+			}
 			ImagePanel panel = new ImagePanel(this, bg);
 			this.add(panel);
 			main = panel;
