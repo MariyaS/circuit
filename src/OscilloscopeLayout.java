@@ -18,22 +18,24 @@ class OscilloscopeLayout implements LayoutManager {
 		int targetw = target.getWidth() - (insets.left + insets.right);
 		int targeth = target.getHeight() - (insets.top + insets.bottom);
 		
+		// Position canvas
 		Component canvas = target.getComponent(0);
 		canvas.setLocation(insets.left, insets.top+40);
 		canvas.setSize(targetw, targeth-40);
 		
+		// Position component labels
+		int nLabels = 0;
 		for ( int i = 1; i < target.getComponentCount(); i++ ) {
 			Component c = target.getComponent(i);
 			if ( c instanceof JLabel ) {
-				//c.setForeground(Color.BLACK);
-				//c.setLocation(insets.left+5, insets.top);
-				if ( (i-1) % 2 == 0 ) {
-					Point p = new Point(insets.left+5, insets.top);
-					c.setLocation(p);
+				int x = insets.left+5 + nLabels/2 * 80;
+				int y = insets.top;
+				if ( nLabels % 2 == 1 ) {
+					y = insets.top+15;
 				}
-				else
-					c.setLocation(5, insets.top+15);
+				c.setLocation(x, y);
 				c.setSize(c.getPreferredSize());
+				nLabels++;
 			}
 		}
 	}
