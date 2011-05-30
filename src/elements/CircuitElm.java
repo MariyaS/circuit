@@ -592,6 +592,7 @@ public abstract class CircuitElm implements Editable {
 		    c = colorScaleCount-1;
 		g.setColor(colorScale[c]);
     }
+    
     void setPowerColor(Graphics g, boolean yellow) {
 		/*if (conductanceCheckItem.getState()) {
 		  setConductanceColor(g, current/getVoltageDiff());
@@ -629,7 +630,9 @@ public abstract class CircuitElm implements Editable {
 		g.setColor(new Color(rg, rg, rg));
     }
     
-    double getPower() { return getVoltageDiff()*current; }
+    double getPower() {
+    	return getVoltageDiff()*current;
+    }
     
     double getScopeValue(int x) {
     	return (x == 1) ? getPower() : getVoltageDiff();
