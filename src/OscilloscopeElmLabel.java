@@ -3,14 +3,13 @@ import java.awt.*;
 import java.util.Random;
 import java.awt.event.*;
 
-class OscilloscopeElmLabel extends JLabel implements MouseListener, ActionListener {
+class OscilloscopeElmLabel extends JLabel implements MouseListener {
 	private static final long serialVersionUID = 7847884518095331490L;
 	
 	PopupMenu elmMenu;
 	MenuItem removeItem;
-	Oscilloscope scope;
 	
-	OscilloscopeElmLabel( String labelString ) {
+	OscilloscopeElmLabel( String labelString, Oscilloscope scope ) {
 		super( labelString );
 		
 		// Random color for label
@@ -24,19 +23,13 @@ class OscilloscopeElmLabel extends JLabel implements MouseListener, ActionListen
 		// Popup menu for removing element
 		elmMenu = new PopupMenu();
 		removeItem = new MenuItem("Remove");
-		removeItem.addActionListener(this);
+		removeItem.addActionListener(scope);
+		removeItem.setActionCommand("REMOVE_ELM");
 		elmMenu.add(removeItem);
 		this.add(elmMenu);
 		
 		this.addMouseListener(this);
 		
-	}
-	
-	
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		System.out.println("Remove Element");
-		System.out.println(this.toString());
 	}
 
 	@Override
