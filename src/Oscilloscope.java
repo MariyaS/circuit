@@ -10,6 +10,7 @@ class Oscilloscope extends JFrame implements
 	private static final long serialVersionUID = 4788980391955265718L;
 	
 	CirSim sim;
+	static final int maxElements = 10;
 	Vector<CircuitElm> elements;
 	Vector<Color> elementColors;
 	Vector<OscilloscopeElmLabel> elementLabels;
@@ -66,7 +67,7 @@ class Oscilloscope extends JFrame implements
 		Point p = sim.getLocation();
 		this.setLocation( p.x+sim.getWidth(), p.y+50 );
 		this.setSize(350,450);
-		this.setMinimumSize(new Dimension(200, 250));
+		this.setMinimumSize(new Dimension(350, 300));
 		
 		this.setTitle("Oscilloscope");
 		this.setJMenuBar(buildMenu());
@@ -249,10 +250,16 @@ class Oscilloscope extends JFrame implements
 	
 	public void addElement(CircuitElm elm) {
 		
+		if ( elements.size() >= maxElements ) {
+			System.out.println("Scope accepts maximum of 10 elements");
+			return;
+		}
+		
 		// Add name of component to oscilloscope window
 		elm.getInfo(info);
-		OscilloscopeElmLabel lbl = new OscilloscopeElmLabel(info[0]); 
+		OscilloscopeElmLabel lbl = new OscilloscopeElmLabel(info[0], this); 
 		elementLabels.add(lbl);
+		elementColors.add(lbl.getForeground());
 		this.add(lbl);
 		this.validate();
 		
@@ -275,16 +282,21 @@ class Oscilloscope extends JFrame implements
 	/* ********************************************************* */
 	@Override
 	public void actionPerformed(ActionEvent e) {
+		// Reset
 		if ( e.getSource() == reset ) {
 			resetScales();
 			resetGraph();
-		} else if ( e.getSource() == timeScaleUp ) {
+		}
+		// Change time scale
+		else if ( e.getSource() == timeScaleUp ) {
 			timeScale *= 2;
 			resetGraph();
 		} else if ( e.getSource() == timeScaleDown ) {
 			timeScale /= 2;
 			resetGraph();
-		} else if ( e.getSource() == scaleUp ) {
+		}
+		// Change y-axis scale
+		else if ( e.getSource() == scaleUp ) {
 			if ( showingValue == VOLTAGE ) {
 				voltageRange *= 2;
 			} else if ( showingValue == CURRENT ) {
@@ -298,7 +310,9 @@ class Oscilloscope extends JFrame implements
 				currentRange /= 2;
 			}
 			resetGraph();
-		} else if ( e.getSource() instanceof JRadioButtonMenuItem ) {
+		}
+		// Change value shown on scope
+		else if ( e.getSource() instanceof JRadioButtonMenuItem ) {
 			System.out.println("Radio: " + e.getActionCommand());
 			String cmd = e.getActionCommand();
 			if ( cmd.equals("SHOW_VOLTAGE") ) {
@@ -312,6 +326,26 @@ class Oscilloscope extends JFrame implements
 			}
 			System.out.println(showingValue);
 			resetGraph();
+		}
+		// Remove an element from scope
+		else if ( e.getSource() instanceof MenuItem && e.getActionCommand().equals("REMOVE_ELM") ) {
+			OscilloscopeElmLabel srcLabel = (OscilloscopeElmLabel) ((PopupMenu) ((MenuItem) e.getSource()).getParent()).getParent();
+			System.out.println("remove " + srcLabel.toString());
+			int i = elementLabels.indexOf( srcLabel );
+			if ( i == -1 ) {
+				System.err.println("Error: element label not found");
+			}
+			
+			elements.remove(i);
+			elementColors.remove(i);
+			elementLabels.remove(i);
+			
+			this.remove(srcLabel);
+			this.validate();
+			this.repaint();
+			
+			
+			
 		}
 	}
 	
