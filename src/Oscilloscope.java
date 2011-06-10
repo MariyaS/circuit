@@ -3,6 +3,7 @@ import java.awt.*;
 import java.awt.image.*;
 import java.awt.event.*;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.Vector;
 
 class Oscilloscope extends JFrame implements
@@ -25,8 +26,9 @@ class Oscilloscope extends JFrame implements
 	// top of gridImage allows the gridlines to show through.
 	
 	// Variables from the last call of drawScope
-	int last_py;  // Keeps track of the last point drawn to draw a line between
+	//int last_py;  // Keeps track of the last point drawn to draw a line between
 				  // it and the current point.
+	int[] last_py;
 	double last_t;
 	double last_ps;
 	
@@ -85,6 +87,7 @@ class Oscilloscope extends JFrame implements
 		
 		this.setVisible(true);
 		
+		last_py = new int[10];
 		createImage(); // Necessary to allocate dbimage before the first
 					   // call to drawScope
 		
@@ -126,18 +129,6 @@ class Oscilloscope extends JFrame implements
 	
 	// Where the magic happens
 	public void drawScope(Graphics realg) {		
-		
-		// This will have to change to an array or vector of doubles.
-		// One value per element attached to the scope.
-		// Use array.  In addElement/removeElement, reallocate array to
-		// correct size.
-		double val = 0;
-		if ( elements.size() > 0 ) {
-			if ( showingValue == VOLTAGE )
-				val = elements.get(0).getVoltageDiff();
-			else if ( showingValue == CURRENT )
-				val = elements.get(0).getCurrent();
-		}
 		
 		// Clear scope window
 		Graphics g = gridImage.getGraphics();
@@ -211,19 +202,29 @@ class Oscilloscope extends JFrame implements
 		g2d.fill(new Rectangle(cvSize.width-ps, 0, ps, cvSize.height));
 		g2d.setComposite(c);
 		
-		// Calculate pixel Y coordinate of current value
-		int py = 0;
-		if ( showingValue == VOLTAGE )
-			py = (int) Math.round(((voltageRange/2 - val) / (voltageRange)) * cvSize.height);
-		else if ( showingValue == CURRENT )
-			py = (int) Math.round(((currentRange/2 - val) / (currentRange)) * cvSize.height);
-		
-		// Draw a line from the previous point (which has now been moved ps pixels from the right of the image)
-		// to the current point (which is at the right of the image)
-		g = wfImage.getGraphics();
-		g.setColor(Color.GREEN);
-		CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py, cvSize.width-2, py);
-		last_py = py;
+		for ( int i = 0; i < elements.size(); i++ ) {
+			
+			double val = 0;
+			if ( showingValue == VOLTAGE )
+				val = elements.get(i).getVoltageDiff();
+			else if ( showingValue == CURRENT )
+				val = elements.get(i).getCurrent();
+			
+			// Calculate pixel Y coordinate of current value
+			int py = 0;
+			if ( showingValue == VOLTAGE )
+				py = (int) Math.round(((voltageRange/2 - val) / (voltageRange)) * cvSize.height);
+			else if ( showingValue == CURRENT )
+				py = (int) Math.round(((currentRange/2 - val) / (currentRange)) * cvSize.height);
+			
+			// Draw a line from the previous point (which has now been moved ps pixels from the right of the image)
+			// to the current point (which is at the right of the image)
+			g = wfImage.getGraphics();
+			g.setColor(Color.GREEN);
+			g.setColor(elementColors.get(i));
+			CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py[i], cvSize.width-2, py);
+			last_py[i] = py;
+		}
 		
 		// Clear the waveform image after a reset.  Must be done here after drawing the line to the current
 		// point.  Changing the time scale will result in the point (cvSize.width-ps, last_py) being in the
@@ -250,6 +251,8 @@ class Oscilloscope extends JFrame implements
 	
 	public void addElement(CircuitElm elm) {
 		
+		// This was to keep labels from overflowing onto the canvas
+		// when the scope window is small.
 		if ( elements.size() >= maxElements ) {
 			System.out.println("Scope accepts maximum of 10 elements");
 			return;
@@ -273,7 +276,7 @@ class Oscilloscope extends JFrame implements
 		cvSize = cv.getSize();
 		gridImage = new BufferedImage(cvSize.width, cvSize.height, BufferedImage.TYPE_INT_ARGB);
 		wfImage = new BufferedImage(cvSize.width, cvSize.height, BufferedImage.TYPE_INT_ARGB);
-		last_py = cvSize.height/2;
+		Arrays.fill(last_py, cvSize.height/2);
 		last_ps = 0;
 	}
 	
