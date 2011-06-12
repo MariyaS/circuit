@@ -13,7 +13,6 @@ class Oscilloscope extends JFrame implements
 	CirSim sim;
 	static final int maxElements = 10;
 	Vector<CircuitElm> elements;
-	Vector<Color> elementColors;
 	Vector<OscilloscopeElmLabel> elementLabels;
 	
 	OscilloscopeCanvas cv;
@@ -25,10 +24,8 @@ class Oscilloscope extends JFrame implements
 	// wfImage is transparent except for the waveform itself, so drawing it on
 	// top of gridImage allows the gridlines to show through.
 	
-	// Variables from the last call of drawScope
-	//int last_py;  // Keeps track of the last point drawn to draw a line between
-				  // it and the current point.
-	int[] last_py;
+	int[] last_py_current; // Keep track of the last point drawn in order to
+	int[] last_py_voltage; // draw a line between it and the current point.
 	double last_t;
 	double last_ps;
 	
@@ -45,8 +42,6 @@ class Oscilloscope extends JFrame implements
 	static final int V_VS_I = 4;
 	int showingValue;
 	
-	String[] info;
-	
 	/* Menu items */
 	JMenuItem reset;
 	JMenuItem timeScaleUp, timeScaleDown;
@@ -58,47 +53,50 @@ class Oscilloscope extends JFrame implements
 	Oscilloscope(CirSim s) {
 		
 		sim = s;
-		elements = new Vector<CircuitElm>(); // no elements to start with
+		elements = new Vector<CircuitElm>();
 		elementLabels = new Vector<OscilloscopeElmLabel>();
-		elementColors = new Vector<Color>();
 		
+		// Background and grid line colors
 		bgColor = Color.WHITE;
-		gridLineColor = new Color(0x80,0x80,0x80);
 		this.setBackground(bgColor);
+		gridLineColor = new Color(0x80,0x80,0x80);
 
-		Point p = sim.getLocation();
-		this.setLocation( p.x+sim.getWidth(), p.y+50 );
+		// Set window size and initial position
 		this.setSize(350,450);
 		this.setMinimumSize(new Dimension(350, 300));
+		Point p = sim.getLocation();
+		this.setLocation( p.x+sim.getWidth(), p.y+50 );
 		
+		// Window title and menu bar
 		this.setTitle("Oscilloscope");
 		this.setJMenuBar(buildMenu());
-		showingValue = VOLTAGE;
 		
-		graph_reset = false;
-		
+		// Canvas for displaying scope
 		this.setLayout(new OscilloscopeLayout());
-		
 		cv = new OscilloscopeCanvas(this);
 		this.add(cv);
 		cv.addComponentListener(this);
 		
+		// Initialize scales
 		resetScales();
+		graph_reset = false;
+		
+		showingValue = VOLTAGE;
 		
 		this.setVisible(true);
 		
-		last_py = new int[10];
+		last_py_current = new int[maxElements];
+		last_py_voltage = new int[maxElements];
 		createImage(); // Necessary to allocate dbimage before the first
 					   // call to drawScope
 		
 		last_t = 0;
-		info = new String[10];
 	}
 	
 	// Reset to default time and amplitude scales
 	private void resetScales() {
 		timeScale = 64;
-		voltageRange = 5.0;
+		voltageRange = 10.0;
 		currentRange = 0.1;
 	}
 	
@@ -202,9 +200,10 @@ class Oscilloscope extends JFrame implements
 		g2d.fill(new Rectangle(cvSize.width-ps, 0, ps, cvSize.height));
 		g2d.setComposite(c);
 		
+		g = wfImage.getGraphics();
 		for ( int i = 0; i < elements.size(); i++ ) {
 			
-			double val = 0;
+			/*double val = 0;
 			if ( showingValue == VOLTAGE )
 				val = elements.get(i).getVoltageDiff();
 			else if ( showingValue == CURRENT )
@@ -216,14 +215,23 @@ class Oscilloscope extends JFrame implements
 				py = (int) Math.round(((voltageRange/2 - val) / (voltageRange)) * cvSize.height);
 			else if ( showingValue == CURRENT )
 				py = (int) Math.round(((currentRange/2 - val) / (currentRange)) * cvSize.height);
-			
+			*/
 			// Draw a line from the previous point (which has now been moved ps pixels from the right of the image)
 			// to the current point (which is at the right of the image)
-			g = wfImage.getGraphics();
-			g.setColor(Color.GREEN);
-			g.setColor(elementColors.get(i));
+			/*g.setColor(elementColors.get(i));
 			CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py[i], cvSize.width-2, py);
-			last_py[i] = py;
+			last_py[i] = py;*/
+			
+			int py = 0;
+			py = (int) Math.round(((voltageRange/2 - elements.get(i).getVoltageDiff()) / voltageRange) * cvSize.height);
+			g.setColor(elementLabels.get(i).getVColor());
+			CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_voltage[i], cvSize.width-2, py);
+			last_py_voltage[i] = py;
+			
+			py = (int) Math.round(((currentRange/2 - elements.get(i).getCurrent()) / currentRange) * cvSize.height);
+			g.setColor(elementLabels.get(i).getIColor());
+			CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_current[i], cvSize.width-2, py);
+			last_py_current[i] = py;
 		}
 		
 		// Clear the waveform image after a reset.  Must be done here after drawing the line to the current
@@ -254,20 +262,31 @@ class Oscilloscope extends JFrame implements
 		// This was to keep labels from overflowing onto the canvas
 		// when the scope window is small.
 		if ( elements.size() >= maxElements ) {
-			System.out.println("Scope accepts maximum of 10 elements");
+			System.out.println("Scope accepts maximum of " + maxElements + " elements");
 			return;
 		}
 		
 		// Add name of component to oscilloscope window
-		elm.getInfo(info);
-		OscilloscopeElmLabel lbl = new OscilloscopeElmLabel(info[0], this); 
+		OscilloscopeElmLabel lbl = new OscilloscopeElmLabel(elm, this); 
 		elementLabels.add(lbl);
-		elementColors.add(lbl.getForeground());
 		this.add(lbl);
 		this.validate();
 		
 		// Add element to list to show values of
 		elements.add(elm);
+	}
+	
+	public void removeElement(int index) {
+		
+		elements.remove(index);
+		
+		// Remove label from window and array
+		this.remove(elementLabels.get(index));
+		elementLabels.remove(index);
+		
+		// Repaint after removing label
+		this.validate();
+		this.repaint();
 	}
 	
 	// Called whenever the canvas is resized and also during Oscilloscope's
@@ -276,7 +295,8 @@ class Oscilloscope extends JFrame implements
 		cvSize = cv.getSize();
 		gridImage = new BufferedImage(cvSize.width, cvSize.height, BufferedImage.TYPE_INT_ARGB);
 		wfImage = new BufferedImage(cvSize.width, cvSize.height, BufferedImage.TYPE_INT_ARGB);
-		Arrays.fill(last_py, cvSize.height/2);
+		Arrays.fill(last_py_current, cvSize.height/2);
+		Arrays.fill(last_py_voltage, cvSize.height/2);
 		last_ps = 0;
 	}
 	
@@ -332,23 +352,16 @@ class Oscilloscope extends JFrame implements
 		}
 		// Remove an element from scope
 		else if ( e.getSource() instanceof MenuItem && e.getActionCommand().equals("REMOVE_ELM") ) {
+			
+			// Surely there's a cleaner way to do this
 			OscilloscopeElmLabel srcLabel = (OscilloscopeElmLabel) ((PopupMenu) ((MenuItem) e.getSource()).getParent()).getParent();
-			System.out.println("remove " + srcLabel.toString());
+			
 			int i = elementLabels.indexOf( srcLabel );
 			if ( i == -1 ) {
 				System.err.println("Error: element label not found");
 			}
 			
-			elements.remove(i);
-			elementColors.remove(i);
-			elementLabels.remove(i);
-			
-			this.remove(srcLabel);
-			this.validate();
-			this.repaint();
-			
-			
-			
+			removeElement(i);
 		}
 	}
 	
