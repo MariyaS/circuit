@@ -9,16 +9,22 @@ class OscilloscopeElmLabel extends JLabel implements MouseListener {
 	PopupMenu elmMenu;
 	MenuItem removeItem;
 	
-	OscilloscopeElmLabel( String labelString, Oscilloscope scope ) {
-		super( labelString );
+	Color vColor;
+	Color iColor;
+	
+	OscilloscopeElmLabel( CircuitElm elm, Oscilloscope scope ) {
 		
-		// Random color for label
-		Color c;
-		Random rand = new Random();
-		do {
-			c = new Color( Math.abs(rand.nextInt()) % 256, Math.abs(rand.nextInt()) % 256, Math.abs(rand.nextInt()) % 256 );
-		} while ( c.getRed() + c.getGreen() + c.getBlue() > 600 );
-		this.setForeground(c);
+		vColor = randomColor();
+		iColor = randomColor();
+		
+		String info[] = new String[10];
+		elm.getInfo(info);
+		
+		this.setText("<html>" + 
+				info[3].substring(4) + " " + info[0].substring(0, 1).toUpperCase().concat(info[0].substring(1)) +
+				"<br>" +
+				"<font color=#" + this.getVColorHex() + ">\u25FC V</font>\t" +
+				"<font color=#" + this.getIColorHex() + ">\u25FC I</font>");
 		
 		// Popup menu for removing element
 		elmMenu = new PopupMenu();
@@ -30,6 +36,33 @@ class OscilloscopeElmLabel extends JLabel implements MouseListener {
 		
 		this.addMouseListener(this);
 		
+		this.setPreferredSize(new Dimension(110, 30));
+		
+	}
+	
+	static Color randomColor() {
+		Color c;
+		Random rand = new Random();
+		do {
+			c = new Color( Math.abs(rand.nextInt()) % 256, Math.abs(rand.nextInt()) % 256, Math.abs(rand.nextInt()) % 256 );
+		} while ( c.getRed() + c.getGreen() + c.getBlue() > 600 );
+		return c;
+	}
+	
+	public Color getVColor() {
+		return vColor;
+	}
+	
+	public Color getIColor() {
+		return iColor;
+	}
+	
+	public String getVColorHex() {
+		return Integer.toHexString(vColor.getRGB()).substring(2);
+	}
+	
+	public String getIColorHex() {
+		return Integer.toHexString(iColor.getRGB()).substring(2);
 	}
 
 	@Override
