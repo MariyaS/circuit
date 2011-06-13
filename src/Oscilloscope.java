@@ -26,6 +26,7 @@ class Oscilloscope extends JFrame implements
 	
 	int[] last_py_current; // Keep track of the last point drawn in order to
 	int[] last_py_voltage; // draw a line between it and the current point.
+	int[] last_py_power;
 	double last_t;
 	double last_ps;
 	
@@ -34,20 +35,18 @@ class Oscilloscope extends JFrame implements
 	double timeScale; // this is the 'speed' variable in the original Scope class
 	double voltageRange;
 	double currentRange;
-	
-	// The type of measurement that's currently displayed
-	static final int VOLTAGE = 1;
-	static final int CURRENT = 2;
-	static final int POWER = 3;
-	static final int V_VS_I = 4;
-	int showingValue;
+	double powerRange;
 	
 	/* Menu items */
 	JMenuItem reset;
 	JMenuItem timeScaleUp, timeScaleDown;
-	JMenuItem scaleUp, scaleDown, maxScale;
+	JMenuItem vScaleUp, vScaleDown;
+	JMenuItem iScaleUp, iScaleDown;
+	JMenuItem pScaleUp, pScaleDown;
+	JMenuItem scaleUp, scaleDown;
+	JMenuItem maxScale;
 	ButtonGroup showOptions;
-	JRadioButtonMenuItem showVoltage, showCurrent, showPower, showVvsI;
+	JRadioButtonMenuItem showVIP, showVvsI;
 	JCheckBoxMenuItem showPeak, showNPeak, showFreq;
 	
 	Oscilloscope(CirSim s) {
@@ -81,12 +80,11 @@ class Oscilloscope extends JFrame implements
 		resetScales();
 		graph_reset = false;
 		
-		showingValue = VOLTAGE;
-		
 		this.setVisible(true);
 		
 		last_py_current = new int[maxElements];
 		last_py_voltage = new int[maxElements];
+		last_py_power = new int[maxElements];
 		createImage(); // Necessary to allocate dbimage before the first
 					   // call to drawScope
 		
@@ -98,6 +96,7 @@ class Oscilloscope extends JFrame implements
 		timeScale = 64;
 		voltageRange = 10.0;
 		currentRange = 0.1;
+		powerRange = 1.0;
 	}
 	
 	// Clear the waveform image when changing time or amplitude scales
@@ -202,36 +201,28 @@ class Oscilloscope extends JFrame implements
 		
 		g = wfImage.getGraphics();
 		for ( int i = 0; i < elements.size(); i++ ) {
-			
-			/*double val = 0;
-			if ( showingValue == VOLTAGE )
-				val = elements.get(i).getVoltageDiff();
-			else if ( showingValue == CURRENT )
-				val = elements.get(i).getCurrent();
-			
-			// Calculate pixel Y coordinate of current value
 			int py = 0;
-			if ( showingValue == VOLTAGE )
-				py = (int) Math.round(((voltageRange/2 - val) / (voltageRange)) * cvSize.height);
-			else if ( showingValue == CURRENT )
-				py = (int) Math.round(((currentRange/2 - val) / (currentRange)) * cvSize.height);
-			*/
-			// Draw a line from the previous point (which has now been moved ps pixels from the right of the image)
-			// to the current point (which is at the right of the image)
-			/*g.setColor(elementColors.get(i));
-			CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py[i], cvSize.width-2, py);
-			last_py[i] = py;*/
+
+			if ( elementLabels.get(i).showingVoltage() ) {
+				py = (int) Math.round(((voltageRange/2 - elements.get(i).getVoltageDiff()) / voltageRange) * cvSize.height);
+				g.setColor(elementLabels.get(i).getVColor());
+				CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_voltage[i], cvSize.width-2, py);
+				last_py_voltage[i] = py;
+			}
 			
-			int py = 0;
-			py = (int) Math.round(((voltageRange/2 - elements.get(i).getVoltageDiff()) / voltageRange) * cvSize.height);
-			g.setColor(elementLabels.get(i).getVColor());
-			CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_voltage[i], cvSize.width-2, py);
-			last_py_voltage[i] = py;
+			if ( elementLabels.get(i).showingCurrent() ) {
+				py = (int) Math.round(((currentRange/2 - elements.get(i).getCurrent()) / currentRange) * cvSize.height);
+				g.setColor(elementLabels.get(i).getIColor());
+				CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_current[i], cvSize.width-2, py);
+				last_py_current[i] = py;
+			}
 			
-			py = (int) Math.round(((currentRange/2 - elements.get(i).getCurrent()) / currentRange) * cvSize.height);
-			g.setColor(elementLabels.get(i).getIColor());
-			CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_current[i], cvSize.width-2, py);
-			last_py_current[i] = py;
+			if ( elementLabels.get(i).showingPower() ) {
+				py = (int) Math.round(((powerRange/2 - elements.get(i).getPower()) / powerRange) * cvSize.height);
+				g.setColor(elementLabels.get(i).getPColor());
+				CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_power[i], cvSize.width-2, py);
+				last_py_power[i] = py;
+			}
 		}
 		
 		// Clear the waveform image after a reset.  Must be done here after drawing the line to the current
@@ -297,6 +288,7 @@ class Oscilloscope extends JFrame implements
 		wfImage = new BufferedImage(cvSize.width, cvSize.height, BufferedImage.TYPE_INT_ARGB);
 		Arrays.fill(last_py_current, cvSize.height/2);
 		Arrays.fill(last_py_voltage, cvSize.height/2);
+		Arrays.fill(last_py_power, cvSize.height/2);
 		last_ps = 0;
 	}
 	
@@ -319,35 +311,42 @@ class Oscilloscope extends JFrame implements
 			resetGraph();
 		}
 		// Change y-axis scale
+		else if ( e.getSource() == vScaleUp ) {
+			voltageRange *= 2;
+			resetGraph();
+		} else if ( e.getSource() == vScaleDown ) {
+			voltageRange /= 2;
+			resetGraph();
+		}
+		else if ( e.getSource() == iScaleUp ) {
+			currentRange *= 2;
+			resetGraph();
+		} else if ( e.getSource() == iScaleDown ) {
+			currentRange /= 2;
+			resetGraph();
+		}
+		else if ( e.getSource() == pScaleUp ) {
+			powerRange *= 2;
+			resetGraph();
+		} else if ( e.getSource() == pScaleDown ) {
+			powerRange /= 2;
+			resetGraph();
+		}
 		else if ( e.getSource() == scaleUp ) {
-			if ( showingValue == VOLTAGE ) {
-				voltageRange *= 2;
-			} else if ( showingValue == CURRENT ) {
-				currentRange *= 2;
-			}
+			voltageRange *= 2;
+			currentRange *= 2;
+			powerRange *= 2;
 			resetGraph();
 		} else if ( e.getSource() == scaleDown ) {
-			if ( showingValue == VOLTAGE ) {
-				voltageRange /= 2;
-			} else if ( showingValue == CURRENT ) {
-				currentRange /= 2;
-			}
+			voltageRange *= 2;
+			currentRange *= 2;
+			powerRange /= 2;
 			resetGraph();
 		}
 		// Change value shown on scope
 		else if ( e.getSource() instanceof JRadioButtonMenuItem ) {
 			System.out.println("Radio: " + e.getActionCommand());
-			String cmd = e.getActionCommand();
-			if ( cmd.equals("SHOW_VOLTAGE") ) {
-				showingValue = VOLTAGE;
-			} else if ( cmd.equals("SHOW_CURRENT") ) {
-				showingValue = CURRENT;
-			} else if ( cmd.equals("SHOW_POWER") ) {
-				showingValue = POWER;
-			} else if ( cmd.equals("SHOW_V_VS_I") ) {
-				showingValue = V_VS_I;
-			}
-			System.out.println(showingValue);
+			//String cmd = e.getActionCommand();
 			resetGraph();
 		}
 		// Remove an element from scope
@@ -410,30 +409,35 @@ class Oscilloscope extends JFrame implements
 		/* */
 		m = new JMenu("Amplitude Scale");
 		mb.add(m);
-		m.add(scaleUp = new JMenuItem("Scale 2x"));
-		m.add(scaleDown = new JMenuItem("Scale 1/2x"));
-		m.add(maxScale = new JMenuItem("Max Scale"));
-		for ( int i = 0; i < m.getItemCount(); i++ )
-			((JMenuItem) m.getMenuComponent(i)).addActionListener(this);
+		m.add(vScaleUp = new JMenuItem("Voltage Scale 2x"));
+		m.add(vScaleDown = new JMenuItem("Voltage Scale 1/2x"));
+		m.addSeparator();
+		m.add(iScaleUp = new JMenuItem("Current Scale 2x"));
+		m.add(iScaleDown = new JMenuItem("Current Scale 1/2x"));
+		m.addSeparator();
+		m.add(pScaleUp = new JMenuItem("Power Scale 2x"));
+		m.add(pScaleDown = new JMenuItem("Power Scale 1/2x"));
+		m.addSeparator();
+		m.add(scaleUp = new JMenuItem("All Scales 2x"));
+		m.add(scaleDown = new JMenuItem("All Scales 1/2x"));
+		//m.add(maxScale = new JMenuItem("Max Scale"));
+		for ( int i = 0; i < m.getItemCount(); i++ ) {
+			if ( m.getMenuComponent(i) instanceof JMenuItem )
+				((JMenuItem) m.getMenuComponent(i)).addActionListener(this);
+		}
 		
 		/* */
 		m = new JMenu("Show");
 		mb.add(m);
 		showOptions = new ButtonGroup();
-		m.add(showVoltage = new JRadioButtonMenuItem("Voltage"));
-		showVoltage.setActionCommand("SHOW_VOLTAGE");
-		m.add(showCurrent = new JRadioButtonMenuItem("Current"));
-		showCurrent.setActionCommand("SHOW_CURRENT");
-		m.add(showPower = new JRadioButtonMenuItem("Power Consumed"));
-		showPower.setActionCommand("SHOW_POWER");
+		m.add(showVIP = new JRadioButtonMenuItem("Voltage/Current/Power"));
+		showVIP.setActionCommand("SHOW_VCP");
 		m.add(showVvsI = new JRadioButtonMenuItem("Plot V vs I"));
 		showVvsI.setActionCommand("SHOW_V_VS_I");
-		showOptions.add(showVoltage);
-		showOptions.add(showCurrent);
-		showOptions.add(showPower);
+		showOptions.add(showVIP);
 		showOptions.add(showVvsI);
-		showVoltage.setSelected(true);
-		for ( int i = 0; i < 4; i++ )
+		showVIP.setSelected(true);
+		for ( int i = 0; i < 2; i++ )
 			((JRadioButtonMenuItem) m.getMenuComponent(i)).addActionListener(this);
 		
 		/* */
@@ -441,7 +445,7 @@ class Oscilloscope extends JFrame implements
 		m.add(showPeak = new JCheckBoxMenuItem("Peak Value"));
 		m.add(showNPeak = new JCheckBoxMenuItem("Negative Peak Value"));
 		m.add(showFreq = new JCheckBoxMenuItem("Frequency"));
-		for ( int i = 5; i < 8; i++ )
+		for ( int i = 3; i < 6; i++ )
 			((JCheckBoxMenuItem) m.getMenuComponent(i)).addItemListener(this);
 		
 		return mb;
