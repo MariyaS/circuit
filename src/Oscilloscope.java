@@ -43,7 +43,7 @@ class Oscilloscope extends JFrame implements
 	JMenuItem vScaleUp, vScaleDown;
 	JMenuItem iScaleUp, iScaleDown;
 	JMenuItem pScaleUp, pScaleDown;
-	JMenuItem scaleUp, scaleDown;
+	JMenuItem allScaleUp, allScaleDown;
 	JMenuItem maxScale;
 	ButtonGroup showOptions;
 	JRadioButtonMenuItem showVIP, showVvsI;
@@ -117,7 +117,7 @@ class Oscilloscope extends JFrame implements
 		else if ( t < 10e-6 )
 			return df.format(t/10e-9).concat("ns");
 		else if ( t < 10e-3 )
-			return df.format(t/10e-6).concat("\u03bcs");
+			return df.format(t/10e-6).concat("\u03BCs");
 		else if ( t < 1 )
 			return df.format(t/10e-3).concat("ms");
 		else
@@ -203,26 +203,29 @@ class Oscilloscope extends JFrame implements
 		for ( int i = 0; i < elements.size(); i++ ) {
 			int py = 0;
 
+			// Calculating py and storing last_py regardless of whether the element is shown or not
+			// avoids the vertical jumps whenever an element is shown for the first time
+			
+			py = (int) Math.round(((voltageRange/2 - elements.get(i).getVoltageDiff()) / voltageRange) * cvSize.height);
 			if ( elementLabels.get(i).showingVoltage() ) {
-				py = (int) Math.round(((voltageRange/2 - elements.get(i).getVoltageDiff()) / voltageRange) * cvSize.height);
 				g.setColor(elementLabels.get(i).getVColor());
 				CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_voltage[i], cvSize.width-2, py);
-				last_py_voltage[i] = py;
 			}
+			last_py_voltage[i] = py;
 			
+			py = (int) Math.round(((currentRange/2 - elements.get(i).getCurrent()) / currentRange) * cvSize.height);
 			if ( elementLabels.get(i).showingCurrent() ) {
-				py = (int) Math.round(((currentRange/2 - elements.get(i).getCurrent()) / currentRange) * cvSize.height);
 				g.setColor(elementLabels.get(i).getIColor());
 				CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_current[i], cvSize.width-2, py);
-				last_py_current[i] = py;
 			}
+			last_py_current[i] = py;
 			
+			py = (int) Math.round(((powerRange/2 - elements.get(i).getPower()) / powerRange) * cvSize.height);
 			if ( elementLabels.get(i).showingPower() ) {
-				py = (int) Math.round(((powerRange/2 - elements.get(i).getPower()) / powerRange) * cvSize.height);
 				g.setColor(elementLabels.get(i).getPColor());
 				CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_power[i], cvSize.width-2, py);
-				last_py_power[i] = py;
 			}
+			last_py_power[i] = py;
 		}
 		
 		// Clear the waveform image after a reset.  Must be done here after drawing the line to the current
@@ -246,6 +249,17 @@ class Oscilloscope extends JFrame implements
 		}
 		
 		cv.repaint(); // This makes it actually show up
+		
+		drawLabels();
+	}
+	
+	public void drawLabels() {
+		Graphics g = this.getGraphics();
+		Font f = new Font(g.getFont().getFamily(), Font.PLAIN, 9);
+		g.setFont(f);
+		//g.clearRect(0, 0, this.getWidth(), this.getHeight());
+		g.drawString("10.00 mV | 10.00 mA | 10.00 mW", cv.getX()+cv.getWidth(), 100);
+		this.repaint();
 	}
 	
 	public void addElement(CircuitElm elm) {
@@ -265,6 +279,12 @@ class Oscilloscope extends JFrame implements
 		
 		// Add element to list to show values of
 		elements.add(elm);
+		
+		// Avoid the jump from whatever the last value of py was to the current value of this element
+		last_py_voltage[elementLabels.size()-1] = (int) Math.round(((voltageRange/2 - elm.getVoltageDiff()) / voltageRange) * cvSize.height);
+		last_py_current[elementLabels.size()-1] = (int) Math.round(((currentRange/2 - elm.getCurrent()) / currentRange) * cvSize.height);
+		last_py_power[elementLabels.size()-1] = (int) Math.round(((powerRange/2 - elm.getPower()) / powerRange) * cvSize.height);
+		
 	}
 	
 	public void removeElement(int index) {
@@ -332,12 +352,12 @@ class Oscilloscope extends JFrame implements
 			powerRange /= 2;
 			resetGraph();
 		}
-		else if ( e.getSource() == scaleUp ) {
+		else if ( e.getSource() == allScaleUp ) {
 			voltageRange *= 2;
 			currentRange *= 2;
 			powerRange *= 2;
 			resetGraph();
-		} else if ( e.getSource() == scaleDown ) {
+		} else if ( e.getSource() == allScaleDown ) {
 			voltageRange *= 2;
 			currentRange *= 2;
 			powerRange /= 2;
@@ -418,8 +438,8 @@ class Oscilloscope extends JFrame implements
 		m.add(pScaleUp = new JMenuItem("Power Scale 2x"));
 		m.add(pScaleDown = new JMenuItem("Power Scale 1/2x"));
 		m.addSeparator();
-		m.add(scaleUp = new JMenuItem("All Scales 2x"));
-		m.add(scaleDown = new JMenuItem("All Scales 1/2x"));
+		m.add(allScaleUp = new JMenuItem("All Scales 2x"));
+		m.add(allScaleDown = new JMenuItem("All Scales 1/2x"));
 		//m.add(maxScale = new JMenuItem("Max Scale"));
 		for ( int i = 0; i < m.getItemCount(); i++ ) {
 			if ( m.getMenuComponent(i) instanceof JMenuItem )
