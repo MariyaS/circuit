@@ -47,7 +47,7 @@ class Oscilloscope extends JFrame implements
 	JMenuItem maxScale;
 	ButtonGroup showOptions;
 	JRadioButtonMenuItem showVIP, showVvsI;
-	JCheckBoxMenuItem showPeak, showNPeak, showFreq;
+	JCheckBoxMenuItem showPeak, showNPeak, showFreq, showGrid;
 	
 	Oscilloscope(CirSim s) {
 		
@@ -188,6 +188,18 @@ class Oscilloscope extends JFrame implements
 		
 		realg.drawImage(gridImage, 0, 0, null);
 		
+		// Draw horizontal gridlines
+		// Drawing them like this (on realg) allows them to behind the waveform but turning them off or on
+		// doesn't have to reset the entire graph.
+		if ( showGrid.getState() ) {
+			Color c = realg.getColor();
+			realg.setColor(gridLineColor);
+			for ( int i = 1; i <= 7; i++ ) {
+				realg.drawLine(cv.getX(), i * cvSize.height/8, cv.getX()+cvSize.width, i * cvSize.height/8);
+			}
+			realg.setColor(c);
+		}
+		
 		// Shift waveform image to the left according to the value of ps
 		// Set rightmost columns which were vacated by shift to transparent
 		// Thank you, StackOverflow
@@ -249,17 +261,6 @@ class Oscilloscope extends JFrame implements
 		}
 		
 		cv.repaint(); // This makes it actually show up
-		
-		drawLabels();
-	}
-	
-	public void drawLabels() {
-		Graphics g = this.getGraphics();
-		Font f = new Font(g.getFont().getFamily(), Font.PLAIN, 9);
-		g.setFont(f);
-		//g.clearRect(0, 0, this.getWidth(), this.getHeight());
-		g.drawString("10.00 mV | 10.00 mA | 10.00 mW", cv.getX()+cv.getWidth(), 100);
-		this.repaint();
 	}
 	
 	public void addElement(CircuitElm elm) {
@@ -460,13 +461,16 @@ class Oscilloscope extends JFrame implements
 		for ( int i = 0; i < 2; i++ )
 			((JRadioButtonMenuItem) m.getMenuComponent(i)).addActionListener(this);
 		
-		/* */
 		m.addSeparator();
 		m.add(showPeak = new JCheckBoxMenuItem("Peak Value"));
 		m.add(showNPeak = new JCheckBoxMenuItem("Negative Peak Value"));
 		m.add(showFreq = new JCheckBoxMenuItem("Frequency"));
 		for ( int i = 3; i < 6; i++ )
 			((JCheckBoxMenuItem) m.getMenuComponent(i)).addItemListener(this);
+		
+		m.addSeparator();
+		m.add(showGrid = new JCheckBoxMenuItem("Gridlines"));
+		showGrid.setState(true);
 		
 		return mb;
 	}
