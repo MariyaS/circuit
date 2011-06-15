@@ -94,6 +94,9 @@ class Oscilloscope extends JFrame implements
 		last_t = 0;
 	}
 	
+	/* ******************************************************************************************
+	 * *                                                                                        *
+	 * ******************************************************************************************/
 	// Reset to default time and amplitude scales
 	private void resetScales() {
 		timeScale = 64;
@@ -102,31 +105,18 @@ class Oscilloscope extends JFrame implements
 		powerRange = 1.0;
 	}
 	
+	/* ******************************************************************************************
+	 * *                                                                                        *
+	 * ******************************************************************************************/
 	// Clear the waveform image when changing time or amplitude scales
 	private void resetGraph() {
 		graph_reset = true;
 		last_ps = 0;
 	}
 	
-	// Convert time to string with appropriate unit
-	private String formatTime( double t ) {
-		DecimalFormat df = new DecimalFormat("#0.0##");
-		if ( t == 0 )
-			return "0.00s";
-		else if ( t < 10e-12 )
-			return df.format(t/10e-15).concat("fs");
-		else if ( t < 10e-9 )
-			return df.format(t/10e-12).concat("ps");
-		else if ( t < 10e-6 )
-			return df.format(t/10e-9).concat("ns");
-		else if ( t < 10e-3 )
-			return df.format(t/10e-6).concat("\u03BCs");
-		else if ( t < 1 )
-			return df.format(t/10e-3).concat("ms");
-		else
-			return df.format(t).concat("s");
-	}
-	
+	/* ******************************************************************************************
+	 * *                                                                                        *
+	 * ******************************************************************************************/
 	private void drawTimeGridlines(Graphics realg) {
 		
 		// Clear scope window
@@ -180,6 +170,28 @@ class Oscilloscope extends JFrame implements
 		realg.drawImage(gridImage, 0, 0, null);
 	}
 	
+	// Convert time to string with appropriate unit
+	private String formatTime( double t ) {
+		DecimalFormat df = new DecimalFormat("#0.0##");
+		if ( t == 0 )
+			return "0.00s";
+		else if ( t < 10e-12 )
+			return df.format(t/10e-15).concat("fs");
+		else if ( t < 10e-9 )
+			return df.format(t/10e-12).concat("ps");
+		else if ( t < 10e-6 )
+			return df.format(t/10e-9).concat("ns");
+		else if ( t < 10e-3 )
+			return df.format(t/10e-6).concat("\u03BCs");
+		else if ( t < 1 )
+			return df.format(t/10e-3).concat("ms");
+		else
+			return df.format(t).concat("s");
+	}
+	
+	/* ******************************************************************************************
+	 * *                                                                                        *
+	 * ******************************************************************************************/
 	private void drawHorizontalGridlines(Graphics realg) {
 		// Draw horizontal gridlines
 		// Drawing them like this (on realg) allows them to behind the waveform but turning them off or on
@@ -187,11 +199,78 @@ class Oscilloscope extends JFrame implements
 		Color c = realg.getColor();
 		realg.setColor(gridLineColor);
 		for ( int i = 1; i <= 7; i++ ) {
-			realg.drawLine(cv.getX(), i * cvSize.height/8, cv.getX()+cvSize.width, i * cvSize.height/8);
+			realg.drawLine(0, i * cvSize.height/8, cvSize.width, i * cvSize.height/8);
 		}
 		realg.setColor(c);
 	}
 	
+	/* ******************************************************************************************
+	 * *                                                                                        *
+	 * ******************************************************************************************/
+	private void drawLabels(Graphics realg) {
+		Color c = realg.getColor();
+		realg.setColor(gridLineColor);
+		realg.setFont(realg.getFont().deriveFont(9.0f));
+		String str = new String();
+		for ( int i = 3; i >= 1; i-- ) {
+			str = "";
+			if ( this.showingVoltage() )
+				str = str.concat(formatValue(voltageRange/8 * i)).concat("V");
+			if ( this.showingCurrent() ) {
+				if ( ! str.equals("")  )
+					str = str.concat(" | ");
+				str = str.concat(formatValue(currentRange/8 * i)).concat("A");
+			}
+			if ( this.showingPower() ) {
+				if ( ! str.equals("")  )
+					str = str.concat(" | ");
+				str = str.concat(formatValue(powerRange/8 * i)).concat("W");
+			}
+			realg.drawString(str, 0, Math.round(cvSize.height/2-cvSize.height/8*i-5));
+		}
+		if ( this.showingVoltage() || this.showingCurrent() || this.showingPower() ) {
+			realg.drawString("0.00", 0, cvSize.height/2);
+		}
+		for ( int i = 3; i >= 1; i-- ) {
+			str = "";
+			if ( this.showingVoltage() )
+				str = str.concat("-").concat(formatValue(voltageRange/8 * i)).concat("V");
+			if ( this.showingCurrent() ) {
+				if ( ! str.equals("")  )
+					str = str.concat(" | ");
+				str = str.concat("-").concat(formatValue(currentRange/8 * i)).concat("A");
+			}
+			if ( this.showingPower() ) {
+				if ( ! str.equals("")  )
+					str = str.concat(" | ");
+				str = str.concat("-").concat(formatValue(powerRange/8 * i)).concat("W");
+			}
+			realg.drawString(str, 0, Math.round(cvSize.height/2+cvSize.height/8*i-2));
+		}
+		realg.setColor(c);
+	}
+	
+	private String formatValue(double v) {
+		DecimalFormat df = new DecimalFormat("#0.00#");
+		if ( v == 0 )
+			return "0.00";
+		else if ( v < 10e-12 )
+			return df.format(v/10e-15).concat("f");
+		else if ( v < 10e-9 )
+			return df.format(v/10e-12).concat("p");
+		else if ( v < 10e-6 )
+			return df.format(v/10e-9).concat("n");
+		else if ( v < 10e-3 )
+			return df.format(v/10e-6).concat("\u03BC");
+		else if ( v < 1 )
+			return df.format(v/10e-3).concat("m");
+		else
+			return df.format(v);
+	}
+	
+	/* ******************************************************************************************
+	 * *                                                                                        *
+	 * ******************************************************************************************/
 	// Where the magic happens
 	public void drawScope(Graphics realg) {		
 		
@@ -263,15 +342,20 @@ class Oscilloscope extends JFrame implements
 		
 		realg.drawImage(wfImage, 0, 0, null);
 		
-		// Do not draw anything to the left of t = 0
+		// Clear everything to the left of t = 0
 		if ( zero_visible ) {
 			realg.setColor( bgColor );
 			realg.fillRect(0, 0, zero_lx, cvSize.height);
 		}
 		
+		drawLabels(realg);
+		
 		cv.repaint(); // This makes it actually show up
 	}
 	
+	/* ******************************************************************************************
+	 * *                                                                                        *
+	 * ******************************************************************************************/
 	public void addElement(CircuitElm elm) {
 		
 		// This was to keep labels from overflowing onto the canvas
@@ -297,6 +381,9 @@ class Oscilloscope extends JFrame implements
 		
 	}
 	
+	/* ******************************************************************************************
+	 * *                                                                                        *
+	 * ******************************************************************************************/
 	public void removeElement(int index) {
 		
 		elements.remove(index);
@@ -310,6 +397,9 @@ class Oscilloscope extends JFrame implements
 		this.repaint();
 	}
 	
+	/* ******************************************************************************************
+	 * *                                                                                        *
+	 * ******************************************************************************************/
 	// Called whenever the canvas is resized and also during Oscilloscope's
 	// constructor
 	private void createImage() {
@@ -320,6 +410,36 @@ class Oscilloscope extends JFrame implements
 		Arrays.fill(last_py_voltage, cvSize.height/2);
 		Arrays.fill(last_py_power, cvSize.height/2);
 		last_ps = 0;
+	}
+	
+	/* ******************************************************************************************
+	 * *                                                                                        *
+	 * ******************************************************************************************/
+	public boolean showingVoltage() {
+		for ( int i = 0; i < elementLabels.size(); i++ ) {
+			if ( elementLabels.get(i).showingVoltage() ) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public boolean showingCurrent() {
+		for ( int i = 0; i < elementLabels.size(); i++ ) {
+			if ( elementLabels.get(i).showingCurrent() ) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public boolean showingPower() {
+		for ( int i = 0; i < elementLabels.size(); i++ ) {
+			if ( elementLabels.get(i).showingPower() ) {
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	/* ********************************************************* */
