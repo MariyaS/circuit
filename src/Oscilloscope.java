@@ -24,6 +24,9 @@ class Oscilloscope extends JFrame implements
 	// wfImage is transparent except for the waveform itself, so drawing it on
 	// top of gridImage allows the gridlines to show through.
 	
+	boolean zero_visible; // Used in drawing gridlines
+	int zero_lx;
+	
 	int[] last_py_current; // Keep track of the last point drawn in order to
 	int[] last_py_voltage; // draw a line between it and the current point.
 	int[] last_py_power;
@@ -124,8 +127,7 @@ class Oscilloscope extends JFrame implements
 			return df.format(t).concat("s");
 	}
 	
-	// Where the magic happens
-	public void drawScope(Graphics realg) {		
+	private void drawTimeGridlines(Graphics realg) {
 		
 		// Clear scope window
 		Graphics g = gridImage.getGraphics();
@@ -135,6 +137,7 @@ class Oscilloscope extends JFrame implements
 		double ts = sim.timeStep * timeScale;  // Timestep adjusted for current scale
 		double tstart = sim.t - ts * cvSize.width;  // Time at the far left of the scope window
 
+		// Calculate step between gridlines (in time)
 		double gridStep = 1e-15;	// Time between gridlines
 		while ( gridStep/ts < 25 )  // Using ts * constant here makes gridline
 			gridStep *= 10;					  // spacing independent of window size
@@ -145,12 +148,6 @@ class Oscilloscope extends JFrame implements
 		
 		double tx = sim.t - (sim.t % gridStep);
 		
-		// Calculate number of pixels to shift waveform image
-		double total_ps = (sim.t - last_t) / ts + last_ps;
-		last_t = sim.t;
-		int ps = (int) Math.floor( total_ps );
-		last_ps = total_ps - ps; // Store the remainder to add to the next shift
-
 		// Draw X axis
 		g.setColor(gridLineColor);
 		g.drawRect(0, cvSize.height/2, cvSize.width, 1);
@@ -159,12 +156,8 @@ class Oscilloscope extends JFrame implements
 		double t;
 		int lx = cvSize.width;
 		int ln;
-		boolean zero_visible = false;
-		int zero_lx = 0;
 		for ( int i = 0; ; i++ ) {
-			
 			t = tx - i * gridStep; // time at gridline
-			
 			if ( t < 0 ) {				// If the gridline at t = 0 is visible, store
 				zero_visible = true;	// its position so we can go back and clear
 										// everything to the left of it.
@@ -177,7 +170,6 @@ class Oscilloscope extends JFrame implements
 				break;
 			
 			lx = (int) Math.round((t - tstart) / ts); // pixel position of gridline
-			
 			g.drawLine(lx, 0, lx, cvSize.height);
 			
 			// Mark time every other gridline
@@ -185,19 +177,35 @@ class Oscilloscope extends JFrame implements
 			if ( ln % 2 == 0 )
 				g.drawString(formatTime(t), lx+2, cvSize.height - 15);
 		}
-		
 		realg.drawImage(gridImage, 0, 0, null);
-		
+	}
+	
+	private void drawHorizontalGridlines(Graphics realg) {
 		// Draw horizontal gridlines
 		// Drawing them like this (on realg) allows them to behind the waveform but turning them off or on
 		// doesn't have to reset the entire graph.
-		if ( showGrid.getState() ) {
-			Color c = realg.getColor();
-			realg.setColor(gridLineColor);
-			for ( int i = 1; i <= 7; i++ ) {
-				realg.drawLine(cv.getX(), i * cvSize.height/8, cv.getX()+cvSize.width, i * cvSize.height/8);
-			}
-			realg.setColor(c);
+		Color c = realg.getColor();
+		realg.setColor(gridLineColor);
+		for ( int i = 1; i <= 7; i++ ) {
+			realg.drawLine(cv.getX(), i * cvSize.height/8, cv.getX()+cvSize.width, i * cvSize.height/8);
+		}
+		realg.setColor(c);
+	}
+	
+	// Where the magic happens
+	public void drawScope(Graphics realg) {		
+		
+		drawTimeGridlines(realg);
+		
+		// Calculate number of pixels to shift waveform image
+		double ts = sim.timeStep * timeScale;  // Timestep adjusted for current scale
+		double total_ps = (sim.t - last_t) / ts + last_ps;
+		last_t = sim.t;
+		int ps = (int) Math.floor( total_ps );
+		last_ps = total_ps - ps; // Store the remainder to add to the next shift	
+		
+		if (showGrid.getState()) {
+			drawHorizontalGridlines(realg);
 		}
 		
 		// Shift waveform image to the left according to the value of ps
@@ -211,7 +219,8 @@ class Oscilloscope extends JFrame implements
 		g2d.fill(new Rectangle(cvSize.width-ps, 0, ps, cvSize.height));
 		g2d.setComposite(c);
 		
-		g = wfImage.getGraphics();
+		// Draw waveforms
+		Graphics g = wfImage.getGraphics();
 		for ( int i = 0; i < elements.size(); i++ ) {
 			int py = 0;
 
