@@ -67,8 +67,8 @@ class Oscilloscope extends JFrame implements
 		gridLineColor = new Color(0x80,0x80,0x80);
 
 		// Set window size and initial position
-		this.setSize(350,450);
-		this.setMinimumSize(new Dimension(350, 300));
+		this.setSize(600,450);
+		this.setMinimumSize(new Dimension(500, 300));
 		Point p = sim.getLocation();
 		this.setLocation( p.x+sim.getWidth(), p.y+50 );
 		
@@ -283,7 +283,8 @@ class Oscilloscope extends JFrame implements
 	 * ******************************************************************************************/
 	private void drawElementInfo() {
 		Graphics g = this.getGraphics();
-		g.clearRect(0, this.getHeight()-40, this.getWidth(), 40);
+		// Clearing rectangle now happens in drawCurrentTime
+		//g.clearRect(0, this.getHeight()-40, this.getWidth(), 40);
 		
 		Font f = g.getFont();
 		g.setFont(f.deriveFont(10.0f));
@@ -296,13 +297,27 @@ class Oscilloscope extends JFrame implements
 		
 		int x = 3;
 		for ( int i = 0; i < 10 && info[i] != null; i++ ) {
-			g.drawString(info[i], x, this.getHeight()-30+fontHeight*(int)(i/5));
+			g.drawString(info[i], x, this.getHeight()-40+fontHeight*(1+(int)(i/5)));
 			if ( i == 5 ) {
 				x = 3;
 			} else {
 				x += Math.round(fm.getStringBounds(info[i], g).getWidth()) + 10;
 			}
 		}
+		
+		g.setFont(f);
+	}
+	
+	private void drawCurrentTime() {
+		Graphics g = this.getGraphics();
+		g.clearRect(0, this.getHeight()-40, this.getWidth(), 40);
+		
+		Font f = g.getFont();
+		g.setFont(f.deriveFont(10.0f));
+		
+		String time = formatTime(sim.t);
+		FontMetrics fm = g.getFontMetrics();
+		g.drawString(time, this.getWidth()-(int)fm.getStringBounds(time, g).getWidth()-3, this.getHeight()-40+fm.getHeight());
 		
 		g.setFont(f);
 	}
@@ -391,6 +406,7 @@ class Oscilloscope extends JFrame implements
 		
 		cv.repaint(); // This makes it actually show up
 		
+		drawCurrentTime();
 		if ( selectedElm != null ) {
 			drawElementInfo();
 		}
