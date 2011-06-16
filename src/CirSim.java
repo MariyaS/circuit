@@ -43,7 +43,6 @@ public class CirSim extends JFrame
 
     static Container main;
 
-    ImagePanel panel;
     MenuItem exportItem, exportLinkItem, importItem, exitItem, undoItem, redoItem,
 	cutItem, copyItem, pasteItem, selectAllItem, optionsItem;
     Menu optionsMenu;
@@ -216,7 +215,7 @@ public class CirSim extends JFrame
 			} catch (IOException e) {
 				System.out.println(e.getMessage());
 			}
-			ImagePanel panel = new ImagePanel(this, bg);
+			JPanel panel = new JPanel();
 			this.add(panel);
 			main = panel;
 		}  else
