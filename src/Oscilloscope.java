@@ -29,9 +29,9 @@ class Oscilloscope extends JFrame implements
 	boolean zero_visible; // Used in drawing gridlines
 	int zero_lx;
 	
-	int[] last_py_current; // Keep track of the last point drawn in order to
-	int[] last_py_voltage; // draw a line between it and the current point.
-	int[] last_py_power;
+	Vector<Integer> last_py_current; // Keep track of the last point drawn in order to
+	Vector<Integer> last_py_voltage; // draw a line between it and the current point.
+	Vector<Integer> last_py_power;
 	double last_t;
 	double last_ps;
 	
@@ -88,9 +88,9 @@ class Oscilloscope extends JFrame implements
 		
 		this.setVisible(true);
 		
-		last_py_current = new int[maxElements];
-		last_py_voltage = new int[maxElements];
-		last_py_power = new int[maxElements];
+		last_py_current = new Vector<Integer>();
+		last_py_voltage = new Vector<Integer>();
+		last_py_power = new Vector<Integer>();
 		createImage(); // Necessary to allocate dbimage before the first
 					   // call to drawScope
 		
@@ -348,23 +348,23 @@ class Oscilloscope extends JFrame implements
 			py = (int) Math.round(((voltageRange/2 - elements.get(i).getVoltageDiff()) / voltageRange) * cvSize.height);
 			if ( elementLabels.get(i).showingVoltage() ) {
 				g.setColor(elementLabels.get(i).getVColor());
-				CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_voltage[i], cvSize.width-2, py);
+				CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_voltage.get(i), cvSize.width-2, py);
 			}
-			last_py_voltage[i] = py;
+			last_py_voltage.set(i,py);
 			
 			py = (int) Math.round(((currentRange/2 - elements.get(i).getCurrent()) / currentRange) * cvSize.height);
 			if ( elementLabels.get(i).showingCurrent() ) {
 				g.setColor(elementLabels.get(i).getIColor());
-				CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_current[i], cvSize.width-2, py);
+				CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_current.get(i), cvSize.width-2, py);
 			}
-			last_py_current[i] = py;
+			last_py_current.set(i,py);
 			
 			py = (int) Math.round(((powerRange/2 - elements.get(i).getPower()) / powerRange) * cvSize.height);
 			if ( elementLabels.get(i).showingPower() ) {
 				g.setColor(elementLabels.get(i).getPColor());
-				CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_power[i], cvSize.width-2, py);
+				CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_power.get(i), cvSize.width-2, py);
 			}
-			last_py_power[i] = py;
+			last_py_power.set(i,py);
 		}
 		
 		// Clear the waveform image after a reset.  Must be done here after drawing the line to the current
@@ -419,9 +419,9 @@ class Oscilloscope extends JFrame implements
 		elements.add(elm);
 		
 		// Avoid the jump from whatever the last value of py was to the current value of this element
-		last_py_voltage[elementLabels.size()-1] = (int) Math.round(((voltageRange/2 - elm.getVoltageDiff()) / voltageRange) * cvSize.height);
-		last_py_current[elementLabels.size()-1] = (int) Math.round(((currentRange/2 - elm.getCurrent()) / currentRange) * cvSize.height);
-		last_py_power[elementLabels.size()-1] = (int) Math.round(((powerRange/2 - elm.getPower()) / powerRange) * cvSize.height);
+		last_py_voltage.add( (int) Math.round(((voltageRange/2 - elm.getVoltageDiff()) / voltageRange) * cvSize.height) );
+		last_py_current.add( (int) Math.round(((currentRange/2 - elm.getCurrent()) / currentRange) * cvSize.height) );
+		last_py_power.add( (int) Math.round(((powerRange/2 - elm.getPower()) / powerRange) * cvSize.height) );
 		
 	}
 	
@@ -440,6 +440,10 @@ class Oscilloscope extends JFrame implements
 		this.remove(elementLabels.get(index));
 		elementLabels.remove(index);
 		
+		last_py_voltage.remove(index);
+		last_py_current.remove(index);
+		last_py_power.remove(index);
+		
 		// Repaint after removing label
 		this.validate();
 		this.repaint();
@@ -454,9 +458,11 @@ class Oscilloscope extends JFrame implements
 		cvSize = cv.getSize();
 		gridImage = new BufferedImage(cvSize.width, cvSize.height, BufferedImage.TYPE_INT_ARGB);
 		wfImage = new BufferedImage(cvSize.width, cvSize.height, BufferedImage.TYPE_INT_ARGB);
-		Arrays.fill(last_py_current, cvSize.height/2);
-		Arrays.fill(last_py_voltage, cvSize.height/2);
-		Arrays.fill(last_py_power, cvSize.height/2);
+		for ( int i = 0; i < elements.size(); i++ ) {
+			last_py_current.set(i, cvSize.height/2);
+			last_py_voltage.set(i, cvSize.height/2);
+			last_py_power.set(i, cvSize.height/2);
+		}
 		last_ps = 0;
 	}
 	
