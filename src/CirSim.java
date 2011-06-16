@@ -206,18 +206,7 @@ public class CirSim extends JFrame
 		boolean euro = (euroResistor != null && euroResistor.equalsIgnoreCase("true"));
 		useFrame = (useFrameStr == null || !useFrameStr.equalsIgnoreCase("false"));
 		if (useFrame) {
-		    //main = this;
-			File f = new File("images/graphtile.png");
-			System.out.println(f.getPath());
-			Image bg = null;
-			try {
-				bg = ImageIO.read(f);
-			} catch (IOException e) {
-				System.out.println(e.getMessage());
-			}
-			JPanel panel = new JPanel();
-			this.add(panel);
-			main = panel;
+		    main = this;
 		}  else
 		    main = applet;
 		
