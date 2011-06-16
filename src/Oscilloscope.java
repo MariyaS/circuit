@@ -15,6 +15,7 @@ class Oscilloscope extends JFrame implements
 	static final int maxElements = 10;
 	Vector<CircuitElm> elements;
 	Vector<OscilloscopeElmLabel> elementLabels;
+	CircuitElm selectedElm;
 	
 	OscilloscopeCanvas cv;
 	Dimension cvSize;
@@ -58,6 +59,7 @@ class Oscilloscope extends JFrame implements
 		sim = s;
 		elements = new Vector<CircuitElm>();
 		elementLabels = new Vector<OscilloscopeElmLabel>();
+		selectedElm = null;
 		
 		// Background and grid line colors
 		bgColor = Color.WHITE;
@@ -279,6 +281,35 @@ class Oscilloscope extends JFrame implements
 	/* ******************************************************************************************
 	 * *                                                                                        *
 	 * ******************************************************************************************/
+	private void drawElementInfo() {
+		Graphics g = this.getGraphics();
+		g.clearRect(0, this.getHeight()-40, this.getWidth(), 40);
+		
+		Font f = g.getFont();
+		g.setFont(f.deriveFont(10.0f));
+		
+		String info[] = new String[10];
+		selectedElm.getInfo(info);
+		
+		FontMetrics fm = g.getFontMetrics();
+		int fontHeight = fm.getHeight();
+		
+		int x = 3;
+		for ( int i = 0; i < 10 && info[i] != null; i++ ) {
+			g.drawString(info[i], x, this.getHeight()-30+fontHeight*(int)(i/5));
+			if ( i == 5 ) {
+				x = 3;
+			} else {
+				x += Math.round(fm.getStringBounds(info[i], g).getWidth()) + 10;
+			}
+		}
+		
+		g.setFont(f);
+	}
+	
+	/* ******************************************************************************************
+	 * *                                                                                        *
+	 * ******************************************************************************************/
 	// Where the magic happens
 	public void drawScope(Graphics realg) {		
 		
@@ -359,6 +390,11 @@ class Oscilloscope extends JFrame implements
 		drawLabels(realg);
 		
 		cv.repaint(); // This makes it actually show up
+		
+		if ( selectedElm != null ) {
+			drawElementInfo();
+		}
+		
 	}
 	
 	/* ******************************************************************************************
@@ -393,6 +429,10 @@ class Oscilloscope extends JFrame implements
 	 * *                                                                                        *
 	 * ******************************************************************************************/
 	public void removeElement(int index) {
+		
+		if ( selectedElm == elements.get(index) ) {
+			selectedElm = null;
+		}
 		
 		elements.remove(index);
 		

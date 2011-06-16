@@ -107,6 +107,17 @@ class OscilloscopeElmLabel extends JLabel implements MouseListener {
 		if ( e.isPopupTrigger() ) {
 			menu.show(e.getComponent(), e.getX(), e.getY());
 		}
+		
+		// Left clicking displays instantaneous info about this element
+		else if ( e.getButton() == MouseEvent.BUTTON1 ) {
+			scope.selectedElm = scope.elements.get(scope.elementLabels.indexOf(this));
+			Font plainFont = new Font(this.getFont().getName(), Font.PLAIN, this.getFont().getSize());
+			Font selectedFont = new Font(this.getFont().getName(), Font.BOLD, this.getFont().getSize());
+			for ( int i = 0; i < scope.elementLabels.size(); i++ ) {
+				scope.elementLabels.get(i).setFont(plainFont);
+			}
+			this.setFont(selectedFont);
+		}
 	}
 	
 	@Override
