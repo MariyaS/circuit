@@ -281,11 +281,7 @@ class Oscilloscope extends JFrame implements
 	/* ******************************************************************************************
 	 * *                                                                                        *
 	 * ******************************************************************************************/
-	private void drawElementInfo() {
-		Graphics g = this.getGraphics();
-		// Clearing rectangle now happens in drawCurrentTime
-		//g.clearRect(0, this.getHeight()-40, this.getWidth(), 40);
-		
+	private void drawElementInfo(Graphics g) {
 		Font f = g.getFont();
 		g.setFont(f.deriveFont(10.0f));
 		
@@ -308,10 +304,7 @@ class Oscilloscope extends JFrame implements
 		g.setFont(f);
 	}
 	
-	private void drawCurrentTime() {
-		Graphics g = this.getGraphics();
-		g.clearRect(0, this.getHeight()-40, this.getWidth(), 40);
-		
+	private void drawCurrentTime(Graphics g) {
 		Font f = g.getFont();
 		g.setFont(f.deriveFont(10.0f));
 		
@@ -406,9 +399,12 @@ class Oscilloscope extends JFrame implements
 		
 		cv.repaint(); // This makes it actually show up
 		
-		drawCurrentTime();
+		// Clear bottom 40 pixels to draw current time and element info
+		g = this.getGraphics();
+		g.clearRect(0, this.getHeight()-40, this.getWidth(), 40);
+		drawCurrentTime(g);
 		if ( selectedElm != null ) {
-			drawElementInfo();
+			drawElementInfo(g);
 		}
 		
 	}
