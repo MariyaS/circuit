@@ -5,6 +5,7 @@ import java.awt.event.*;
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Vector;
+import java.awt.geom.Rectangle2D;
 
 class Oscilloscope extends JFrame implements
   ActionListener, ComponentListener, ItemListener {
@@ -212,6 +213,7 @@ class Oscilloscope extends JFrame implements
 		realg.setColor(gridLineColor);
 		realg.setFont(realg.getFont().deriveFont(9.0f));
 		String str = new String();
+		Rectangle2D r;
 		for ( int i = 3; i >= 1; i-- ) {
 			str = "";
 			if ( this.showingVoltage() )
@@ -226,10 +228,14 @@ class Oscilloscope extends JFrame implements
 					str = str.concat(" | ");
 				str = str.concat(formatValue(powerRange/8 * i)).concat("W");
 			}
-			realg.drawString(str, 0, Math.round(cvSize.height/2-cvSize.height/8*i-5));
+			r = realg.getFontMetrics().getStringBounds(str, realg);
+			realg.clearRect(3, cvSize.height/2-cvSize.height/8*i-5-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
+			realg.drawString(str, 3, Math.round(cvSize.height/2-cvSize.height/8*i-5));
 		}
 		if ( this.showingVoltage() || this.showingCurrent() || this.showingPower() ) {
-			realg.drawString("0.00", 0, cvSize.height/2);
+			r = realg.getFontMetrics().getStringBounds("0.00", realg);
+			realg.clearRect(3, cvSize.height/2-2-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
+			realg.drawString("0.00", 3, cvSize.height/2-2);
 		}
 		for ( int i = 3; i >= 1; i-- ) {
 			str = "";
@@ -245,7 +251,9 @@ class Oscilloscope extends JFrame implements
 					str = str.concat(" | ");
 				str = str.concat("-").concat(formatValue(powerRange/8 * i)).concat("W");
 			}
-			realg.drawString(str, 0, Math.round(cvSize.height/2+cvSize.height/8*i-2));
+			r = realg.getFontMetrics().getStringBounds(str, realg);
+			realg.clearRect(3, cvSize.height/2+cvSize.height/8*i-2-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
+			realg.drawString(str, 3, Math.round(cvSize.height/2+cvSize.height/8*i-2));
 		}
 		realg.setColor(c);
 	}
