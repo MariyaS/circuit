@@ -26,8 +26,7 @@ class OscilloscopeElmLabel extends JLabel implements MouseListener {
 		String info[] = new String[10];
 		elm.getInfo(info);
 		
-		this.setText("<html>" + 
-				info[3].substring(4) + " " +  // R, L, C, etc. value 
+		this.setText("<html>" +  
 				info[0].substring(0, 1).toUpperCase().concat(info[0].substring(1)) +  // capitalize type of element
 				"<br>" +
 				"<font color=#" + this.getVColorHex() + ">\u25FC V</font>\t" +
