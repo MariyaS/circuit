@@ -2730,6 +2730,7 @@ public class CirSim extends JFrame
 		} else if (mouseElm != null) {
 		    elmEditMenuItem .setEnabled(mouseElm.getEditInfo(0) != null);
 		    elmScopeMenuItem.setEnabled(mouseElm.canViewInScope());
+		    addToScope.setEnabled(mouseElm.canViewInScope());
 		    elmMenu.show(e.getComponent(), e.getX(), e.getY());
 		} else {
 		    doMainMenuChecks(mainMenu);
