@@ -2,7 +2,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.*;
 import java.awt.event.*;
-import java.text.DecimalFormat;
 import java.util.Vector;
 import java.awt.geom.Rectangle2D;
 
@@ -148,6 +147,8 @@ class Oscilloscope extends JFrame implements
 		double t;
 		int lx = cvSize.width;
 		int ln;
+		CircuitElm.showFormat.setMinimumFractionDigits(2);
+		g.setFont(g.getFont().deriveFont(9.0f));
 		for ( int i = 0; ; i++ ) {
 			t = tx - i * gridStep; // time at gridline
 			if ( t < 0 ) {				// If the gridline at t = 0 is visible, store
@@ -167,28 +168,10 @@ class Oscilloscope extends JFrame implements
 			// Mark time every other gridline
 			ln = (int) Math.round(t / gridStep ); // gridline number (since beginning of time)
 			if ( ln % 2 == 0 )
-				g.drawString(formatTime(t), lx+2, cvSize.height - 15);
+				g.drawString(CircuitElm.getUnitText(t, "s"), lx+2, cvSize.height-2);
 		}
+		CircuitElm.showFormat.setMinimumFractionDigits(0);
 		realg.drawImage(gridImage, 0, 0, null);
-	}
-	
-	// Convert time to string with appropriate unit
-	private String formatTime( double t ) {
-		DecimalFormat df = new DecimalFormat("#0.0##");
-		if ( t == 0 )
-			return "0.00s";
-		else if ( t < 10e-12 )
-			return df.format(t/1e-15).concat("fs");
-		else if ( t < 10e-9 )
-			return df.format(t/1e-12).concat("ps");
-		else if ( t < 10e-6 )
-			return df.format(t/1e-9).concat("ns");
-		else if ( t < 10e-3 )
-			return df.format(t/1e-6).concat("\u03BCs");
-		else if ( t < 1 )
-			return df.format(t/1e-3).concat("ms");
-		else
-			return df.format(t).concat("s");
 	}
 	
 	/* ******************************************************************************************
@@ -215,66 +198,32 @@ class Oscilloscope extends JFrame implements
 		realg.setFont(realg.getFont().deriveFont(9.0f));
 		String str = new String();
 		Rectangle2D r;
-		for ( int i = 3; i >= 1; i-- ) {
+		CircuitElm.showFormat.setMinimumFractionDigits(2);
+		for ( int i = 3; i >= -3; i-- ) {
 			str = "";
-			if ( this.showingVoltage() )
-				str = str.concat(formatValue(voltageRange/8 * i)).concat("V");
-			if ( this.showingCurrent() ) {
-				if ( ! str.equals("")  )
-					str = str.concat(" | ");
-				str = str.concat(formatValue(currentRange/8 * i)).concat("A");
-			}
-			if ( this.showingPower() ) {
-				if ( ! str.equals("")  )
-					str = str.concat(" | ");
-				str = str.concat(formatValue(powerRange/8 * i)).concat("W");
+			if ( i == 0 && (this.showingVoltage() || this.showingCurrent() || this.showingPower() ) ) {
+				str = "0.00";
+			} else {
+				if ( this.showingVoltage() )
+					str = str.concat(CircuitElm.getUnitText(voltageRange/8 * i,"V"));
+				if ( this.showingCurrent() ) {
+					if ( ! str.equals("")  )
+						str = str.concat(" | ");
+					str = str.concat(CircuitElm.getUnitText(currentRange/8 * i,"A"));
+				}
+				if ( this.showingPower() ) {
+					if ( ! str.equals("")  )
+						str = str.concat(" | ");
+					str = str.concat(CircuitElm.getUnitText(powerRange/8 * i,"W"));
+				}
 			}
 			r = realg.getFontMetrics().getStringBounds(str, realg);
-			realg.clearRect(3, cvSize.height/2-cvSize.height/8*i-5-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
-			realg.drawString(str, 3, Math.round(cvSize.height/2-cvSize.height/8*i-5));
+			int offset = (i > 0) ? 5 : 2;
+			realg.clearRect(3, cvSize.height/2-cvSize.height/8*i-offset-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
+			realg.drawString(str, 3, Math.round(cvSize.height/2-cvSize.height/8*i-offset));
 		}
-		if ( this.showingVoltage() || this.showingCurrent() || this.showingPower() ) {
-			r = realg.getFontMetrics().getStringBounds("0.00", realg);
-			realg.clearRect(3, cvSize.height/2-2-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
-			realg.drawString("0.00", 3, cvSize.height/2-2);
-		}
-		for ( int i = 3; i >= 1; i-- ) {
-			str = "";
-			if ( this.showingVoltage() )
-				str = str.concat("-").concat(formatValue(voltageRange/8 * i)).concat("V");
-			if ( this.showingCurrent() ) {
-				if ( ! str.equals("")  )
-					str = str.concat(" | ");
-				str = str.concat("-").concat(formatValue(currentRange/8 * i)).concat("A");
-			}
-			if ( this.showingPower() ) {
-				if ( ! str.equals("")  )
-					str = str.concat(" | ");
-				str = str.concat("-").concat(formatValue(powerRange/8 * i)).concat("W");
-			}
-			r = realg.getFontMetrics().getStringBounds(str, realg);
-			realg.clearRect(3, cvSize.height/2+cvSize.height/8*i-2-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
-			realg.drawString(str, 3, Math.round(cvSize.height/2+cvSize.height/8*i-2));
-		}
+		CircuitElm.showFormat.setMinimumFractionDigits(0);
 		realg.setColor(c);
-	}
-	
-	private String formatValue(double v) {
-		DecimalFormat df = new DecimalFormat("#0.00#");
-		if ( v == 0 )
-			return "0.00";
-		else if ( v < 10e-12 )
-			return df.format(v/1e-15).concat("f");
-		else if ( v < 10e-9 )
-			return df.format(v/1e-12).concat("p");
-		else if ( v < 10e-6 )
-			return df.format(v/1e-9).concat("n");
-		else if ( v < 10e-3 )
-			return df.format(v/1e-6).concat("\u03BC");
-		else if ( v < 1 )
-			return df.format(v/1e-3).concat("m");
-		else
-			return df.format(v);
 	}
 	
 	/* ******************************************************************************************
@@ -307,7 +256,10 @@ class Oscilloscope extends JFrame implements
 		Font f = g.getFont();
 		g.setFont(f.deriveFont(10.0f));
 		
-		String time = formatTime(sim.t);
+		CircuitElm.showFormat.setMinimumFractionDigits(2);
+		String time = CircuitElm.getUnitText(sim.t, "s");
+		CircuitElm.showFormat.setMinimumFractionDigits(0);
+		
 		FontMetrics fm = g.getFontMetrics();
 		g.drawString(time, this.getWidth()-(int)fm.getStringBounds(time, g).getWidth()-3, this.getHeight()-40+fm.getHeight());
 		
