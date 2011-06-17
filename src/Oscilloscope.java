@@ -3,7 +3,6 @@ import java.awt.*;
 import java.awt.image.*;
 import java.awt.event.*;
 import java.text.DecimalFormat;
-import java.util.Arrays;
 import java.util.Vector;
 import java.awt.geom.Rectangle2D;
 
@@ -179,15 +178,15 @@ class Oscilloscope extends JFrame implements
 		if ( t == 0 )
 			return "0.00s";
 		else if ( t < 10e-12 )
-			return df.format(t/10e-15).concat("fs");
+			return df.format(t/1e-15).concat("fs");
 		else if ( t < 10e-9 )
-			return df.format(t/10e-12).concat("ps");
+			return df.format(t/1e-12).concat("ps");
 		else if ( t < 10e-6 )
-			return df.format(t/10e-9).concat("ns");
+			return df.format(t/1e-9).concat("ns");
 		else if ( t < 10e-3 )
-			return df.format(t/10e-6).concat("\u03BCs");
+			return df.format(t/1e-6).concat("\u03BCs");
 		else if ( t < 1 )
-			return df.format(t/10e-3).concat("ms");
+			return df.format(t/1e-3).concat("ms");
 		else
 			return df.format(t).concat("s");
 	}
@@ -265,15 +264,15 @@ class Oscilloscope extends JFrame implements
 		if ( v == 0 )
 			return "0.00";
 		else if ( v < 10e-12 )
-			return df.format(v/10e-15).concat("f");
+			return df.format(v/1e-15).concat("f");
 		else if ( v < 10e-9 )
-			return df.format(v/10e-12).concat("p");
+			return df.format(v/1e-12).concat("p");
 		else if ( v < 10e-6 )
-			return df.format(v/10e-9).concat("n");
+			return df.format(v/1e-9).concat("n");
 		else if ( v < 10e-3 )
-			return df.format(v/10e-6).concat("\u03BC");
+			return df.format(v/1e-6).concat("\u03BC");
 		else if ( v < 1 )
-			return df.format(v/10e-3).concat("m");
+			return df.format(v/1e-3).concat("m");
 		else
 			return df.format(v);
 	}
