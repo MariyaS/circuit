@@ -27,7 +27,7 @@ class OscilloscopeLayout implements LayoutManager {
 		int nLabels = 0;
 		for ( int i = 1; i < target.getComponentCount(); i++ ) {
 			Component c = target.getComponent(i);
-			if ( c instanceof OscilloscopeElmLabel ) {
+			if ( c instanceof JLabel ) {
 				int x = insets.left+5 + nLabels * c.getPreferredSize().width;
 				int y = insets.top;
 				c.setLocation(x, y);

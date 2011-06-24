@@ -1837,6 +1837,7 @@ public class CirSim extends JFrame
 		    	break;
 		    }
 		    t += timeStep;
+		    scope.timeStep();
 		    for (i = 0; i != scopeCount; i++)
 		    	scopes[i].timeStep();
 		    tm = System.currentTimeMillis();

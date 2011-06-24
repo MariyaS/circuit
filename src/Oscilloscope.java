@@ -1,80 +1,82 @@
-import javax.swing.*;
 import java.awt.*;
-import java.awt.image.*;
 import java.awt.event.*;
-import java.util.Vector;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.*;
+import java.text.*;
+import java.util.Iterator;
+import java.util.Vector;
+import javax.swing.*;
+
 
 class Oscilloscope extends JFrame implements
-  ActionListener, ComponentListener, ItemListener {
+  ActionListener, ComponentListener {
 	private static final long serialVersionUID = 4788980391955265718L;
 	
 	CirSim sim;
-	static final int maxElements = 10;
-	Vector<CircuitElm> elements;
-	Vector<OscilloscopeElmLabel> elementLabels;
-	CircuitElm selectedElm;
+	
+	static final int MAX_ELEMENTS = 10;
+	
+	// Waveforms to display
+	Vector<OscilloscopeWaveform> waveforms;
+	Iterator<OscilloscopeWaveform> wfi;
+	CircuitElm selected_elm;
+	
+	static Color bg_color = Color.WHITE;
+	static Color grid_color = new Color(0x80,0x80,0x80);
+	Font grid_label_font;
+	Font info_font;
+	static Font label_font;
+	static Font selected_label_font;
+	
+	static NumberFormat display_format;
+	static {
+		label_font = UIManager.getFont("Label.font");
+		selected_label_font = new Font(label_font.getName(), Font.BOLD, label_font.getSize());
+		display_format = DecimalFormat.getInstance();
+		display_format.setMinimumFractionDigits(2);
+	}
 	
 	OscilloscopeCanvas cv;
-	Dimension cvSize;
-	Color bgColor, gridLineColor;
+	Dimension cv_size;
 	
-	BufferedImage gridImage; // Gridlines drawn on this
-	BufferedImage wfImage;   // Waveform drawn on this
-	// wfImage is transparent except for the waveform itself, so drawing it on
-	// top of gridImage allows the gridlines to show through.
+	BufferedImage grid_image; // Gridlines drawn on this
+	Graphics2D grid_gfx;
 	
 	boolean zero_visible; // Used in drawing gridlines
-	int zero_lx;
-	
-	Vector<Integer> last_py_current; // Keep track of the last point drawn in order to
-	Vector<Integer> last_py_voltage; // draw a line between it and the current point.
-	Vector<Integer> last_py_power;
-	double last_t;
-	double last_ps;
-	
-	boolean graph_reset;
+	int zero_x;
 
-	double timeScale; // this is the 'speed' variable in the original Scope class
-	double voltageRange;
-	double currentRange;
-	double powerRange;
+	double time_scale; // this is the 'speed' variable in the original Scope class
 	
-	/* Menu items */
+	double voltage_range;
+	double current_range;
+	double power_range;
+	
+	// Menu items
 	JMenuItem reset;
-	JMenuItem timeScaleUp, timeScaleDown;
-	JMenuItem vScaleUp, vScaleDown;
-	JMenuItem iScaleUp, iScaleDown;
-	JMenuItem pScaleUp, pScaleDown;
-	JMenuItem allScaleUp, allScaleDown;
-	JMenuItem maxScale;
-	ButtonGroup showOptions;
-	JRadioButtonMenuItem showVIP, showVvsI;
-	JCheckBoxMenuItem showPeak, showNPeak, showFreq, showGrid;
+	JMenuItem t_scale_up, t_scale_down;
+	JMenuItem v_scale_up, v_scale_down;
+	JMenuItem i_scale_up, i_scale_down;
+	JMenuItem p_scale_up, p_scale_down;
+	JMenuItem all_scales_up, all_scales_down;
+	JMenuItem max_scale;
+	ButtonGroup show_options;
+	JRadioButtonMenuItem show_v_i_p, show_v_vs_i;
+	JCheckBoxMenuItem show_peak, show_n_peak, show_freq, show_grid;
 	
 	Oscilloscope(CirSim s) {
 		
 		sim = s;
-		elements = new Vector<CircuitElm>();
-		elementLabels = new Vector<OscilloscopeElmLabel>();
-		selectedElm = null;
+		waveforms = new Vector<OscilloscopeWaveform>();
+		selected_elm = null;
 		
-		// Background and grid line colors
-		bgColor = Color.WHITE;
-		this.setBackground(bgColor);
-		gridLineColor = new Color(0x80,0x80,0x80);
-
-		// Set window size and initial position
+		// Setup window
+		this.setTitle("Oscilloscope");
+		this.setJMenuBar(buildMenu());
+		this.setBackground(bg_color);
 		this.setSize(600,450);
 		this.setMinimumSize(new Dimension(500, 300));
 		Point p = sim.getLocation();
 		this.setLocation( p.x+sim.getWidth(), p.y+50 );
-		
-		// Window title and menu bar
-		this.setTitle("Oscilloscope");
-		this.setJMenuBar(buildMenu());
-		
-		// Canvas for displaying scope
 		this.setLayout(new OscilloscopeLayout());
 		cv = new OscilloscopeCanvas(this);
 		this.add(cv);
@@ -82,17 +84,14 @@ class Oscilloscope extends JFrame implements
 		
 		// Initialize scales
 		resetScales();
-		graph_reset = false;
 		
+		// Show window
 		this.setVisible(true);
+		createImage(); // Necessary to allocate gridImage before drawScope is called
 		
-		last_py_current = new Vector<Integer>();
-		last_py_voltage = new Vector<Integer>();
-		last_py_power = new Vector<Integer>();
-		createImage(); // Necessary to allocate dbimage before the first
-					   // call to drawScope
-		
-		last_t = 0;
+		Font f = cv.getGraphics().getFont();
+		grid_label_font = f.deriveFont(9.0f);
+		info_font = f.deriveFont(10.0f);
 	}
 	
 	/* ******************************************************************************************
@@ -100,10 +99,10 @@ class Oscilloscope extends JFrame implements
 	 * ******************************************************************************************/
 	// Reset to default time and amplitude scales
 	private void resetScales() {
-		timeScale = 64;
-		voltageRange = 10.0;
-		currentRange = 0.1;
-		powerRange = 1.0;
+		time_scale = 64;
+		voltage_range = 5.0;
+		current_range = 0.1;
+		power_range = 1.0;
 	}
 	
 	/* ******************************************************************************************
@@ -111,8 +110,8 @@ class Oscilloscope extends JFrame implements
 	 * ******************************************************************************************/
 	// Clear the waveform image when changing time or amplitude scales
 	private void resetGraph() {
-		graph_reset = true;
-		last_ps = 0;
+		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
+			wfi.next().reset();
 	}
 	
 	/* ******************************************************************************************
@@ -121,12 +120,13 @@ class Oscilloscope extends JFrame implements
 	private void drawTimeGridlines(Graphics realg) {
 		
 		// Clear scope window
-		Graphics g = gridImage.getGraphics();
-		g.setColor(bgColor);
-		g.fillRect(0, 0, cvSize.width, cvSize.height);
+		/*grid_gfx.setComposite(AlphaComposite.getInstance(AlphaComposite.CLEAR, 0.0f));
+		grid_gfx.fillRect(0, 0, cv_size.width, cv_size.height);
+		grid_gfx.setComposite(AlphaComposite.getInstance(AlphaComposite.DST, 1.0f));*/
+		grid_gfx.clearRect(0, 0, cv_size.width, cv_size.height);
 		
-		double ts = sim.timeStep * timeScale;  // Timestep adjusted for current scale
-		double tstart = sim.t - ts * cvSize.width;  // Time at the far left of the scope window
+		double ts = sim.timeStep * time_scale;  // Timestep adjusted for current scale
+		double tstart = sim.t - ts * cv_size.width;  // Time at the far left of the scope window
 
 		// Calculate step between gridlines (in time)
 		double gridStep = 1e-15;	// Time between gridlines
@@ -140,21 +140,18 @@ class Oscilloscope extends JFrame implements
 		double tx = sim.t - (sim.t % gridStep);
 		
 		// Draw X axis
-		g.setColor(gridLineColor);
-		g.drawRect(0, cvSize.height/2, cvSize.width, 1);
+		grid_gfx.drawRect(0, cv_size.height/2, cv_size.width, 1);
 		
 		// Draw grid lines parallel to Y axis
 		double t;
-		int lx = cvSize.width;
+		int lx = cv_size.width;
 		int ln;
-		CircuitElm.showFormat.setMinimumFractionDigits(2);
-		g.setFont(g.getFont().deriveFont(9.0f));
 		for ( int i = 0; ; i++ ) {
 			t = tx - i * gridStep; // time at gridline
 			if ( t < 0 ) {				// If the gridline at t = 0 is visible, store
 				zero_visible = true;	// its position so we can go back and clear
 										// everything to the left of it.
-				zero_lx = lx;		// Since t here is less than 0, we want the position
+				zero_x = lx;		// Since t here is less than 0, we want the position
 									// of the previous gridline, which should have been at
 									// t=0.  So use lx from the last time through the loop
 				break;
@@ -163,78 +160,62 @@ class Oscilloscope extends JFrame implements
 				break;
 			
 			lx = (int) Math.round((t - tstart) / ts); // pixel position of gridline
-			g.drawLine(lx, 0, lx, cvSize.height);
+			grid_gfx.drawLine(lx, 0, lx, cv_size.height);
 			
 			// Mark time every other gridline
 			ln = (int) Math.round(t / gridStep ); // gridline number (since beginning of time)
 			if ( ln % 2 == 0 )
-				g.drawString(CircuitElm.getUnitText(t, "s"), lx+2, cvSize.height-2);
+				grid_gfx.drawString(getUnitText(t, "s"), lx+2, cv_size.height-2);
 		}
-		CircuitElm.showFormat.setMinimumFractionDigits(0);
-		realg.drawImage(gridImage, 0, 0, null);
+		realg.drawImage(grid_image, 0, 0, null);
 	}
 	
 	/* ******************************************************************************************
 	 * *                                                                                        *
 	 * ******************************************************************************************/
-	private void drawHorizontalGridlines(Graphics realg) {
-		// Draw horizontal gridlines
-		// Drawing them like this (on realg) allows them to behind the waveform but turning them off or on
-		// doesn't have to reset the entire graph.
-		Color c = realg.getColor();
-		realg.setColor(gridLineColor);
+	private void drawHorizontalGridlines(Graphics g) {
 		for ( int i = 1; i <= 7; i++ ) {
-			realg.drawLine(0, i * cvSize.height/8, cvSize.width, i * cvSize.height/8);
+			g.drawLine(0, i * cv_size.height/8, cv_size.width, i * cv_size.height/8);
 		}
-		realg.setColor(c);
 	}
 	
 	/* ******************************************************************************************
 	 * *                                                                                        *
 	 * ******************************************************************************************/
 	private void drawLabels(Graphics realg) {
-		Color c = realg.getColor();
-		realg.setColor(gridLineColor);
-		realg.setFont(realg.getFont().deriveFont(9.0f));
 		String str = new String();
 		Rectangle2D r;
-		CircuitElm.showFormat.setMinimumFractionDigits(2);
 		for ( int i = 3; i >= -3; i-- ) {
 			str = "";
 			if ( i == 0 && (this.showingVoltage() || this.showingCurrent() || this.showingPower() ) ) {
 				str = "0.00";
 			} else {
 				if ( this.showingVoltage() )
-					str = str.concat(CircuitElm.getUnitText(voltageRange/8 * i,"V"));
+					str = str.concat(getUnitText(voltage_range/8 * i,"V"));
 				if ( this.showingCurrent() ) {
 					if ( ! str.equals("")  )
 						str = str.concat(" | ");
-					str = str.concat(CircuitElm.getUnitText(currentRange/8 * i,"A"));
+					str = str.concat(getUnitText(current_range/8 * i,"A"));
 				}
 				if ( this.showingPower() ) {
 					if ( ! str.equals("")  )
 						str = str.concat(" | ");
-					str = str.concat(CircuitElm.getUnitText(powerRange/8 * i,"W"));
+					str = str.concat(getUnitText(power_range/8 * i,"W"));
 				}
 			}
 			r = realg.getFontMetrics().getStringBounds(str, realg);
 			int offset = (i > 0) ? 5 : 2;
-			realg.clearRect(3, cvSize.height/2-cvSize.height/8*i-offset-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
-			realg.drawString(str, 3, Math.round(cvSize.height/2-cvSize.height/8*i-offset));
+			realg.clearRect(3, cv_size.height/2-cv_size.height/8*i-offset-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
+			realg.drawString(str, 3, Math.round(cv_size.height/2-cv_size.height/8*i-offset));
 		}
-		CircuitElm.showFormat.setMinimumFractionDigits(0);
-		realg.setColor(c);
 	}
 	
 	/* ******************************************************************************************
 	 * *                                                                                        *
 	 * ******************************************************************************************/
 	private void drawElementInfo(Graphics g) {
-		Font f = g.getFont();
-		g.setFont(f.deriveFont(10.0f));
-		
 		String info[] = new String[10];
-		selectedElm.getInfo(info);
+		selected_elm.getInfo(info);
 		
 		FontMetrics fm = g.getFontMetrics();
 		int fontHeight = fm.getHeight();
@@ -248,116 +229,53 @@ class Oscilloscope extends JFrame implements
 				x += Math.round(fm.getStringBounds(info[i], g).getWidth()) + 10;
 			}
 		}
-		
-		g.setFont(f);
 	}
 	
 	private void drawCurrentTime(Graphics g) {
-		Font f = g.getFont();
-		g.setFont(f.deriveFont(10.0f));
-		
-		CircuitElm.showFormat.setMinimumFractionDigits(2);
-		String time = CircuitElm.getUnitText(sim.t, "s");
-		CircuitElm.showFormat.setMinimumFractionDigits(0);
-		
+		String time = getUnitText(sim.t, "s");
 		FontMetrics fm = g.getFontMetrics();
 		g.drawString(time, this.getWidth()-(int)fm.getStringBounds(time, g).getWidth()-3, this.getHeight()-40+fm.getHeight());
-		
-		g.setFont(f);
 	}
 	
 	/* ******************************************************************************************
 	 * *                                                                                        *
 	 * ******************************************************************************************/
+	public void timeStep() {
+		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
+			wfi.next().timeStep();
+	}
+	
 	// Where the magic happens
 	public void drawScope(Graphics realg) {		
 		
+		realg.setColor(grid_color);
+		realg.setFont(grid_label_font);
+		
 		drawTimeGridlines(realg);
-		
-		// Calculate number of pixels to shift waveform image
-		double ts = sim.timeStep * timeScale;  // Timestep adjusted for current scale
-		double total_ps = (sim.t - last_t) / ts + last_ps;
-		last_t = sim.t;
-		int ps = (int) Math.floor( total_ps );
-		last_ps = total_ps - ps; // Store the remainder to add to the next shift	
-		
-		if (showGrid.getState()) {
+		if (show_grid.getState()) {
 			drawHorizontalGridlines(realg);
 		}
 		
-		// Shift waveform image to the left according to the value of ps
-		// Set rightmost columns which were vacated by shift to transparent
-		// Thank you, StackOverflow
-		// http://stackoverflow.com/questions/2825837/java-how-to-do-fast-copy-of-a-bufferedimages-pixels-unit-test-included
-		wfImage.getRaster().setRect(-ps, 0, wfImage.getRaster());
-		Graphics2D g2d = (Graphics2D) wfImage.getGraphics();
-		Composite c = g2d.getComposite();
-		g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.CLEAR, 0.0f));
-		g2d.fill(new Rectangle(cvSize.width-ps, 0, ps, cvSize.height));
-		g2d.setComposite(c);
-		
-		// Draw waveforms
-		Graphics g = wfImage.getGraphics();
-		for ( int i = 0; i < elements.size(); i++ ) {
-			int py = 0;
-
-			// Calculating py and storing last_py regardless of whether the element is shown or not
-			// avoids the vertical jumps whenever an element is shown for the first time
-			
-			py = (int) Math.round(((voltageRange/2 - elements.get(i).getVoltageDiff()) / voltageRange) * cvSize.height);
-			if ( elementLabels.get(i).showingVoltage() ) {
-				g.setColor(elementLabels.get(i).getVColor());
-				CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_voltage.get(i), cvSize.width-2, py);
-			}
-			last_py_voltage.set(i,py);
-			
-			py = (int) Math.round(((currentRange/2 - elements.get(i).getCurrent()) / currentRange) * cvSize.height);
-			if ( elementLabels.get(i).showingCurrent() ) {
-				g.setColor(elementLabels.get(i).getIColor());
-				CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_current.get(i), cvSize.width-2, py);
-			}
-			last_py_current.set(i,py);
-			
-			py = (int) Math.round(((powerRange/2 - elements.get(i).getPower()) / powerRange) * cvSize.height);
-			if ( elementLabels.get(i).showingPower() ) {
-				g.setColor(elementLabels.get(i).getPColor());
-				CircuitElm.drawThickLine(g, cvSize.width-ps-2, last_py_power.get(i), cvSize.width-2, py);
-			}
-			last_py_power.set(i,py);
-		}
-		
-		// Clear the waveform image after a reset.  Must be done here after drawing the line to the current
-		// point.  Changing the time scale will result in the point (cvSize.width-ps, last_py) being in the
-		// wrong place since that point will be positioned according to the old time scale.  Thus, when the
-		// graph is reset, we must remove the line between (cvSize.width-ps, last_py) and (cvSize.width, py)
-		if ( graph_reset == true ) {
-			c = g2d.getComposite();
-			g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.CLEAR, 0.0f));
-			g2d.fill(new Rectangle(0, 0, cvSize.width, cvSize.height));
-			g2d.setComposite(c);
-			graph_reset = false;
-		}
-		
-		realg.drawImage(wfImage, 0, 0, null);
+		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
+			realg.drawImage(wfi.next().wf_img, 0, 0, null);
 		
 		// Clear everything to the left of t = 0
 		if ( zero_visible ) {
-			realg.setColor( bgColor );
-			realg.fillRect(0, 0, zero_lx, cvSize.height);
+			realg.setColor( bg_color );
+			realg.fillRect(0, 0, zero_x, cv_size.height);
 		}
 		
 		drawLabels(realg);
 		
-		cv.repaint(); // This makes it actually show up
-		
 		// Clear bottom 40 pixels to draw current time and element info
-		g = this.getGraphics();
+		Graphics g = this.getGraphics();
 		g.clearRect(0, this.getHeight()-40, this.getWidth(), 40);
 		drawCurrentTime(g);
-		if ( selectedElm != null ) {
+		if ( selected_elm != null ) {
 			drawElementInfo(g);
 		}
 		
+		cv.repaint();
 	}
 	
 	/* ******************************************************************************************
@@ -367,49 +285,24 @@ class Oscilloscope extends JFrame implements
 		
 		// This was to keep labels from overflowing onto the canvas
 		// when the scope window is small.
-		if ( elements.size() >= maxElements ) {
-			System.out.println("Scope accepts maximum of " + maxElements + " elements");
+		if ( waveforms.size() >= MAX_ELEMENTS ) {
+			System.out.println("Scope accepts maximum of " + MAX_ELEMENTS + " elements");
 			return;
 		}
-		
-		// Add name of component to oscilloscope window
-		OscilloscopeElmLabel lbl = new OscilloscopeElmLabel(elm, this); 
-		elementLabels.add(lbl);
-		this.add(lbl);
-		this.validate();
-		
-		// Add element to list to show values of
-		elements.add(elm);
-		
-		// Avoid the jump from whatever the last value of py was to the current value of this element
-		last_py_voltage.add( (int) Math.round(((voltageRange/2 - elm.getVoltageDiff()) / voltageRange) * cvSize.height) );
-		last_py_current.add( (int) Math.round(((currentRange/2 - elm.getCurrent()) / currentRange) * cvSize.height) );
-		last_py_power.add( (int) Math.round(((powerRange/2 - elm.getPower()) / powerRange) * cvSize.height) );
+			
+		waveforms.add(new OscilloscopeWaveform(elm, this));
 		
 	}
 	
 	/* ******************************************************************************************
 	 * *                                                                                        *
-	 * ******************************************************************************************/
-	public void removeElement(int index) {
-		
-		if ( selectedElm == elements.get(index) ) {
-			selectedElm = null;
-		}
-		
-		elements.remove(index);
-		
-		// Remove label from window and array
-		this.remove(elementLabels.get(index));
-		elementLabels.remove(index);
-		
-		last_py_voltage.remove(index);
-		last_py_current.remove(index);
-		last_py_power.remove(index);
-		
-		// Repaint after removing label
+	 * ******************************************************************************************/	
+	public void removeElement(OscilloscopeWaveform wf) {
+		this.remove(wf.label);
+		waveforms.remove(wf);
 		this.validate();
 		this.repaint();
+		
 	}
 	
 	/* ******************************************************************************************
@@ -418,45 +311,63 @@ class Oscilloscope extends JFrame implements
 	// Called whenever the canvas is resized and also during Oscilloscope's
 	// constructor
 	private void createImage() {
-		cvSize = cv.getSize();
-		gridImage = new BufferedImage(cvSize.width, cvSize.height, BufferedImage.TYPE_INT_ARGB);
-		wfImage = new BufferedImage(cvSize.width, cvSize.height, BufferedImage.TYPE_INT_ARGB);
-		for ( int i = 0; i < elements.size(); i++ ) {
-			last_py_current.set(i, cvSize.height/2);
-			last_py_voltage.set(i, cvSize.height/2);
-			last_py_power.set(i, cvSize.height/2);
-		}
-		last_ps = 0;
+		cv_size = cv.getSize();
+		grid_image = new BufferedImage(cv_size.width, cv_size.height, BufferedImage.TYPE_INT_ARGB);
+		grid_gfx = (Graphics2D) grid_image.getGraphics();
+		grid_gfx.setColor(grid_color);
+		grid_gfx.setFont(grid_label_font);
+		grid_gfx.setBackground(bg_color);
 	}
 	
 	/* ******************************************************************************************
 	 * *                                                                                        *
 	 * ******************************************************************************************/
 	public boolean showingVoltage() {
-		for ( int i = 0; i < elementLabels.size(); i++ ) {
-			if ( elementLabels.get(i).showingVoltage() ) {
+		/*for ( int i = 0; i < wfs.size(); i++ ) {
+			if ( wfs.get(i).showingVoltage() ) {
 				return true;
 			}
-		}
+		}*/
 		return false;
 	}
 	
 	public boolean showingCurrent() {
-		for ( int i = 0; i < elementLabels.size(); i++ ) {
-			if ( elementLabels.get(i).showingCurrent() ) {
+		/*for ( int i = 0; i < wfs.size(); i++ ) {
+			if ( wfs.get(i).showingCurrent() ) {
 				return true;
 			}
-		}
+		}*/
 		return false;
 	}
 	
 	public boolean showingPower() {
-		for ( int i = 0; i < elementLabels.size(); i++ ) {
-			if ( elementLabels.get(i).showingPower() ) {
+		/*for ( int i = 0; i < wfs.size(); i++ ) {
+			if ( wfs.get(i).showingPower() ) {
 				return true;
 			}
-		}
+		}*/
 		return false;
+	}
+	
+	static private String getUnitText(double value, String unit) {
+		double va = Math.abs(value);
+		if (va < 1e-14)
+		    return "0 " + unit;
+		if (va < 1e-9)
+		    return display_format.format(value*1e12) + " p" + unit;
+		if (va < 1e-6)
+		    return display_format.format(value*1e9) + " n" + unit;
+		if (va < 1e-3)
+		    return display_format.format(value*1e6) + " " + CirSim.muString + unit;
+		if (va < 1)
+		    return display_format.format(value*1e3) + " m" + unit;
+		if (va < 1e3)
+		    return display_format.format(value) + " " + unit;
+		if (va < 1e6)
+		    return display_format.format(value*1e-3) + " k" + unit;
+		if (va < 1e9)
+		    return display_format.format(value*1e-6) + " M" + unit;
+		return display_format.format(value*1e-9) + " G" + unit;
 	}
 	
 	/* ********************************************************* */
@@ -470,44 +381,45 @@ class Oscilloscope extends JFrame implements
 			resetGraph();
 		}
 		// Change time scale
-		else if ( e.getSource() == timeScaleUp ) {
-			timeScale *= 2;
+		else if ( e.getSource() == t_scale_up ) {
+			time_scale *= 2;
 			resetGraph();
-		} else if ( e.getSource() == timeScaleDown ) {
-			timeScale /= 2;
-			resetGraph();
-		}
-		// Change y-axis scale
-		else if ( e.getSource() == vScaleUp ) {
-			voltageRange *= 2;
-			resetGraph();
-		} else if ( e.getSource() == vScaleDown ) {
-			voltageRange /= 2;
+		} else if ( e.getSource() == t_scale_down ) {
+			time_scale /= 2;
 			resetGraph();
 		}
-		else if ( e.getSource() == iScaleUp ) {
-			currentRange *= 2;
+		
+		// Change y-axis scales
+		else if ( e.getSource() == v_scale_up ) {
+			voltage_range *= 2;
 			resetGraph();
-		} else if ( e.getSource() == iScaleDown ) {
-			currentRange /= 2;
-			resetGraph();
-		}
-		else if ( e.getSource() == pScaleUp ) {
-			powerRange *= 2;
-			resetGraph();
-		} else if ( e.getSource() == pScaleDown ) {
-			powerRange /= 2;
+		} else if ( e.getSource() == v_scale_down ) {
+			voltage_range /= 2;
 			resetGraph();
 		}
-		else if ( e.getSource() == allScaleUp ) {
-			voltageRange *= 2;
-			currentRange *= 2;
-			powerRange *= 2;
+		else if ( e.getSource() == i_scale_up ) {
+			current_range *= 2;
 			resetGraph();
-		} else if ( e.getSource() == allScaleDown ) {
-			voltageRange *= 2;
-			currentRange *= 2;
-			powerRange /= 2;
+		} else if ( e.getSource() == i_scale_down ) {
+			current_range /= 2;
+			resetGraph();
+		}
+		else if ( e.getSource() == p_scale_up ) {
+			power_range *= 2;
+			resetGraph();
+		} else if ( e.getSource() == p_scale_down ) {
+			power_range /= 2;
+			resetGraph();
+		}
+		else if ( e.getSource() == all_scales_up ) {
+			voltage_range *= 2;
+			current_range *= 2;
+			power_range *= 2;
+			resetGraph();
+		} else if ( e.getSource() == all_scales_down ) {
+			voltage_range *= 2;
+			current_range *= 2;
+			power_range /= 2;
 			resetGraph();
 		}
 		// Change value shown on scope
@@ -516,27 +428,6 @@ class Oscilloscope extends JFrame implements
 			//String cmd = e.getActionCommand();
 			resetGraph();
 		}
-		// Remove an element from scope
-		else if ( e.getSource() instanceof MenuItem && e.getActionCommand().equals("REMOVE_ELM") ) {
-			
-			// Surely there's a cleaner way to do this
-			OscilloscopeElmLabel srcLabel = (OscilloscopeElmLabel) ((PopupMenu) ((MenuItem) e.getSource()).getParent()).getParent();
-			
-			int i = elementLabels.indexOf( srcLabel );
-			if ( i == -1 ) {
-				System.err.println("Error: element label not found");
-			}
-			
-			removeElement(i);
-		}
-	}
-	
-	/* ********************************************************* */
-	/* Item Listener Implementation                              */
-	/* ********************************************************* */
-	@Override
-	public void itemStateChanged(ItemEvent e) {
-		System.out.println(showOptions.getSelection().toString());
 	}
 	
 	/* ********************************************************* */
@@ -559,64 +450,58 @@ class Oscilloscope extends JFrame implements
 		
 		JMenuBar mb = new JMenuBar();
 		
-		/* */
 		JMenu m = new JMenu("Reset");
 		mb.add(m);
 		m.add(reset = new JMenuItem("Reset"));
 		reset.addActionListener(this);
 		
-		/* */
 		m = new JMenu("Time Scale");
 		mb.add(m);
-		m.add(timeScaleUp = new JMenuItem("Time Scale 2x"));
-		m.add(timeScaleDown = new JMenuItem("Time Scale 1/2x"));
+		m.add(t_scale_up = new JMenuItem("Time Scale 2x"));
+		m.add(t_scale_down = new JMenuItem("Time Scale 1/2x"));
 		for ( int i = 0; i < m.getItemCount(); i++ )
 			((JMenuItem) m.getMenuComponent(i)).addActionListener(this);
 		
-		/* */
 		m = new JMenu("Amplitude Scale");
 		mb.add(m);
-		m.add(vScaleUp = new JMenuItem("Voltage Scale 2x"));
-		m.add(vScaleDown = new JMenuItem("Voltage Scale 1/2x"));
+		m.add(v_scale_up = new JMenuItem("Voltage Scale 2x"));
+		m.add(v_scale_down = new JMenuItem("Voltage Scale 1/2x"));
 		m.addSeparator();
-		m.add(iScaleUp = new JMenuItem("Current Scale 2x"));
-		m.add(iScaleDown = new JMenuItem("Current Scale 1/2x"));
+		m.add(i_scale_up = new JMenuItem("Current Scale 2x"));
+		m.add(i_scale_down = new JMenuItem("Current Scale 1/2x"));
 		m.addSeparator();
-		m.add(pScaleUp = new JMenuItem("Power Scale 2x"));
-		m.add(pScaleDown = new JMenuItem("Power Scale 1/2x"));
+		m.add(p_scale_up = new JMenuItem("Power Scale 2x"));
+		m.add(p_scale_down = new JMenuItem("Power Scale 1/2x"));
 		m.addSeparator();
-		m.add(allScaleUp = new JMenuItem("All Scales 2x"));
-		m.add(allScaleDown = new JMenuItem("All Scales 1/2x"));
+		m.add(all_scales_up = new JMenuItem("All Scales 2x"));
+		m.add(all_scales_down = new JMenuItem("All Scales 1/2x"));
 		//m.add(maxScale = new JMenuItem("Max Scale"));
 		for ( int i = 0; i < m.getItemCount(); i++ ) {
 			if ( m.getMenuComponent(i) instanceof JMenuItem )
 				((JMenuItem) m.getMenuComponent(i)).addActionListener(this);
 		}
 		
-		/* */
 		m = new JMenu("Show");
 		mb.add(m);
-		showOptions = new ButtonGroup();
-		m.add(showVIP = new JRadioButtonMenuItem("Voltage/Current/Power"));
-		showVIP.setActionCommand("SHOW_VCP");
-		m.add(showVvsI = new JRadioButtonMenuItem("Plot V vs I"));
-		showVvsI.setActionCommand("SHOW_V_VS_I");
-		showOptions.add(showVIP);
-		showOptions.add(showVvsI);
-		showVIP.setSelected(true);
+		show_options = new ButtonGroup();
+		m.add(show_v_i_p = new JRadioButtonMenuItem("Voltage/Current/Power"));
+		show_v_i_p.setActionCommand("SHOW_VCP");
+		m.add(show_v_vs_i = new JRadioButtonMenuItem("Plot V vs I"));
+		show_v_vs_i.setActionCommand("SHOW_V_VS_I");
+		show_options.add(show_v_i_p);
+		show_options.add(show_v_vs_i);
+		show_v_i_p.setSelected(true);
 		for ( int i = 0; i < 2; i++ )
 			((JRadioButtonMenuItem) m.getMenuComponent(i)).addActionListener(this);
 		
 		m.addSeparator();
-		m.add(showPeak = new JCheckBoxMenuItem("Peak Value"));
-		m.add(showNPeak = new JCheckBoxMenuItem("Negative Peak Value"));
-		m.add(showFreq = new JCheckBoxMenuItem("Frequency"));
-		for ( int i = 3; i < 6; i++ )
-			((JCheckBoxMenuItem) m.getMenuComponent(i)).addItemListener(this);
+		m.add(show_peak = new JCheckBoxMenuItem("Peak Value"));
+		m.add(show_n_peak = new JCheckBoxMenuItem("Negative Peak Value"));
+		m.add(show_freq = new JCheckBoxMenuItem("Frequency"));
 		
 		m.addSeparator();
-		m.add(showGrid = new JCheckBoxMenuItem("Gridlines"));
-		showGrid.setState(true);
+		m.add(show_grid = new JCheckBoxMenuItem("Gridlines"));
+		show_grid.setState(true);
 		
 		return mb;
 	}
