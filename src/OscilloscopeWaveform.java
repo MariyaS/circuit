@@ -1,8 +1,8 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.*;
+import java.util.Arrays;
 import java.util.Random;
-
 import javax.swing.*;
 
 
@@ -11,9 +11,15 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	CircuitElm elm;
 	Oscilloscope scope;
 	
-	BufferedImage wf_img;
-	private Graphics2D wf_gfx;
 	Color v_color, i_color, p_color;
+	
+	Image wf_img;
+	MemoryImageSource img_src;
+	int[] pixels;
+	int last_column;
+	int columns_visible;
+	
+	double[] min_v, max_v, min_i, max_i, min_p, max_p;
 	
 	JLabel label;
 	PopupMenu menu;
@@ -21,8 +27,6 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	
 	Dimension size;
 	private int counter;
-	
-	double min_v, max_v, min_i, max_i, min_p, max_p;
 	
 	OscilloscopeWaveform( CircuitElm e, Oscilloscope o ) {
 		elm = e;
@@ -61,13 +65,16 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	public void reset() {
 
 		// Clear image
-		wf_gfx.setComposite(AlphaComposite.getInstance(AlphaComposite.CLEAR, 0.0f));
-		wf_gfx.fillRect(0, 0, size.width, size.height);
+		Arrays.fill(pixels, 0);
+		img_src.newPixels();
+		
+		last_column = 0;
+		columns_visible = 1;
 		
 		// Reset min/max voltage, current, power to the current values
-		min_v = max_v = elm.getVoltageDiff();
-		min_i = max_i = elm.getCurrent();
-		min_p = max_p = elm.getPower();
+		min_v[last_column] = max_v[last_column] = elm.getVoltageDiff();
+		min_i[last_column] = max_i[last_column] = elm.getCurrent();
+		min_p[last_column] = max_p[last_column] = elm.getPower();
 		
 		counter = 0;
 	}
@@ -76,13 +83,26 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		size = s;
 		
 		// Create new image
-		wf_img = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
-		wf_gfx = (Graphics2D) wf_img.getGraphics();
+		pixels = new int[size.width * size.height];
+		img_src = new MemoryImageSource(size.width, size.height, pixels, 0, size.width);
+		img_src.setAnimated(true);
+		img_src.setFullBufferUpdates(true);
+		wf_img = scope.cv.createImage(img_src);
+		
+		max_v = new double[size.width];
+		min_v = new double[size.width];
+		max_i = new double[size.width];
+		min_i = new double[size.width];
+		max_p = new double[size.width];
+		min_p = new double[size.width];
+		
+		last_column = 0;
+		columns_visible = 0;
 		
 		// Reset min/max voltage, current, power to the current values
-		min_v = max_v = elm.getVoltageDiff();
-		min_i = max_i = elm.getCurrent();
-		min_p = max_p = elm.getPower();
+		min_v[last_column] = max_v[last_column] = elm.getVoltageDiff();
+		min_i[last_column] = max_i[last_column] = elm.getCurrent();
+		min_p[last_column] = max_p[last_column] = elm.getPower();
 		
 		counter = 0;
 	}
@@ -100,62 +120,68 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		
 		// Update min/max voltage, current, power
 		double v = elm.getVoltageDiff();
-		if ( v > max_v )
-			max_v = v;
-		else if ( v < min_v )
-			min_v = v;
+		if ( v > max_v[last_column] )
+			max_v[last_column] = v;
+		else if ( v < min_v[last_column] )
+			min_v[last_column] = v;
 		double i = elm.getCurrent();
-		if ( i > max_i )
-			max_i = i;
-		else if ( i < min_i )
-			min_i = i;
+		if ( i > max_i[last_column] )
+			max_i[last_column] = i;
+		else if ( i < min_i[last_column] )
+			min_i[last_column] = i;
 		double p = elm.getPower();
-		if ( p > max_p )
-			max_p = p;
-		else if ( p < min_p )
-			min_p = p;
+		if ( p > max_p[last_column] )
+			max_p[last_column] = p;
+		else if ( p < min_p[last_column] )
+			min_p[last_column] = p;
 		
 		if ( counter == scope.time_scale ) {
+			
+			Arrays.fill(pixels, 0);
+			
+			int max_v_y, min_v_y;
+			int max_i_y, min_i_y;
+			int max_p_y, min_p_y;
+			for ( int col = size.width-1; col > (size.width - columns_visible); col-- ) {
 				
-			// Shift image one pixel to the left
-			wf_img.getRaster().setRect(-1, 0, wf_img.getRaster());
-			
-			// Set last pixel column to transparent
-			wf_gfx.setComposite(AlphaComposite.getInstance(AlphaComposite.CLEAR, 0.0f));
-			wf_gfx.fill(new Rectangle(size.width-1, 0, 1, size.height));
-			
-			// Draw last column
-			wf_gfx.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC));
-			int min_y, max_y;
-			
-			// Draw voltage 
-			if ( show_v.getState() ) {
-				min_y = (int) Math.round(size.height/2 - (min_v / scope.voltage_range * size.height));
-				max_y = (int) Math.round(size.height/2 - (max_v / scope.voltage_range * size.height));
-				wf_gfx.setColor(v_color);
-				wf_gfx.drawLine(size.width-1, min_y, size.width-1, max_y);
+				// Draw voltage
+				if ( show_v.getState() ) {
+					max_v_y = Math.min((int) Math.round(size.height/2 - (min_v[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), size.height-1);
+					min_v_y = Math.max((int) Math.round(size.height/2 - (max_v[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), 0);
+					for ( int row = min_v_y; row <= max_v_y; row++ ) {
+						pixels[row * size.width + col] = v_color.getRGB();
+					}
+				}
+				
+				// Draw current
+				if ( show_i.getState() ) {
+					max_i_y = Math.min((int) Math.round(size.height/2 - (min_i[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), size.height-1);
+					min_i_y = Math.max((int) Math.round(size.height/2 - (max_i[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), 0);
+					for ( int row = min_i_y; row <= max_i_y; row++ ) {
+						pixels[row * size.width + col] = i_color.getRGB();
+					}
+				}
+				
+				// Draw power
+				if ( show_p.getState() ) {
+					max_p_y = Math.min((int) Math.round(size.height/2 - (min_p[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), size.height-1);
+					min_p_y = Math.max((int) Math.round(size.height/2 - (max_p[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), 0);
+					for ( int row = min_p_y; row <= max_p_y; row++ ) {
+						pixels[row * size.width + col] = p_color.getRGB();
+					}
+				}
+				
 			}
 			
-			// Draw current
-			if ( show_i.getState() ) {
-				min_y = (int) Math.round(size.height/2 - (min_i / scope.current_range * size.height));
-				max_y = (int) Math.round(size.height/2 - (max_i / scope.current_range * size.height));
-				wf_gfx.setColor(i_color);
-				wf_gfx.drawLine(size.width-1, min_y, size.width-1, max_y);
-			}
+			img_src.newPixels();
 			
-			// Draw power
-			if ( show_p.getState() ) {
-				min_y = (int) Math.round(size.height/2 - (min_p / scope.power_range * size.height));
-				max_y = (int) Math.round(size.height/2 - (max_p / scope.power_range * size.height));
-				wf_gfx.setColor(p_color);
-				wf_gfx.drawLine(size.width-1, min_y, size.width-1, max_y);
-			}
+			last_column = (last_column + 1) % size.width;
+			columns_visible = Math.min(columns_visible+1, size.width);
 			
-			// Reset min/max voltage, current, power to the current values
-			min_v = max_v = elm.getVoltageDiff();
-			min_i = max_i = elm.getCurrent();
-			min_p = max_p = elm.getPower();
+			// Reset min/max values for next column
+			min_v[last_column] = max_v[last_column] = elm.getVoltageDiff();
+			min_i[last_column] = max_i[last_column] = elm.getCurrent();
+			min_p[last_column] = max_p[last_column] = elm.getPower();
 			
 			counter = 0;
 		}

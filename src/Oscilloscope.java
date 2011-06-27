@@ -417,8 +417,8 @@ class Oscilloscope extends JFrame implements
 			power_range *= 2;
 			resetGraph();
 		} else if ( e.getSource() == all_scales_down ) {
-			voltage_range *= 2;
-			current_range *= 2;
+			voltage_range /= 2;
+			current_range /= 2;
 			power_range /= 2;
 			resetGraph();
 		}
