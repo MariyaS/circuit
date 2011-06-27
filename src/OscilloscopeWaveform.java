@@ -18,6 +18,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	int[] pixels;
 	int last_column;
 	int columns_visible;
+	boolean redraw;
 	
 	double[] min_v, max_v, min_i, max_i, min_p, max_p;
 	
@@ -77,6 +78,8 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		min_p[last_column] = max_p[last_column] = elm.getPower();
 		
 		counter = 0;
+		
+		redraw = true;
 	}
 	
 	public void reset( Dimension s ) {
@@ -105,6 +108,8 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		min_p[last_column] = max_p[last_column] = elm.getPower();
 		
 		counter = 0;
+		
+		redraw = true;
 	}
 	
 	/* ******************************************************************************************
@@ -137,44 +142,6 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		
 		if ( counter == scope.time_scale ) {
 			
-			Arrays.fill(pixels, 0);
-			
-			int max_v_y, min_v_y;
-			int max_i_y, min_i_y;
-			int max_p_y, min_p_y;
-			for ( int col = size.width-1; col > (size.width - columns_visible); col-- ) {
-				
-				// Draw voltage
-				if ( show_v.getState() ) {
-					max_v_y = Math.min((int) Math.round(size.height/2 - (min_v[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), size.height-1);
-					min_v_y = Math.max((int) Math.round(size.height/2 - (max_v[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), 0);
-					for ( int row = min_v_y; row <= max_v_y; row++ ) {
-						pixels[row * size.width + col] = v_color.getRGB();
-					}
-				}
-				
-				// Draw current
-				if ( show_i.getState() ) {
-					max_i_y = Math.min((int) Math.round(size.height/2 - (min_i[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), size.height-1);
-					min_i_y = Math.max((int) Math.round(size.height/2 - (max_i[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), 0);
-					for ( int row = min_i_y; row <= max_i_y; row++ ) {
-						pixels[row * size.width + col] = i_color.getRGB();
-					}
-				}
-				
-				// Draw power
-				if ( show_p.getState() ) {
-					max_p_y = Math.min((int) Math.round(size.height/2 - (min_p[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), size.height-1);
-					min_p_y = Math.max((int) Math.round(size.height/2 - (max_p[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), 0);
-					for ( int row = min_p_y; row <= max_p_y; row++ ) {
-						pixels[row * size.width + col] = p_color.getRGB();
-					}
-				}
-				
-			}
-			
-			img_src.newPixels();
-			
 			last_column = (last_column + 1) % size.width;
 			columns_visible = Math.min(columns_visible+1, size.width);
 			
@@ -184,7 +151,56 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			min_p[last_column] = max_p[last_column] = elm.getPower();
 			
 			counter = 0;
+			
+			redraw = true;
 		}
+	}
+	
+	public void redraw() {
+		
+		if ( ! redraw ) {
+			return;
+		}
+		
+		Arrays.fill(pixels, 0);
+		
+		int max_v_y, min_v_y;
+		int max_i_y, min_i_y;
+		int max_p_y, min_p_y;
+		for ( int col = size.width-1; col > (size.width - columns_visible); col-- ) {
+			
+			// Draw voltage
+			if ( show_v.getState() ) {
+				max_v_y = Math.min((int) Math.round(size.height/2 - (min_v[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), size.height-1);
+				min_v_y = Math.max((int) Math.round(size.height/2 - (max_v[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), 0);
+				for ( int row = min_v_y; row <= max_v_y; row++ ) {
+					pixels[row * size.width + col] = v_color.getRGB();
+				}
+			}
+			
+			// Draw current
+			if ( show_i.getState() ) {
+				max_i_y = Math.min((int) Math.round(size.height/2 - (min_i[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), size.height-1);
+				min_i_y = Math.max((int) Math.round(size.height/2 - (max_i[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), 0);
+				for ( int row = min_i_y; row <= max_i_y; row++ ) {
+					pixels[row * size.width + col] = i_color.getRGB();
+				}
+			}
+			
+			// Draw power
+			if ( show_p.getState() ) {
+				max_p_y = Math.min((int) Math.round(size.height/2 - (min_p[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), size.height-1);
+				min_p_y = Math.max((int) Math.round(size.height/2 - (max_p[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), 0);
+				for ( int row = min_p_y; row <= max_p_y; row++ ) {
+					pixels[row * size.width + col] = p_color.getRGB();
+				}
+			}
+			
+		}
+		
+		img_src.newPixels();
+		
+		redraw = false;
 	}
 	
 	/* ******************************************************************************************

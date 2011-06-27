@@ -256,8 +256,12 @@ class Oscilloscope extends JFrame implements
 			drawHorizontalGridlines(realg);
 		}
 		
-		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
-			realg.drawImage(wfi.next().wf_img, 0, 0, null);
+		System.out.println("draw wfs");
+		for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
+			OscilloscopeWaveform wf = wfi.next();
+			wf.redraw();
+			realg.drawImage(wf.wf_img, 0, 0, null);
+		}
 		
 		// Clear everything to the left of t = 0
 		if ( zero_visible ) {
