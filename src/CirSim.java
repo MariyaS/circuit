@@ -8,6 +8,8 @@ import java.awt.image.*;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.*;
+
+import java.util.Iterator;
 import java.util.Vector;
 import java.io.File;
 import java.util.Random;
@@ -127,8 +129,9 @@ public class CirSim extends JFrame
     boolean circuitNeedsMap;
     public boolean useFrame;
     int scopeCount;
-    Scope scopes[];
-    Oscilloscope scope;
+    Scope original_scopes[];
+    Vector<Oscilloscope> scopes;
+    Oscilloscope selected_scope;
     int scopeColCount[];
     static EditDialog editDialog;
     static ImportDialog impDialog;
@@ -482,7 +485,7 @@ public class CirSim extends JFrame
 		undoStack = new Vector<String>();
 		redoStack = new Vector<String>();
 	
-		scopes = new Scope[20];
+		original_scopes = new Scope[20];
 		scopeColCount = new int[20];
 		scopeCount = 0;
 		
@@ -517,7 +520,9 @@ public class CirSim extends JFrame
 		    Dimension x = getSize();
 		    setLocation((screen.width  - x.width)/2, (screen.height - x.height)/2);
 		    this.setVisible(true);
-		    scope = new Oscilloscope(this);
+		    scopes = new Vector<Oscilloscope>();
+		    scopes.add(new Oscilloscope(this));
+		    selected_scope = scopes.get(0);
 		} else {
 		    if (!powerCheckItem.getState()) {
 				main.remove(powerBar);
@@ -677,10 +682,15 @@ public class CirSim extends JFrame
     }
 
     void destroyFrame() {
+    	for ( Iterator<Oscilloscope> oi = scopes.iterator(); oi.hasNext(); ) {
+    		oi.next().dispose();
+    	}
+    	
 		if (applet == null)
 		    dispose();
 		else
 		    applet.destroyFrame();
+		System.exit(0);
     }
     
     protected void processEvent(AWTEvent ev) {
@@ -816,7 +826,7 @@ public class CirSim extends JFrame
 	if (stopMessage != null)
 	    ct = 0;
 	for (i = 0; i != ct; i++)
-	    scopes[i].draw(g);
+	    original_scopes[i].draw(g);
 	g.setColor(CircuitElm.whiteColor);
 	if (stopMessage != null) {
 	    g.drawString(stopMessage, 10, circuitArea.height);
@@ -853,7 +863,7 @@ public class CirSim extends JFrame
 	    }
 	    int x = 0;
 	    if (ct != 0)
-	    	x = scopes[ct-1].rightEdge() + 20;
+	    	x = original_scopes[ct-1].rightEdge() + 20;
 	    x = max(x, winSize.width*2/3);
 	    
 	    // count lines of data
@@ -906,29 +916,29 @@ public class CirSim extends JFrame
 		// unused scopes/columns
 		int pos = -1;
 		for (i = 0; i < scopeCount; i++) {
-		    if (locateElm(scopes[i].elm) < 0)
-		    	scopes[i].setElm(null);
-		    if (scopes[i].elm == null) {
+		    if (locateElm(original_scopes[i].elm) < 0)
+		    	original_scopes[i].setElm(null);
+		    if (original_scopes[i].elm == null) {
 				int j;
 				for (j = i; j != scopeCount; j++)
-				    scopes[j] = scopes[j+1];
+				    original_scopes[j] = original_scopes[j+1];
 				scopeCount--;
 				i--;
 				continue;
 		    }
-		    if (scopes[i].position > pos+1)
-		    	scopes[i].position = pos+1;
-		    pos = scopes[i].position;
+		    if (original_scopes[i].position > pos+1)
+		    	original_scopes[i].position = pos+1;
+		    pos = original_scopes[i].position;
 		}
-		while (scopeCount > 0 && scopes[scopeCount-1].elm == null)
+		while (scopeCount > 0 && original_scopes[scopeCount-1].elm == null)
 		    scopeCount--;
 		int h = winSize.height - circuitArea.height;
 		pos = 0;
 		for (i = 0; i != scopeCount; i++)
 		    scopeColCount[i] = 0;
 		for (i = 0; i != scopeCount; i++) {
-		    pos = max(scopes[i].position, pos);
-		    scopeColCount[scopes[i].position]++;
+		    pos = max(original_scopes[i].position, pos);
+		    scopeColCount[original_scopes[i].position]++;
 		}
 		int colct = pos+1;
 		int iw = infoWidth;
@@ -943,7 +953,7 @@ public class CirSim extends JFrame
 		int row = 0;
 		int speed = 0;
 		for (i = 0; i != scopeCount; i++) {
-		    Scope s = scopes[i];
+		    Scope s = original_scopes[i];
 		    if (s.position > pos) {
 				pos = s.position;
 				colh = h / scopeColCount[pos];
@@ -1837,9 +1847,11 @@ public class CirSim extends JFrame
 		    	break;
 		    }
 		    t += timeStep;
-		    scope.timeStep();
+		    for ( Iterator<Oscilloscope> oi = scopes.iterator(); oi.hasNext(); ) {
+		    	oi.next().timeStep();
+		    }
 		    for (i = 0; i != scopeCount; i++)
-		    	scopes[i].timeStep();
+		    	original_scopes[i].timeStep();
 		    tm = System.currentTimeMillis();
 		    lit = tm;
 		    if (iter*1000 >= steprate*(tm-lastIterTime) || (tm-lastFrameTime > 500))
@@ -1871,7 +1883,13 @@ public class CirSim extends JFrame
 		String ac = e.getActionCommand();
 		
 		if (e.getSource() == addToScope && menuElm != null ) {
-			scope.addElement(menuElm);
+			if ( selected_scope == null ) {
+				if ( scopes.size() == 0 ) {
+					scopes.add(new Oscilloscope(this));
+				}
+				selected_scope = scopes.get(0);
+			}
+			selected_scope.addElement(menuElm);
 		}
 		if (e.getSource() == resetButton) {
 		    int i;
@@ -1884,7 +1902,7 @@ public class CirSim extends JFrame
 		    for (i = 0; i != elmList.size(); i++)
 			getElm(i).reset();
 		    for (i = 0; i != scopeCount; i++)
-			scopes[i].resetGraph();
+			original_scopes[i].resetGraph();
 		    analyzeFlag = true;
 		    t = 0;
 		    stoppedCheck.setSelected(false);
@@ -1936,38 +1954,38 @@ public class CirSim extends JFrame
 		if (e.getSource() == elmScopeMenuItem && menuElm != null) {
 		    int i;
 		    for (i = 0; i != scopeCount; i++) {
-				if (scopes[i].elm == null)
+				if (original_scopes[i].elm == null)
 				    break;
 		    }
 		    if (i == scopeCount) {
-				if (scopeCount == scopes.length)
+				if (scopeCount == original_scopes.length)
 				    return;
 				scopeCount++;
-				scopes[i] = new Scope(this);
-				scopes[i].position = i;
+				original_scopes[i] = new Scope(this);
+				original_scopes[i].position = i;
 				handleResize();
 		    }
-		    scopes[i].setElm(menuElm);
+		    original_scopes[i].setElm(menuElm);
 		}
 		if (menuScope != -1) {
 		    if (ac.compareTo("remove") == 0)
-		    	scopes[menuScope].setElm(null);
+		    	original_scopes[menuScope].setElm(null);
 		    if (ac.compareTo("speed2") == 0)
-		    	scopes[menuScope].speedUp();
+		    	original_scopes[menuScope].speedUp();
 		    if (ac.compareTo("speed1/2") == 0)
-		    	scopes[menuScope].slowDown();
+		    	original_scopes[menuScope].slowDown();
 		    if (ac.compareTo("scale") == 0)
-		    	scopes[menuScope].adjustScale(.5);
+		    	original_scopes[menuScope].adjustScale(.5);
 		    if (ac.compareTo("maxscale") == 0)
-		    	scopes[menuScope].adjustScale(1e-50);
+		    	original_scopes[menuScope].adjustScale(1e-50);
 		    if (ac.compareTo("stack") == 0)
 		    	stackScope(menuScope);
 		    if (ac.compareTo("unstack") == 0)
 		    	unstackScope(menuScope);
 		    if (ac.compareTo("selecty") == 0)
-		    	scopes[menuScope].selectY();
+		    	original_scopes[menuScope].selectY();
 		    if (ac.compareTo("reset") == 0)
-		    	scopes[menuScope].resetGraph();
+		    	original_scopes[menuScope].resetGraph();
 		    cv.repaint();
 		}
 		if (ac.indexOf("setup ") == 0) {
@@ -1983,11 +2001,11 @@ public class CirSim extends JFrame
 			return;
 		    s = 1;
 		}
-		if (scopes[s].position == scopes[s-1].position)
+		if (original_scopes[s].position == original_scopes[s-1].position)
 		    return;
-		scopes[s].position = scopes[s-1].position;
+		original_scopes[s].position = original_scopes[s-1].position;
 		for (s++; s < scopeCount; s++)
-		    scopes[s].position--;
+		    original_scopes[s].position--;
 	    }
 	    
 	    void unstackScope(int s) {
@@ -1996,25 +2014,25 @@ public class CirSim extends JFrame
 			return;
 		    s = 1;
 		}
-		if (scopes[s].position != scopes[s-1].position)
+		if (original_scopes[s].position != original_scopes[s-1].position)
 		    return;
 		for (; s < scopeCount; s++)
-		    scopes[s].position++;
+		    original_scopes[s].position++;
     }
 
     void stackAll() {
 		int i;
 		for (i = 0; i != scopeCount; i++) {
-		    scopes[i].position = 0;
-		    scopes[i].showMax = scopes[i].showMin = false;
+		    original_scopes[i].position = 0;
+		    original_scopes[i].showMax = original_scopes[i].showMin = false;
 		}
     }
 
     void unstackAll() {
 		int i;
 		for (i = 0; i != scopeCount; i++) {
-		    scopes[i].position = i;
-		    scopes[i].showMax = true;
+		    original_scopes[i].position = i;
+		    original_scopes[i].showMax = true;
 		}
     }
     
@@ -2060,7 +2078,7 @@ public class CirSim extends JFrame
 		for (i = 0; i != elmList.size(); i++)
 		    dump += getElm(i).dump() + "\n";
 		for (i = 0; i != scopeCount; i++) {
-		    String d = scopes[i].dump();
+		    String d = original_scopes[i].dump();
 		    if (d != null)
 			dump += d + "\n";
 		}
@@ -2232,7 +2250,7 @@ public class CirSim extends JFrame
 						Scope sc = new Scope(this);
 						sc.position = scopeCount;
 						sc.undump(st);
-						scopes[scopeCount++] = sc;
+						original_scopes[scopeCount++] = sc;
 						break;
 				    }
 				    if (tint == 'h') {
@@ -2587,7 +2605,7 @@ public class CirSim extends JFrame
 	scopeSelected = -1;
 	if (mouseElm == null) {
 	    for (i = 0; i != scopeCount; i++) {
-		Scope s = scopes[i];
+		Scope s = original_scopes[i];
 		if (s.rect.contains(x, y)) {
 		    s.select();
 		    scopeSelected = i;
@@ -2724,7 +2742,7 @@ public class CirSim extends JFrame
 		menuElm = mouseElm;
 		menuScope = -1;
 		if (scopeSelected != -1) {
-		    PopupMenu m = scopes[scopeSelected].getMenu();
+		    PopupMenu m = original_scopes[scopeSelected].getMenu();
 		    menuScope = scopeSelected;
 		    if (m != null)
 		    	m.show(e.getComponent(), e.getX(), e.getY());
@@ -2827,7 +2845,7 @@ public class CirSim extends JFrame
 		    powerCheckItem.setState(false);
 		enableItems();
 		if (menuScope != -1) {
-		    Scope sc = scopes[menuScope];
+		    Scope sc = original_scopes[menuScope];
 		    sc.handleMenu(e, mi);
 		}
 		if (mi instanceof CheckboxMenuItem) {

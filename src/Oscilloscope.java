@@ -78,9 +78,9 @@ class Oscilloscope extends JFrame implements
 		Point p = sim.getLocation();
 		this.setLocation( p.x+sim.getWidth(), p.y+50 );
 		this.setLayout(new OscilloscopeLayout());
+		addComponentListener(this);
 		cv = new OscilloscopeCanvas(this);
 		this.add(cv);
-		cv.addComponentListener(this);
 		
 		// Initialize scales
 		resetScales();
@@ -256,7 +256,6 @@ class Oscilloscope extends JFrame implements
 			drawHorizontalGridlines(realg);
 		}
 		
-		System.out.println("draw wfs");
 		for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
 			OscilloscopeWaveform wf = wfi.next();
 			wf.redraw();
@@ -439,7 +438,13 @@ class Oscilloscope extends JFrame implements
 	/* ********************************************************* */
 	@Override
 	public void componentShown(ComponentEvent e) { cv.repaint(); }
-	public void componentHidden(ComponentEvent e) {}
+	public void componentHidden(ComponentEvent e) {
+		if ( this == sim.selected_scope ) {
+			sim.selected_scope = null;
+		}
+		sim.scopes.remove(this);
+		this.dispose();
+	}
 	public void componentMoved(ComponentEvent e) {}
 	public void componentResized(ComponentEvent e) {
 		createImage();
@@ -509,5 +514,7 @@ class Oscilloscope extends JFrame implements
 		
 		return mb;
 	}
+
+	
 	
 }
