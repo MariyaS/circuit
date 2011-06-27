@@ -281,6 +281,7 @@ public class CirSim extends JFrame
 		    mb.add(m);
 		else
 		    mainMenu.add(m);
+		m.add(getMenuItem("New Scope", "newScope"));
 		m.add(getMenuItem("Stack All", "stackAll"));
 		m.add(getMenuItem("Unstack All", "unstackAll"));
 	
@@ -1940,6 +1941,8 @@ public class CirSim extends JFrame
 		    destroyFrame();
 		    return;
 		}
+		if (ac.equals("newScope"))
+			scopes.add(new Oscilloscope(this));
 		if (ac.compareTo("stackAll") == 0)
 		    stackAll();
 		if (ac.compareTo("unstackAll") == 0)

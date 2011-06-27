@@ -9,7 +9,7 @@ import javax.swing.*;
 
 
 class Oscilloscope extends JFrame implements
-  ActionListener, ComponentListener {
+  ActionListener, ComponentListener, WindowListener {
 	private static final long serialVersionUID = 4788980391955265718L;
 	
 	CirSim sim;
@@ -78,6 +78,7 @@ class Oscilloscope extends JFrame implements
 		Point p = sim.getLocation();
 		this.setLocation( p.x+sim.getWidth(), p.y+50 );
 		this.setLayout(new OscilloscopeLayout());
+		addWindowListener(this);
 		addComponentListener(this);
 		cv = new OscilloscopeCanvas(this);
 		this.add(cv);
@@ -438,6 +439,8 @@ class Oscilloscope extends JFrame implements
 	/* ********************************************************* */
 	@Override
 	public void componentShown(ComponentEvent e) { cv.repaint(); }
+	
+	@Override
 	public void componentHidden(ComponentEvent e) {
 		if ( this == sim.selected_scope ) {
 			sim.selected_scope = null;
@@ -445,12 +448,44 @@ class Oscilloscope extends JFrame implements
 		sim.scopes.remove(this);
 		this.dispose();
 	}
+	
+	@Override
 	public void componentMoved(ComponentEvent e) {}
+	
+	@Override
 	public void componentResized(ComponentEvent e) {
 		createImage();
 		resetGraph();
 		cv.repaint();
 	}
+	
+	/* ********************************************************* */
+	/* Window Listener Implementation                            */
+	/* ********************************************************* */
+	
+	@Override
+	public void windowActivated(WindowEvent e) {
+		sim.selected_scope = this;
+	}
+
+	@Override
+	public void windowClosed(WindowEvent e) {}
+
+	@Override
+	public void windowClosing(WindowEvent e) {}
+
+	@Override
+	public void windowDeactivated(WindowEvent e) {}
+
+	@Override
+	public void windowDeiconified(WindowEvent e) {}
+
+	@Override
+	public void windowIconified(WindowEvent e) {}
+
+	@Override
+	public void windowOpened(WindowEvent e) {}
+
 	
 	/* ********************************************************* */
 	/* Create menu bar                                           */
@@ -514,7 +549,4 @@ class Oscilloscope extends JFrame implements
 		
 		return mb;
 	}
-
-	
-	
 }
