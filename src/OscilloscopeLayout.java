@@ -15,17 +15,10 @@ class OscilloscopeLayout implements LayoutManager {
 	
 	public void layoutContainer(Container target) {
 		Insets insets = target.getInsets();
-		int targetw = target.getWidth() - (insets.left + insets.right);
-		int targeth = target.getHeight() - (insets.top + insets.bottom);
-		
-		// Position canvas
-		Component canvas = target.getComponent(0);
-		canvas.setLocation(insets.left, insets.top+40);
-		canvas.setSize(targetw, targeth-80);
 		
 		// Position component labels
 		int nLabels = 0;
-		for ( int i = 1; i < target.getComponentCount(); i++ ) {
+		for ( int i = 0; i < target.getComponentCount(); i++ ) {
 			Component c = target.getComponent(i);
 			if ( c instanceof JLabel ) {
 				int x = insets.left+5 + nLabels * c.getPreferredSize().width;

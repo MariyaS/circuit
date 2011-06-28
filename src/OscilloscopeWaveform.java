@@ -32,7 +32,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	OscilloscopeWaveform( CircuitElm e, Oscilloscope o ) {
 		elm = e;
 		scope = o;
-		reset(scope.cv_size);
+		reset(scope.canvas_size);
 		
 		v_color = randomColor();
 		i_color = randomColor();
@@ -90,7 +90,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		img_src = new MemoryImageSource(size.width, size.height, pixels, 0, size.width);
 		img_src.setAnimated(true);
 		img_src.setFullBufferUpdates(true);
-		wf_img = scope.cv.createImage(img_src);
+		wf_img = scope.createImage(img_src);
 		
 		max_v = new double[size.width];
 		min_v = new double[size.width];
