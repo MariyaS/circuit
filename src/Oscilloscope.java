@@ -23,27 +23,27 @@ class Oscilloscope extends JFrame implements
 	
 	static Color bg_color = Color.WHITE;
 	static Color grid_color = new Color(0x80,0x80,0x80);
-	
+	Font grid_label_font;
+	Font info_font;
 	static Font label_font;
 	static Font selected_label_font;
-	static Font grid_label_font;
-	static Font info_font;
 	
 	static NumberFormat display_format;
 	static {
 		label_font = UIManager.getFont("Label.font");
 		selected_label_font = new Font(label_font.getName(), Font.BOLD, label_font.getSize());
-		grid_label_font = label_font.deriveFont(9.0f);
-		info_font = label_font.deriveFont(10.0f);
 		display_format = DecimalFormat.getInstance();
 		display_format.setMinimumFractionDigits(2);
 	}
 	
-	Graphics2D canvas_gfx;
-	Dimension canvas_size;
+	OscilloscopeCanvas cv;
+	Dimension cv_size;
 	
-	BufferedImage grid_image;
+	BufferedImage grid_image; // Gridlines drawn on this
 	Graphics2D grid_gfx;
+	
+	boolean zero_visible; // Used in drawing gridlines
+	int zero_x;
 
 	double time_scale; // this is the 'speed' variable in the original Scope class
 	
@@ -70,23 +70,29 @@ class Oscilloscope extends JFrame implements
 		selected_elm = null;
 		
 		// Setup window
-		setTitle("Oscilloscope");
-		setJMenuBar(buildMenu());
-		setBackground(bg_color);
-		setSize(600,450);
-		setMinimumSize(new Dimension(500, 300));
+		this.setTitle("Oscilloscope");
+		this.setJMenuBar(buildMenu());
+		this.setBackground(bg_color);
+		this.setSize(600,450);
+		this.setMinimumSize(new Dimension(500, 300));
 		Point p = sim.getLocation();
-		setLocation( p.x+sim.getWidth(), p.y+50 );
-		setLayout(new OscilloscopeLayout());
+		this.setLocation( p.x+sim.getWidth(), p.y+50 );
+		this.setLayout(new OscilloscopeLayout());
 		addWindowListener(this);
 		addComponentListener(this);
+		cv = new OscilloscopeCanvas(this);
+		this.add(cv);
 		
 		// Initialize scales
 		resetScales();
 		
 		// Show window
-		setVisible(true);
+		this.setVisible(true);
 		createImage(); // Necessary to allocate gridImage before drawScope is called
+		
+		Font f = cv.getGraphics().getFont();
+		grid_label_font = f.deriveFont(9.0f);
+		info_font = f.deriveFont(10.0f);
 	}
 	
 	/* ******************************************************************************************
@@ -115,10 +121,13 @@ class Oscilloscope extends JFrame implements
 	private void drawTimeGridlines(Graphics realg) {
 		
 		// Clear scope window
-		grid_gfx.clearRect(0, 0, canvas_size.width, canvas_size.height); // checked
+		/*grid_gfx.setComposite(AlphaComposite.getInstance(AlphaComposite.CLEAR, 0.0f));
+		grid_gfx.fillRect(0, 0, cv_size.width, cv_size.height);
+		grid_gfx.setComposite(AlphaComposite.getInstance(AlphaComposite.DST, 1.0f));*/
+		grid_gfx.clearRect(0, 0, cv_size.width, cv_size.height);
 		
 		double ts = sim.timeStep * time_scale;  // Timestep adjusted for current scale
-		double tstart = sim.t - ts * canvas_size.width;  // Time at the far left of the scope window
+		double tstart = sim.t - ts * cv_size.width;  // Time at the far left of the scope window
 
 		// Calculate step between gridlines (in time)
 		double gridStep = 1e-15;	// Time between gridlines
@@ -132,24 +141,32 @@ class Oscilloscope extends JFrame implements
 		double tx = sim.t - (sim.t % gridStep);
 		
 		// Draw X axis
-		grid_gfx.drawRect(0, canvas_size.height/2, canvas_size.width, 1);
+		grid_gfx.drawRect(0, cv_size.height/2, cv_size.width, 1);
 		
 		// Draw grid lines parallel to Y axis
 		double t;
-		int lx = canvas_size.width;
+		int lx = cv_size.width;
 		int ln;
 		for ( int i = 0; ; i++ ) {
 			t = tx - i * gridStep; // time at gridline
-			if ( t < 0 || t < tstart )
+			if ( t < 0 ) {				// If the gridline at t = 0 is visible, store
+				zero_visible = true;	// its position so we can go back and clear
+										// everything to the left of it.
+				zero_x = lx;		// Since t here is less than 0, we want the position
+									// of the previous gridline, which should have been at
+									// t=0.  So use lx from the last time through the loop
+				break;
+			}
+			if ( t < tstart )
 				break;
 			
 			lx = (int) Math.round((t - tstart) / ts); // pixel position of gridline
-			grid_gfx.drawLine(lx, 0, lx, canvas_size.height);
+			grid_gfx.drawLine(lx, 0, lx, cv_size.height);
 			
 			// Mark time every other gridline
 			ln = (int) Math.round(t / gridStep ); // gridline number (since beginning of time)
 			if ( ln % 2 == 0 )
-				grid_gfx.drawString(getUnitText(t, "s"), lx+2, canvas_size.height-2);
+				grid_gfx.drawString(getUnitText(t, "s"), lx+2, cv_size.height-2);
 		}
 		realg.drawImage(grid_image, 0, 0, null);
 	}
@@ -159,7 +176,7 @@ class Oscilloscope extends JFrame implements
 	 * ******************************************************************************************/
 	private void drawHorizontalGridlines(Graphics g) {
 		for ( int i = 1; i <= 7; i++ ) {
-			g.drawLine(0, i * canvas_size.height/8, canvas_size.width, i * canvas_size.height/8);
+			g.drawLine(0, i * cv_size.height/8, cv_size.width, i * cv_size.height/8);
 		}
 	}
 	
@@ -167,21 +184,22 @@ class Oscilloscope extends JFrame implements
 	 * *                                                                                        *
 	 * ******************************************************************************************/
 	private void drawLabels(Graphics realg) {
+		realg.setColor(grid_color);
 		String str = new String();
 		Rectangle2D r;
 		for ( int i = 3; i >= -3; i-- ) {
 			str = "";
-			if ( i == 0 ) {
+			if ( i == 0 && (this.showingVoltage() || this.showingCurrent() || this.showingPower() ) ) {
 				str = "0.00";
 			} else {
-				if ( showingVoltage() )
+				if ( this.showingVoltage() )
 					str = str.concat(getUnitText(voltage_range/8 * i,"V"));
-				if ( showingCurrent() ) {
+				if ( this.showingCurrent() ) {
 					if ( ! str.equals("")  )
 						str = str.concat(" | ");
 					str = str.concat(getUnitText(current_range/8 * i,"A"));
 				}
-				if ( showingPower() ) {
+				if ( this.showingPower() ) {
 					if ( ! str.equals("")  )
 						str = str.concat(" | ");
 					str = str.concat(getUnitText(power_range/8 * i,"W"));
@@ -189,8 +207,8 @@ class Oscilloscope extends JFrame implements
 			}
 			r = realg.getFontMetrics().getStringBounds(str, realg);
 			int offset = (i > 0) ? 5 : 2;
-			realg.clearRect(3, canvas_size.height/2-canvas_size.height/8*i-offset-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
-			realg.drawString(str, 3, Math.round(canvas_size.height/2-canvas_size.height/8*i-offset));
+			realg.clearRect(3, cv_size.height/2-cv_size.height/8*i-offset-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
+			realg.drawString(str, 3, Math.round(cv_size.height/2-cv_size.height/8*i-offset));
 		}
 	}
 	
@@ -229,49 +247,40 @@ class Oscilloscope extends JFrame implements
 			wfi.next().timeStep();
 	}
 	
-	public void drawScope(Graphics realg) {
+	// Where the magic happens
+	public void drawScope(Graphics realg) {		
 		
 		realg.setColor(grid_color);
 		realg.setFont(grid_label_font);
 		
-		// Draw gridlines
 		drawTimeGridlines(realg);
 		if (show_grid.getState()) {
 			drawHorizontalGridlines(realg);
 		}
 		
-		// Draw waveforms
 		for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
 			OscilloscopeWaveform wf = wfi.next();
 			wf.redraw();
 			realg.drawImage(wf.wf_img, 0, 0, null);
 		}
 		
-		if ( showingVoltage() || showingCurrent() || showingPower() )
-			drawLabels(realg);
+		// Clear everything to the left of t = 0
+		if ( zero_visible ) {
+			realg.setColor( bg_color );
+			realg.fillRect(0, 0, zero_x, cv_size.height);
+		}
 		
-		// Draw current time and element info at bottom of window
+		drawLabels(realg);
+		
+		// Clear bottom 40 pixels to draw current time and element info
 		Graphics g = this.getGraphics();
-		g.clearRect(0, this.getHeight()-40, this.getWidth(), 40); // checked
-		g.setFont(info_font);
+		g.clearRect(0, this.getHeight()-40, this.getWidth(), 40);
 		drawCurrentTime(g);
 		if ( selected_elm != null ) {
 			drawElementInfo(g);
 		}
 		
-		repaint();
-	}
-	
-	@Override
-	public void paint(Graphics g) {
-		super.paintComponents(g);
-		drawScope(canvas_gfx);
-	}
-	
-	@Override
-	public void update(Graphics g) {
-		super.paintComponents(g);
-		drawScope(canvas_gfx);
+		cv.repaint();
 	}
 	
 	/* ******************************************************************************************
@@ -287,33 +296,28 @@ class Oscilloscope extends JFrame implements
 		}
 			
 		waveforms.add(new OscilloscopeWaveform(elm, this));
+		
 	}
 	
 	/* ******************************************************************************************
 	 * *                                                                                        *
 	 * ******************************************************************************************/	
 	public void removeElement(OscilloscopeWaveform wf) {
-		remove(wf.label);
+		this.remove(wf.label);
 		waveforms.remove(wf);
-		validate();
-		repaint();
+		this.validate();
+		this.repaint();
+		
 	}
 	
 	/* ******************************************************************************************
 	 * *                                                                                        *
 	 * ******************************************************************************************/
-	// Called whenever the canvas is resized and also during Oscilloscope's constructor
+	// Called whenever the canvas is resized and also during Oscilloscope's
+	// constructor
 	private void createImage() {
-		Insets insets = this.getInsets();
-		int window_width = this.getWidth() - (insets.left + insets.right);
-		int mb_height = this.getJMenuBar().getHeight();
-		int window_height = this.getHeight() - (insets.top + insets.bottom) - mb_height;
-		
-		canvas_gfx = (Graphics2D) this.getGraphics().create(insets.left, insets.top+mb_height+40, window_width, window_height-80);
-		
-		canvas_size = new Dimension(window_width, window_height-80);
-		
-		grid_image = new BufferedImage(canvas_size.width, canvas_size.height, BufferedImage.TYPE_INT_ARGB);
+		cv_size = cv.getSize();
+		grid_image = new BufferedImage(cv_size.width, cv_size.height, BufferedImage.TYPE_INT_ARGB);
 		grid_gfx = (Graphics2D) grid_image.getGraphics();
 		grid_gfx.setColor(grid_color);
 		grid_gfx.setFont(grid_label_font);
@@ -324,24 +328,24 @@ class Oscilloscope extends JFrame implements
 	 * *                                                                                        *
 	 * ******************************************************************************************/
 	public boolean showingVoltage() {
-		for ( Iterator<OscilloscopeWaveform> oi = waveforms.iterator(); oi.hasNext(); ) {
-			if ( oi.next().show_v.getState() )
+		for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
+			if ( wfi.next().show_v.getState() )
 				return true;
 		}
 		return false;
 	}
 	
 	public boolean showingCurrent() {
-		for ( Iterator<OscilloscopeWaveform> oi = waveforms.iterator(); oi.hasNext(); ) {
-			if ( oi.next().show_i.getState() )
+		for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
+			if ( wfi.next().show_i.getState() )
 				return true;
 		}
 		return false;
 	}
 	
 	public boolean showingPower() {
-		for ( Iterator<OscilloscopeWaveform> oi = waveforms.iterator(); oi.hasNext(); ) {
-			if ( oi.next().show_p.getState() )
+		for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
+			if ( wfi.next().show_p.getState() )
 				return true;
 		}
 		return false;
@@ -432,7 +436,7 @@ class Oscilloscope extends JFrame implements
 	/* Component Listener Implementation                         */
 	/* ********************************************************* */
 	@Override
-	public void componentShown(ComponentEvent e) { repaint(); }
+	public void componentShown(ComponentEvent e) { cv.repaint(); }
 	
 	@Override
 	public void componentHidden(ComponentEvent e) {
@@ -440,7 +444,7 @@ class Oscilloscope extends JFrame implements
 			sim.selected_scope = null;
 		}
 		sim.scopes.remove(this);
-		dispose();
+		this.dispose();
 	}
 	
 	@Override
@@ -451,8 +455,8 @@ class Oscilloscope extends JFrame implements
 		createImage();
 		resetGraph();
 		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
-			wfi.next().reset(canvas_size);
-		repaint();
+			wfi.next().reset(cv_size);
+		cv.repaint();
 	}
 	
 	/* ********************************************************* */
