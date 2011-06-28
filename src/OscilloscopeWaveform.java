@@ -32,7 +32,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	OscilloscopeWaveform( CircuitElm e, Oscilloscope o ) {
 		elm = e;
 		scope = o;
-		reset(scope.canvas_size);
+		reset(scope.cv_size);
 		
 		v_color = randomColor();
 		i_color = randomColor();
