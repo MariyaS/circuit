@@ -39,7 +39,6 @@ class Oscilloscope extends JFrame implements
 		display_format.setMinimumFractionDigits(2);
 	}
 	
-	//OscilloscopeCanvas cv;
 	Graphics2D canvas_gfx;
 	Dimension canvas_size;
 	
@@ -71,24 +70,22 @@ class Oscilloscope extends JFrame implements
 		selected_elm = null;
 		
 		// Setup window
-		this.setTitle("Oscilloscope");
-		this.setJMenuBar(buildMenu());
-		this.setBackground(bg_color);
-		this.setSize(600,450);
-		this.setMinimumSize(new Dimension(500, 300));
+		setTitle("Oscilloscope");
+		setJMenuBar(buildMenu());
+		setBackground(bg_color);
+		setSize(600,450);
+		setMinimumSize(new Dimension(500, 300));
 		Point p = sim.getLocation();
-		this.setLocation( p.x+sim.getWidth(), p.y+50 );
-		this.setLayout(new OscilloscopeLayout());
+		setLocation( p.x+sim.getWidth(), p.y+50 );
+		setLayout(new OscilloscopeLayout());
 		addWindowListener(this);
 		addComponentListener(this);
-		//cv = new OscilloscopeCanvas(this);
-		//this.add(cv);
 		
 		// Initialize scales
 		resetScales();
 		
 		// Show window
-		this.setVisible(true);
+		setVisible(true);
 		createImage(); // Necessary to allocate gridImage before drawScope is called
 	}
 	
@@ -177,14 +174,14 @@ class Oscilloscope extends JFrame implements
 			if ( i == 0 ) {
 				str = "0.00";
 			} else {
-				if ( this.showingVoltage() )
+				if ( showingVoltage() )
 					str = str.concat(getUnitText(voltage_range/8 * i,"V"));
-				if ( this.showingCurrent() ) {
+				if ( showingCurrent() ) {
 					if ( ! str.equals("")  )
 						str = str.concat(" | ");
 					str = str.concat(getUnitText(current_range/8 * i,"A"));
 				}
-				if ( this.showingPower() ) {
+				if ( showingPower() ) {
 					if ( ! str.equals("")  )
 						str = str.concat(" | ");
 					str = str.concat(getUnitText(power_range/8 * i,"W"));
@@ -296,10 +293,10 @@ class Oscilloscope extends JFrame implements
 	 * *                                                                                        *
 	 * ******************************************************************************************/	
 	public void removeElement(OscilloscopeWaveform wf) {
-		this.remove(wf.label);
+		remove(wf.label);
 		waveforms.remove(wf);
-		this.validate();
-		this.repaint();
+		validate();
+		repaint();
 	}
 	
 	/* ******************************************************************************************
@@ -311,7 +308,6 @@ class Oscilloscope extends JFrame implements
 		int window_width = this.getWidth() - (insets.left + insets.right);
 		int mb_height = this.getJMenuBar().getHeight();
 		int window_height = this.getHeight() - (insets.top + insets.bottom) - mb_height;
-		System.out.println("Menu bar height: " + this.getJMenuBar().getHeight());
 		
 		canvas_gfx = (Graphics2D) this.getGraphics().create(insets.left, insets.top+mb_height+40, window_width, window_height-80);
 		
@@ -444,7 +440,7 @@ class Oscilloscope extends JFrame implements
 			sim.selected_scope = null;
 		}
 		sim.scopes.remove(this);
-		this.dispose();
+		dispose();
 	}
 	
 	@Override
