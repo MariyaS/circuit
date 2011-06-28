@@ -180,8 +180,8 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			
 			// Draw current
 			if ( show_i.getState() ) {
-				max_i_y = Math.min((int) Math.round(size.height/2 - (min_i[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), size.height-1);
-				min_i_y = Math.max((int) Math.round(size.height/2 - (max_i[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), 0);
+				max_i_y = Math.min((int) Math.round(size.height/2 - (min_i[(last_column+1+col) % size.width] / scope.current_range * size.height)), size.height-1);
+				min_i_y = Math.max((int) Math.round(size.height/2 - (max_i[(last_column+1+col) % size.width] / scope.current_range * size.height)), 0);
 				for ( int row = min_i_y; row <= max_i_y; row++ ) {
 					pixels[row * size.width + col] = i_color.getRGB();
 				}
@@ -189,8 +189,8 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			
 			// Draw power
 			if ( show_p.getState() ) {
-				max_p_y = Math.min((int) Math.round(size.height/2 - (min_p[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), size.height-1);
-				min_p_y = Math.max((int) Math.round(size.height/2 - (max_p[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), 0);
+				max_p_y = Math.min((int) Math.round(size.height/2 - (min_p[(last_column+1+col) % size.width] / scope.power_range * size.height)), size.height-1);
+				min_p_y = Math.max((int) Math.round(size.height/2 - (max_p[(last_column+1+col) % size.width] / scope.power_range * size.height)), 0);
 				for ( int row = min_p_y; row <= max_p_y; row++ ) {
 					pixels[row * size.width + col] = p_color.getRGB();
 				}

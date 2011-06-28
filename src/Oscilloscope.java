@@ -506,19 +506,19 @@ class Oscilloscope extends JFrame implements
 		for ( int i = 0; i < m.getItemCount(); i++ )
 			((JMenuItem) m.getMenuComponent(i)).addActionListener(this);
 		
-		m = new JMenu("Amplitude Scale");
+		m = new JMenu("Amplitude Range");
 		mb.add(m);
-		m.add(v_scale_up = new JMenuItem("Voltage Scale 2x"));
-		m.add(v_scale_down = new JMenuItem("Voltage Scale 1/2x"));
+		m.add(v_scale_up = new JMenuItem("Voltage Range 2x"));
+		m.add(v_scale_down = new JMenuItem("Voltage Range 1/2x"));
 		m.addSeparator();
-		m.add(i_scale_up = new JMenuItem("Current Scale 2x"));
-		m.add(i_scale_down = new JMenuItem("Current Scale 1/2x"));
+		m.add(i_scale_up = new JMenuItem("Current Range 2x"));
+		m.add(i_scale_down = new JMenuItem("Current Range 1/2x"));
 		m.addSeparator();
-		m.add(p_scale_up = new JMenuItem("Power Scale 2x"));
-		m.add(p_scale_down = new JMenuItem("Power Scale 1/2x"));
+		m.add(p_scale_up = new JMenuItem("Power Range 2x"));
+		m.add(p_scale_down = new JMenuItem("Power Range 1/2x"));
 		m.addSeparator();
-		m.add(all_scales_up = new JMenuItem("All Scales 2x"));
-		m.add(all_scales_down = new JMenuItem("All Scales 1/2x"));
+		m.add(all_scales_up = new JMenuItem("All Ranges 2x"));
+		m.add(all_scales_down = new JMenuItem("All Ranges 1/2x"));
 		//m.add(maxScale = new JMenuItem("Max Scale"));
 		for ( int i = 0; i < m.getItemCount(); i++ ) {
 			if ( m.getMenuComponent(i) instanceof JMenuItem )
