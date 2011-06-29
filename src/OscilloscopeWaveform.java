@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.Random;
 import javax.swing.*;
 
-
 class OscilloscopeWaveform implements MouseListener, ActionListener {
 	
 	CircuitElm elm;
@@ -18,7 +17,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	private int[] pixels;
 	private int last_column;
 	private int columns_visible;
-	private boolean redraw;
+	private boolean redraw_needed;
 	
 	private double[] min_v, max_v, min_i, max_i, min_p, max_p;
 	
@@ -32,7 +31,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	OscilloscopeWaveform( CircuitElm e, Oscilloscope o ) {
 		elm = e;
 		scope = o;
-		reset(scope.cv_size);
+		reset(scope.canvas_size);
 		
 		v_color = randomColor();
 		i_color = randomColor();
@@ -79,7 +78,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		
 		counter = 0;
 		
-		redraw = true;
+		redraw_needed = true;
 	}
 	
 	public void reset( Dimension s ) {
@@ -109,7 +108,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		
 		counter = 0;
 		
-		redraw = true;
+		redraw_needed = true;
 	}
 	
 	/* ******************************************************************************************
@@ -152,13 +151,13 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			
 			counter = 0;
 			
-			redraw = true;
+			redraw_needed = true;
 		}
 	}
 	
 	public void redraw() {
 		
-		if ( ! redraw ) {
+		if ( ! redraw_needed ) {
 			return;
 		}
 		
@@ -200,7 +199,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		
 		img_src.newPixels();
 		
-		redraw = false;
+		redraw_needed = false;
 	}
 	
 	/* ******************************************************************************************
