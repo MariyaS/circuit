@@ -51,7 +51,7 @@ class Oscilloscope extends JFrame implements
 
 	// Number of time steps per scope pixel
 	// Variable named 'speed' in the original Scope class
-	double time_scale;
+	int time_scale;
 	double voltage_range;
 	double current_range;
 	double power_range;
