@@ -9,24 +9,24 @@ import javax.swing.*;
 class OscilloscopeWaveform implements MouseListener, ActionListener {
 	
 	CircuitElm elm;
-	Oscilloscope scope;
+	private Oscilloscope scope;
 	
-	Color v_color, i_color, p_color;
+	private Color v_color, i_color, p_color;
 	
 	Image wf_img;
-	MemoryImageSource img_src;
-	int[] pixels;
-	int last_column;
-	int columns_visible;
-	boolean redraw;
+	private MemoryImageSource img_src;
+	private int[] pixels;
+	private int last_column;
+	private int columns_visible;
+	private boolean redraw;
 	
-	double[] min_v, max_v, min_i, max_i, min_p, max_p;
+	private double[] min_v, max_v, min_i, max_i, min_p, max_p;
 	
 	JLabel label;
-	PopupMenu menu;
-	CheckboxMenuItem show_v, show_i, show_p;
+	private PopupMenu menu;
+	private CheckboxMenuItem show_v, show_i, show_p;
 	
-	Dimension size;
+	private Dimension size;
 	private int counter;
 	
 	OscilloscopeWaveform( CircuitElm e, Oscilloscope o ) {
@@ -208,7 +208,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	 * ******************************************************************************************/
 	
 	// Generate random colors for drawing voltage, current, power
-	static Color randomColor() {
+	static private Color randomColor() {
 		Color c;
 		Random rand = new Random();
 		do {
@@ -218,8 +218,24 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	}
 	
 	// Convert color to hex string for HTML label
-	static String colorToHex(Color c) {
+	static private String colorToHex(Color c) {
 		return Integer.toHexString(c.getRGB()).substring(2);
+	}
+	
+	/* ******************************************************************************************
+	 * *                                                                                        *
+	 * ******************************************************************************************/
+	
+	public boolean showingVoltage() {
+		return show_v.getState();
+	}
+	
+	public boolean showingCurrent() {
+		return show_i.getState();
+	}
+	
+	public boolean showingPower() {
+		return show_p.getState();
 	}
 	
 	/* ********************************************************* */
@@ -271,11 +287,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		
 		// Left clicking displays instantaneous info about this element
 		else if ( e.getButton() == MouseEvent.BUTTON1 ) {
-			scope.selected_elm = this.elm;
-			for ( int i = 0; i < scope.waveforms.size(); i++ ) {
-				scope.waveforms.get(i).label.setFont(Oscilloscope.label_font);
-			}
-			label.setFont(Oscilloscope.selected_label_font);
+			scope.setSelectedElement(this);
 		}
 	}
 
