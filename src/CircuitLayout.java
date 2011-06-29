@@ -59,6 +59,7 @@ class CircuitLayout implements LayoutManager {
 		
 		// Set positions and sizes of all GUI elements belonging to the container
 		System.out.println(target.getComponentCount());
+		Point p = new Point(topleft.x+targetw-(sbarwidth+5), topleft.y+40);
 		for (int i = 1; i < target.getComponentCount(); i++) {
 		    Component m = target.getComponent(i);
 		    if (m.isVisible()) {
@@ -71,8 +72,18 @@ class CircuitLayout implements LayoutManager {
 					d.width = sbarwidth;
 				}
 				
-				m.setLocation(componentLocations[i]);
-				m.setSize(d);
+				if ( m instanceof Scrollbar ) {
+					d.width = sbarwidth;
+				}
+				
+				if ( i < 12 ) {
+					m.setLocation(componentLocations[i]);
+					m.setSize(d);
+				} else {
+					m.setLocation(p);
+					m.setSize(d);
+					p.translate(0, 20);
+				}
 		    }
 		}
     }
