@@ -132,6 +132,7 @@ public class CirSim extends JFrame
     Scope original_scopes[];
     Vector<Oscilloscope> scopes;
     Oscilloscope selected_scope;
+    LegacyScopeSupport lss;
     int scopeColCount[];
     static EditDialog editDialog;
     static ImportDialog impDialog;
@@ -505,7 +506,11 @@ public class CirSim extends JFrame
 		
 		scopeMenu = buildScopeMenu(false);
 		transScopeMenu = buildScopeMenu(true);
+		
+		scopes = new Vector<Oscilloscope>();
+	    selected_scope = null;
 	
+		lss = new LegacyScopeSupport(this);
 		getSetupList(circuitsMenu, false);
 		if (useFrame)
 		    setMenuBar(mb);
@@ -521,9 +526,6 @@ public class CirSim extends JFrame
 		    Dimension x = getSize();
 		    setLocation((screen.width  - x.width)/2, (screen.height - x.height)/2);
 		    this.setVisible(true);
-		    scopes = new Vector<Oscilloscope>();
-		    scopes.add(new Oscilloscope(this));
-		    selected_scope = scopes.get(0);
 		} else {
 		    if (!powerCheckItem.getState()) {
 				main.remove(powerBar);
@@ -2230,6 +2232,10 @@ public class CirSim extends JFrame
 		    powerBar.setValue(50);
 		    CircuitElm.voltageRange = 5;
 		    scopeCount = 0;
+		    for ( int j = 0; j < scopes.size(); j++ ) {
+		    	scopes.get(j).dispose();
+		    }
+		    scopes.clear();
 		}
 		cv.repaint();
 		int p;
@@ -2250,6 +2256,9 @@ public class CirSim extends JFrame
 				int tint = type.charAt(0);
 				try {
 				    if (tint == 'o') {
+				    	StringTokenizer st2 = new StringTokenizer(line);
+				    	st2.nextToken();
+				    	lss.undumpLegacyScope(st2);
 						Scope sc = new Scope(this);
 						sc.position = scopeCount;
 						sc.undump(st);
@@ -2315,8 +2324,10 @@ public class CirSim extends JFrame
 		    
 		}
 		enableItems();
-		if (!retain)
+		if (!retain) {
 		    handleResize(); // for scopes
+		    lss.setupScopes();
+		}
 		needAnalyze();
     }
 

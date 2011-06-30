@@ -28,7 +28,7 @@ class Oscilloscope extends JFrame implements
 	private static Font info_font;
 	private static Font label_font;
 	private static Font selected_label_font;
-	static NumberFormat display_format;
+	private static NumberFormat display_format;
 	static {
 		label_font = UIManager.getFont("Label.font");
 		selected_label_font = new Font(label_font.getName(), Font.BOLD, label_font.getSize());
@@ -56,6 +56,11 @@ class Oscilloscope extends JFrame implements
 	double current_range;
 	double power_range;
 	
+	int type;
+	static final int TYPE_VIP_VS_T = 0;
+	static final int TYPE_V_VS_I = 1;
+	static final int TYPE_X_VS_Y = 2;
+	
 	// Menu items
 	private JMenuItem reset;
 	private JMenuItem t_scale_up, t_scale_down;
@@ -65,7 +70,7 @@ class Oscilloscope extends JFrame implements
 	private JMenuItem all_scales_up, all_scales_down;
 	private JMenuItem max_scale;
 	private ButtonGroup show_options;
-	private JRadioButtonMenuItem show_v_i_p, show_v_vs_i;
+	private JRadioButtonMenuItem show_vip_vs_t, show_v_vs_i, show_x_vs_y;
 	private JCheckBoxMenuItem show_peak, show_n_peak, show_freq, show_grid;
 	
 	Oscilloscope(CirSim s) {
@@ -74,6 +79,8 @@ class Oscilloscope extends JFrame implements
 		sim = s;
 		waveforms = new Vector<OscilloscopeWaveform>();
 		selected_elm = null;
+		
+		type = TYPE_VIP_VS_T;
 		
 		// Setup window
 		setTitle("Oscilloscope");
@@ -285,6 +292,11 @@ class Oscilloscope extends JFrame implements
 		waveforms.add(new OscilloscopeWaveform(elm, this));
 		
 	}
+	
+	public void addElement(CircuitElm elm, int flags) {
+		addElement(elm);
+		waveforms.lastElement().setShow(flags);
+	}
 		
 	public void removeElement(OscilloscopeWaveform wf) {
 		remove(wf.label);
@@ -321,6 +333,19 @@ class Oscilloscope extends JFrame implements
 		info_img_gfx.setBackground(bg_color);
 		
 		info_window_gfx = (Graphics2D) this.getGraphics().create(0, this.getHeight()-40, this.getWidth(), 40);
+	}
+	
+	public void setType(int type) {;
+		if ( type == TYPE_VIP_VS_T ) {
+			show_vip_vs_t.setSelected(true);
+			this.type = type;
+		} else if ( type == TYPE_V_VS_I ) {
+			show_v_vs_i.setSelected(true);
+			this.type = type;
+		} else if ( type == TYPE_X_VS_Y ) {
+			show_x_vs_y.setSelected(true);
+			this.type = type;
+		}
 	}
 	
 	/* ******************************************************************************************
@@ -423,12 +448,18 @@ class Oscilloscope extends JFrame implements
 			power_range /= 2;
 			resetGraph();
 		}
+		
 		// Change value shown on scope
-		else if ( e.getSource() instanceof JRadioButtonMenuItem ) {
-			System.out.println("Radio: " + e.getActionCommand());
-			//String cmd = e.getActionCommand();
-			resetGraph();
+		else if ( e.getSource() == show_vip_vs_t ) {
+			setType(TYPE_VIP_VS_T);
 		}
+		else if ( e.getSource() == show_v_vs_i ) {
+			setType(TYPE_V_VS_I);
+		}
+		else if ( e.getSource() == show_x_vs_y ) {
+			setType(TYPE_X_VS_Y);
+		}
+		
 	}
 	
 	/* ********************************************************* */
@@ -528,14 +559,17 @@ class Oscilloscope extends JFrame implements
 		m = new JMenu("Show");
 		mb.add(m);
 		show_options = new ButtonGroup();
-		m.add(show_v_i_p = new JRadioButtonMenuItem("Voltage/Current/Power"));
-		show_v_i_p.setActionCommand("SHOW_VCP");
+		m.add(show_vip_vs_t = new JRadioButtonMenuItem("Voltage/Current/Power"));
+		show_vip_vs_t.setActionCommand("SHOW_VCP");
 		m.add(show_v_vs_i = new JRadioButtonMenuItem("Plot V vs I"));
 		show_v_vs_i.setActionCommand("SHOW_V_VS_I");
-		show_options.add(show_v_i_p);
+		m.add(show_x_vs_y = new JRadioButtonMenuItem("Plot X vs Y"));
+		show_x_vs_y.setActionCommand("SHOW_X_VS_Y");
+		show_options.add(show_vip_vs_t);
 		show_options.add(show_v_vs_i);
-		show_v_i_p.setSelected(true);
-		for ( int i = 0; i < 2; i++ )
+		show_options.add(show_x_vs_y);
+		show_vip_vs_t.setSelected(true); // default to show voltage/current/power
+		for ( int i = 0; i < 3; i++ )
 			((JRadioButtonMenuItem) m.getMenuComponent(i)).addActionListener(this);
 		
 		m.addSeparator();
