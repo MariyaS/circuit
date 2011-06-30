@@ -19,7 +19,8 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	private int columns_visible;
 	private boolean redraw_needed;
 	
-	private double[] min_v, max_v, min_i, max_i, min_p, max_p;
+	private double[][] min_values;
+	private double[][] max_values;
 	
 	JLabel label;
 	private PopupMenu menu;
@@ -62,6 +63,15 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	/* ******************************************************************************************
 	 * *                                                                                        *
 	 * ******************************************************************************************/
+	private void setLastColumn() {
+		min_values[Oscilloscope.Value.VOLTAGE.ordinal()][last_column] = elm.getVoltageDiff();
+		max_values[Oscilloscope.Value.VOLTAGE.ordinal()][last_column] = elm.getVoltageDiff();
+		min_values[Oscilloscope.Value.CURRENT.ordinal()][last_column] = elm.getCurrent();
+		max_values[Oscilloscope.Value.CURRENT.ordinal()][last_column] = elm.getCurrent();
+		min_values[Oscilloscope.Value.POWER.ordinal()][last_column] = elm.getPower();
+		max_values[Oscilloscope.Value.POWER.ordinal()][last_column] = elm.getPower();
+	}
+	
 	public void reset() {
 
 		// Clear image
@@ -69,45 +79,30 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		img_src.newPixels();
 		
 		last_column = 0;
-		columns_visible = 1;
-		
-		// Reset min/max voltage, current, power to the current values
-		min_v[last_column] = max_v[last_column] = elm.getVoltageDiff();
-		min_i[last_column] = max_i[last_column] = elm.getCurrent();
-		min_p[last_column] = max_p[last_column] = elm.getPower();
-		
+		columns_visible = 0;
+		setLastColumn();
 		counter = 0;
-		
 		redraw_needed = true;
 	}
 	
 	public void reset( Dimension s ) {
 		size = s;
 		
-		// Create new image
+		// Allocate new image
 		pixels = new int[size.width * size.height];
 		img_src = new MemoryImageSource(size.width, size.height, pixels, 0, size.width);
 		img_src.setAnimated(true);
 		img_src.setFullBufferUpdates(true);
 		wf_img = scope.createImage(img_src);
 		
-		max_v = new double[size.width];
-		min_v = new double[size.width];
-		max_i = new double[size.width];
-		min_i = new double[size.width];
-		max_p = new double[size.width];
-		min_p = new double[size.width];
+		// Allocate arrays for scope values
+		min_values = new double[Oscilloscope.Value.values().length][size.width];
+		max_values = new double[Oscilloscope.Value.values().length][size.width];
 		
 		last_column = 0;
 		columns_visible = 0;
-		
-		// Reset min/max voltage, current, power to the current values
-		min_v[last_column] = max_v[last_column] = elm.getVoltageDiff();
-		min_i[last_column] = max_i[last_column] = elm.getCurrent();
-		min_p[last_column] = max_p[last_column] = elm.getPower();
-		
+		setLastColumn();
 		counter = 0;
-		
 		redraw_needed = true;
 	}
 	
@@ -124,77 +119,47 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		
 		// Update min/max voltage, current, power
 		double v = elm.getVoltageDiff();
-		if ( v > max_v[last_column] )
-			max_v[last_column] = v;
-		else if ( v < min_v[last_column] )
-			min_v[last_column] = v;
+		if ( v > max_values[Oscilloscope.Value.VOLTAGE.ordinal()][last_column] )
+			max_values[Oscilloscope.Value.VOLTAGE.ordinal()][last_column] = v;
+		else if ( v < min_values[Oscilloscope.Value.VOLTAGE.ordinal()][last_column] )
+			min_values[Oscilloscope.Value.VOLTAGE.ordinal()][last_column] = v;
 		double i = elm.getCurrent();
-		if ( i > max_i[last_column] )
-			max_i[last_column] = i;
-		else if ( i < min_i[last_column] )
-			min_i[last_column] = i;
+		if ( i > max_values[Oscilloscope.Value.CURRENT.ordinal()][last_column] )
+			max_values[Oscilloscope.Value.CURRENT.ordinal()][last_column] = i;
+		else if ( i < min_values[Oscilloscope.Value.CURRENT.ordinal()][last_column] )
+			min_values[Oscilloscope.Value.CURRENT.ordinal()][last_column] = i;
 		double p = elm.getPower();
-		if ( p > max_p[last_column] )
-			max_p[last_column] = p;
-		else if ( p < min_p[last_column] )
-			min_p[last_column] = p;
+		if ( p > max_values[Oscilloscope.Value.POWER.ordinal()][last_column] )
+			max_values[Oscilloscope.Value.POWER.ordinal()][last_column] = p;
+		else if ( p < min_values[Oscilloscope.Value.POWER.ordinal()][last_column] )
+			min_values[Oscilloscope.Value.POWER.ordinal()][last_column] = p;
 		
 		if ( counter == scope.getTimeScale() ) {
-			
 			last_column = (last_column + 1) % size.width;
 			columns_visible = Math.min(columns_visible+1, size.width);
-			
-			// Reset min/max values for next column
-			min_v[last_column] = max_v[last_column] = elm.getVoltageDiff();
-			min_i[last_column] = max_i[last_column] = elm.getCurrent();
-			min_p[last_column] = max_p[last_column] = elm.getPower();
-			
+			setLastColumn();
 			counter = 0;
-			
 			redraw_needed = true;
 		}
 	}
 	
 	public void redraw() {
 		
-		if ( ! redraw_needed ) {
+		if ( ! redraw_needed )
 			return;
-		}
 		
 		Arrays.fill(pixels, 0);
 		
-		int max_v_y, min_v_y;
-		int max_i_y, min_i_y;
-		int max_p_y, min_p_y;
+		int max_y, min_y;
 		for ( int col = size.width-1; col > (size.width - columns_visible); col-- ) {
-			
-			// Draw voltage
-			if ( showingValue(Oscilloscope.Value.VOLTAGE) ) {
-				max_v_y = Math.min((int) Math.round(size.height/2 - (min_v[(last_column+1+col) % size.width] / scope.getRange(Oscilloscope.Value.VOLTAGE) * size.height)), size.height-1);
-				min_v_y = Math.max((int) Math.round(size.height/2 - (max_v[(last_column+1+col) % size.width] / scope.getRange(Oscilloscope.Value.VOLTAGE) * size.height)), 0);
-				for ( int row = min_v_y; row <= max_v_y; row++ ) {
-					pixels[row * size.width + col] = v_color.getRGB();
+			for ( Oscilloscope.Value value : Oscilloscope.Value.values() ) {
+				if ( showingValue(value) ) {
+					max_y = Math.min((int) Math.round(size.height/2 - (min_values[value.ordinal()][(last_column+1+col) % size.width] / scope.getRange(value) * size.height)), size.height-1);
+					min_y = Math.max((int) Math.round(size.height/2 - (max_values[value.ordinal()][(last_column+1+col) % size.width] / scope.getRange(value) * size.height)), 0);
+					for ( int row = min_y; row <= max_y; row++ )
+						pixels[row * size.width + col] = getColor(value).getRGB();
 				}
-			}
-			
-			// Draw current
-			if ( showingValue(Oscilloscope.Value.CURRENT) ) {
-				max_i_y = Math.min((int) Math.round(size.height/2 - (min_i[(last_column+1+col) % size.width] / scope.getRange(Oscilloscope.Value.CURRENT) * size.height)), size.height-1);
-				min_i_y = Math.max((int) Math.round(size.height/2 - (max_i[(last_column+1+col) % size.width] / scope.getRange(Oscilloscope.Value.CURRENT) * size.height)), 0);
-				for ( int row = min_i_y; row <= max_i_y; row++ ) {
-					pixels[row * size.width + col] = i_color.getRGB();
-				}
-			}
-			
-			// Draw power
-			if ( showingValue(Oscilloscope.Value.POWER) ) {
-				max_p_y = Math.min((int) Math.round(size.height/2 - (min_p[(last_column+1+col) % size.width] / scope.getRange(Oscilloscope.Value.POWER) * size.height)), size.height-1);
-				min_p_y = Math.max((int) Math.round(size.height/2 - (max_p[(last_column+1+col) % size.width] / scope.getRange(Oscilloscope.Value.POWER) * size.height)), 0);
-				for ( int row = min_p_y; row <= max_p_y; row++ ) {
-					pixels[row * size.width + col] = p_color.getRGB();
-				}
-			}
-			
+			}			
 		}
 		
 		img_src.newPixels();
@@ -240,10 +205,10 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	
 	private Color getColor(Oscilloscope.Value value) {
 		switch (value) {
-		case VOLTAGE:	return v_color;
-		case CURRENT:	return i_color;
-		case POWER:		return p_color;
-		default:		throw new Error("Attempting to get invalid color");
+			case VOLTAGE:	return v_color;
+			case CURRENT:	return i_color;
+			case POWER:		return p_color;
+			default:		throw new Error("Attempting to get invalid color");
 		}
 	}
 	
@@ -254,13 +219,10 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		PopupMenu m = new PopupMenu();
 		
 		// Checkboxes to tell which values to show
-		show_v = new CheckboxMenuItem("Show Voltage");
-		m.add(show_v);
+		m.add(show_v = new CheckboxMenuItem("Show Voltage"));
+		m.add(show_i = new CheckboxMenuItem("Show Current"));
+		m.add(show_p = new CheckboxMenuItem("Show Power"));
 		show_v.setState(true); // Show voltage by default
-		show_i = new CheckboxMenuItem("Show Current");
-		m.add(show_i);
-		show_p = new CheckboxMenuItem("Show Power");
-		m.add(show_p);
 		
 		m.addSeparator();
 		
@@ -277,40 +239,26 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	 * * MouseListener implementation                                                           *
 	 * ******************************************************************************************/
 
-	@Override
-	public void mouseClicked(MouseEvent e) {}
-
-	@Override
-	public void mouseEntered(MouseEvent e) {}
-
-	@Override
-	public void mouseExited(MouseEvent e) {}
-
-	@Override
-	public void mousePressed(MouseEvent e) {
-		
+	@Override public void mouseClicked(MouseEvent e) {}
+	@Override public void mouseEntered(MouseEvent e) {}
+	@Override public void mouseExited(MouseEvent e) {}
+	@Override public void mousePressed(MouseEvent e) {
 		// Right clicking shows popup menu
-		if ( e.isPopupTrigger() ) {
+		if ( e.isPopupTrigger() )
 			menu.show(e.getComponent(), e.getX(), e.getY());
-		}
 		
 		// Left clicking displays instantaneous info about this element
-		else if ( e.getButton() == MouseEvent.BUTTON1 ) {
+		else if ( e.getButton() == MouseEvent.BUTTON1 )
 			scope.setSelectedElement(this);
-		}
 	}
-
-	@Override
-	public void mouseReleased(MouseEvent e) {}
+	@Override public void mouseReleased(MouseEvent e) {}
 
 	/* ******************************************************************************************
 	 * * ActionListener implementation                                                          *
 	 * ******************************************************************************************/
 	
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		if ( e.getActionCommand().equals("REMOVE") ) {
+	@Override public void actionPerformed(ActionEvent e) {
+		if ( e.getActionCommand().equals("REMOVE") )
 			scope.removeElement(this);
-		}
 	}
 }
