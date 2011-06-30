@@ -164,23 +164,23 @@ class LegacyScopeSupport {
 			Oscilloscope o;
 			if ( scope_setup[lsi.scope_id] == false ) {
 				o = new Oscilloscope(sim);
-				o.time_scale = lsi.time_scale;
-				o.voltage_range = lsi.voltage_range;
-				o.current_range = lsi.current_range;
+				o.setTimeScale(lsi.time_scale);
+				o.setRange(Oscilloscope.Value.VOLTAGE, lsi.voltage_range);
+				o.setRange(Oscilloscope.Value.CURRENT, lsi.current_range);
 				if ( lsi.plot_2d ) {
-					o.setType(Oscilloscope.TYPE_V_VS_I);
+					o.setType(Oscilloscope.ScopeType.V_VS_I);
 				} else if ( lsi.plot_xy ) {
-					o.setType(Oscilloscope.TYPE_X_VS_Y);
+					o.setType(Oscilloscope.ScopeType.X_VS_Y);
 				} else {
-					o.setType(Oscilloscope.TYPE_VIP_VS_T);
+					o.setType(Oscilloscope.ScopeType.VIP_VS_T);
 				}
 				sim.scopes.add(o);
 				scope_setup[lsi.scope_id] = true;
 			}
 			else {
 				o = sim.scopes.get(lsi.scope_id);
-				o.voltage_range = Math.max(o.voltage_range, lsi.voltage_range);
-				o.current_range = Math.max(o.current_range, lsi.current_range);
+				o.setRange(Oscilloscope.Value.VOLTAGE, Math.max(o.getRange(Oscilloscope.Value.VOLTAGE), lsi.voltage_range));
+				o.setRange(Oscilloscope.Value.CURRENT, Math.max(o.getRange(Oscilloscope.Value.CURRENT), lsi.current_range));
 			}
 			int show_flags = (lsi.show_v ? 2 : 0) | (lsi.show_i ? 1 : 0);
 			o.addElement(sim.getElm(lsi.elm_no), show_flags);

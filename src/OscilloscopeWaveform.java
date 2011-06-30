@@ -139,7 +139,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		else if ( p < min_p[last_column] )
 			min_p[last_column] = p;
 		
-		if ( counter == scope.time_scale ) {
+		if ( counter == scope.getTimeScale() ) {
 			
 			last_column = (last_column + 1) % size.width;
 			columns_visible = Math.min(columns_visible+1, size.width);
@@ -169,27 +169,27 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		for ( int col = size.width-1; col > (size.width - columns_visible); col-- ) {
 			
 			// Draw voltage
-			if ( show_v.getState() ) {
-				max_v_y = Math.min((int) Math.round(size.height/2 - (min_v[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), size.height-1);
-				min_v_y = Math.max((int) Math.round(size.height/2 - (max_v[(last_column+1+col) % size.width] / scope.voltage_range * size.height)), 0);
+			if ( showingValue(Oscilloscope.Value.VOLTAGE) ) {
+				max_v_y = Math.min((int) Math.round(size.height/2 - (min_v[(last_column+1+col) % size.width] / scope.getRange(Oscilloscope.Value.VOLTAGE) * size.height)), size.height-1);
+				min_v_y = Math.max((int) Math.round(size.height/2 - (max_v[(last_column+1+col) % size.width] / scope.getRange(Oscilloscope.Value.VOLTAGE) * size.height)), 0);
 				for ( int row = min_v_y; row <= max_v_y; row++ ) {
 					pixels[row * size.width + col] = v_color.getRGB();
 				}
 			}
 			
 			// Draw current
-			if ( show_i.getState() ) {
-				max_i_y = Math.min((int) Math.round(size.height/2 - (min_i[(last_column+1+col) % size.width] / scope.current_range * size.height)), size.height-1);
-				min_i_y = Math.max((int) Math.round(size.height/2 - (max_i[(last_column+1+col) % size.width] / scope.current_range * size.height)), 0);
+			if ( showingValue(Oscilloscope.Value.CURRENT) ) {
+				max_i_y = Math.min((int) Math.round(size.height/2 - (min_i[(last_column+1+col) % size.width] / scope.getRange(Oscilloscope.Value.CURRENT) * size.height)), size.height-1);
+				min_i_y = Math.max((int) Math.round(size.height/2 - (max_i[(last_column+1+col) % size.width] / scope.getRange(Oscilloscope.Value.CURRENT) * size.height)), 0);
 				for ( int row = min_i_y; row <= max_i_y; row++ ) {
 					pixels[row * size.width + col] = i_color.getRGB();
 				}
 			}
 			
 			// Draw power
-			if ( show_p.getState() ) {
-				max_p_y = Math.min((int) Math.round(size.height/2 - (min_p[(last_column+1+col) % size.width] / scope.power_range * size.height)), size.height-1);
-				min_p_y = Math.max((int) Math.round(size.height/2 - (max_p[(last_column+1+col) % size.width] / scope.power_range * size.height)), 0);
+			if ( showingValue(Oscilloscope.Value.POWER) ) {
+				max_p_y = Math.min((int) Math.round(size.height/2 - (min_p[(last_column+1+col) % size.width] / scope.getRange(Oscilloscope.Value.POWER) * size.height)), size.height-1);
+				min_p_y = Math.max((int) Math.round(size.height/2 - (max_p[(last_column+1+col) % size.width] / scope.getRange(Oscilloscope.Value.POWER) * size.height)), 0);
 				for ( int row = min_p_y; row <= max_p_y; row++ ) {
 					pixels[row * size.width + col] = p_color.getRGB();
 				}
@@ -229,16 +229,22 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		show_i.setState((flags & 1) != 0);
 	}
 	
-	public boolean showingVoltage() {
-		return show_v.getState();
+	public boolean showingValue(Oscilloscope.Value value) {
+		switch(value) {
+			case VOLTAGE:	return show_v.getState();
+			case CURRENT:	return show_i.getState();
+			case POWER:		return show_p.getState();
+		}
+		return false;
 	}
 	
-	public boolean showingCurrent() {
-		return show_i.getState();
-	}
-	
-	public boolean showingPower() {
-		return show_p.getState();
+	private Color getColor(Oscilloscope.Value value) {
+		switch (value) {
+		case VOLTAGE:	return v_color;
+		case CURRENT:	return i_color;
+		case POWER:		return p_color;
+		default:		throw new Error("Attempting to get invalid color");
+		}
 	}
 	
 	/* ********************************************************* */

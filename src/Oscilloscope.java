@@ -51,24 +51,33 @@ class Oscilloscope extends JFrame implements
 
 	// Number of time steps per scope pixel
 	// Variable named 'speed' in the original Scope class
-	int time_scale;
-	double voltage_range;
-	double current_range;
-	double power_range;
+	private int time_scale;
+	private double voltage_range;
+	private double current_range;
+	private double power_range;
 	
-	int type;
-	static final int TYPE_VIP_VS_T = 0;
-	static final int TYPE_V_VS_I = 1;
-	static final int TYPE_X_VS_Y = 2;
+	private static final int DEFAULT_TIME_SCALE = 64;
+	private static final double DEFAULT_VOLTAGE_RANGE = 5;
+	private static final double DEFAULT_CURRENT_RANGE = 0.1;
+	private static final double DEFAULT_POWER_RANGE = 0.5;
+	
+	static enum ScopeType {
+		VIP_VS_T, V_VS_I, X_VS_Y
+	}
+	private ScopeType scope_type;
+	
+	static enum Value {
+		VOLTAGE, CURRENT, POWER
+	}
 	
 	// Menu items
 	private JMenuItem reset;
 	private JMenuItem t_scale_up, t_scale_down;
-	private JMenuItem v_scale_up, v_scale_down;
-	private JMenuItem i_scale_up, i_scale_down;
-	private JMenuItem p_scale_up, p_scale_down;
-	private JMenuItem all_scales_up, all_scales_down;
-	private JMenuItem max_scale;
+	private JMenuItem v_range_up, v_range_down;
+	private JMenuItem i_range_up, i_range_down;
+	private JMenuItem p_range_up, p_range_down;
+	private JMenuItem all_ranges_up, all_ranges_down;
+	private JMenuItem fit_ranges;
 	private ButtonGroup show_options;
 	private JRadioButtonMenuItem show_vip_vs_t, show_v_vs_i, show_x_vs_y;
 	private JCheckBoxMenuItem show_peak, show_n_peak, show_freq, show_grid;
@@ -80,7 +89,7 @@ class Oscilloscope extends JFrame implements
 		waveforms = new Vector<OscilloscopeWaveform>();
 		selected_elm = null;
 		
-		type = TYPE_VIP_VS_T;
+		scope_type = ScopeType.VIP_VS_T;
 		
 		// Setup window
 		setTitle("Oscilloscope");
@@ -109,10 +118,10 @@ class Oscilloscope extends JFrame implements
 	 * ******************************************************************************************/
 	// Reset to default time and amplitude scales
 	private void resetScales() {
-		time_scale = 64;
-		voltage_range = 5.0;
-		current_range = 0.1;
-		power_range = 1.0;
+		time_scale = DEFAULT_TIME_SCALE;
+		voltage_range = DEFAULT_VOLTAGE_RANGE;
+		current_range = DEFAULT_CURRENT_RANGE;
+		power_range = DEFAULT_POWER_RANGE;
 	}
 	
 	/* ******************************************************************************************
@@ -185,14 +194,14 @@ class Oscilloscope extends JFrame implements
 			if ( i == 0 ) {
 				str = "0.00";
 			} else {
-				if ( showingVoltage() )
+				if ( showingValue(Value.VOLTAGE) )
 					str = str.concat(getUnitText(voltage_range/8 * i,"V"));
-				if ( showingCurrent() ) {
+				if ( showingValue(Value.CURRENT) ) {
 					if ( ! str.equals("")  )
 						str = str.concat(" | ");
 					str = str.concat(getUnitText(current_range/8 * i,"A"));
 				}
-				if ( showingPower() ) {
+				if ( showingValue(Value.POWER) ) {
 					if ( ! str.equals("")  )
 						str = str.concat(" | ");
 					str = str.concat(getUnitText(power_range/8 * i,"W"));
@@ -262,7 +271,7 @@ class Oscilloscope extends JFrame implements
 		}
 		
 		// Draw labels
-		if ( showingVoltage() || showingCurrent() || showingPower() )
+		if ( showingValue(Value.VOLTAGE) || showingValue(Value.CURRENT) || showingValue(Value.POWER) )
 			drawLabels(main_img_gfx);
 		
 		// Draw element info and current time
@@ -335,41 +344,46 @@ class Oscilloscope extends JFrame implements
 		info_window_gfx = (Graphics2D) this.getGraphics().create(0, this.getHeight()-40, this.getWidth(), 40);
 	}
 	
-	public void setType(int type) {;
-		if ( type == TYPE_VIP_VS_T ) {
-			show_vip_vs_t.setSelected(true);
-			this.type = type;
-		} else if ( type == TYPE_V_VS_I ) {
-			show_v_vs_i.setSelected(true);
-			this.type = type;
-		} else if ( type == TYPE_X_VS_Y ) {
-			show_x_vs_y.setSelected(true);
-			this.type = type;
+	public void setType(ScopeType new_type) {;
+		switch (new_type) {
+		case VIP_VS_T:	show_vip_vs_t.setSelected(true);	break;
+		case V_VS_I:	show_v_vs_i.setSelected(true);		break;
+		case X_VS_Y:	show_x_vs_y.setSelected(true);		break;
+		}
+		scope_type = new_type;
+	}
+	
+	public void setTimeScale(int new_scale) {
+		time_scale = new_scale;
+		resetGraph();
+	}
+	
+	public int getTimeScale() { return time_scale; }
+	
+	public void setRange(Value value, double new_range) {
+		switch (value) {
+			case VOLTAGE:	voltage_range = new_range;	break;
+			case CURRENT:	current_range = new_range;	break;
+			case POWER:		power_range = new_range;	break;
+		}
+		resetGraph();
+	}
+	
+	public double getRange(Value value) {
+		switch (value) {
+			case VOLTAGE:	return voltage_range;
+			case CURRENT:	return current_range;
+			case POWER:		return power_range;
+			default:		throw new Error("Attempting to get invalid range");
 		}
 	}
 	
 	/* ******************************************************************************************
 	 * *                                                                                        *
 	 * ******************************************************************************************/
-	public boolean showingVoltage() {
+	public boolean showingValue(Value value) {
 		for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
-			if ( wfi.next().showingVoltage() )
-				return true;
-		}
-		return false;
-	}
-	
-	public boolean showingCurrent() {
-		for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
-			if ( wfi.next().showingCurrent() )
-				return true;
-		}
-		return false;
-	}
-	
-	public boolean showingPower() {
-		for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
-			if ( wfi.next().showingPower() )
+			if ( wfi.next().showingValue(value) )
 				return true;
 		}
 		return false;
@@ -406,82 +420,59 @@ class Oscilloscope extends JFrame implements
 			resetScales();
 			resetGraph();
 		}
+		
 		// Change time scale
-		else if ( e.getSource() == t_scale_up ) {
-			time_scale *= 2;
-			resetGraph();
-		} else if ( e.getSource() == t_scale_down ) {
-			time_scale /= 2;
-			resetGraph();
-		}
+		else if ( e.getSource() == t_scale_up )
+			setTimeScale( time_scale * 2 );
+		else if ( e.getSource() == t_scale_down )
+			setTimeScale( time_scale / 2 );
 		
 		// Change y-axis scales
-		else if ( e.getSource() == v_scale_up ) {
-			voltage_range *= 2;
-			resetGraph();
-		} else if ( e.getSource() == v_scale_down ) {
-			voltage_range /= 2;
-			resetGraph();
-		}
-		else if ( e.getSource() == i_scale_up ) {
-			current_range *= 2;
-			resetGraph();
-		} else if ( e.getSource() == i_scale_down ) {
-			current_range /= 2;
-			resetGraph();
-		}
-		else if ( e.getSource() == p_scale_up ) {
-			power_range *= 2;
-			resetGraph();
-		} else if ( e.getSource() == p_scale_down ) {
-			power_range /= 2;
-			resetGraph();
-		}
-		else if ( e.getSource() == all_scales_up ) {
-			voltage_range *= 2;
-			current_range *= 2;
-			power_range *= 2;
-			resetGraph();
-		} else if ( e.getSource() == all_scales_down ) {
-			voltage_range /= 2;
-			current_range /= 2;
-			power_range /= 2;
-			resetGraph();
+		else if ( e.getSource() == v_range_up )
+			setRange(Value.VOLTAGE, voltage_range * 2);
+		else if ( e.getSource() == v_range_down )
+			setRange(Value.VOLTAGE, voltage_range / 2);
+		else if ( e.getSource() == i_range_up )
+			setRange(Value.CURRENT, current_range * 2);
+		else if ( e.getSource() == i_range_down )
+			setRange(Value.CURRENT, current_range / 2);
+		else if ( e.getSource() == p_range_up )
+			setRange(Value.POWER, power_range * 2);
+		else if ( e.getSource() == p_range_down )
+			setRange(Value.POWER, power_range / 2);
+		else if ( e.getSource() == all_ranges_up ) {
+			setRange(Value.VOLTAGE, voltage_range * 2);
+			setRange(Value.CURRENT, current_range * 2);
+			setRange(Value.POWER, power_range * 2);
+		} else if ( e.getSource() == all_ranges_down ) {
+			setRange(Value.VOLTAGE, voltage_range / 2);
+			setRange(Value.CURRENT, current_range / 2);
+			setRange(Value.POWER, power_range / 2);
 		}
 		
 		// Change value shown on scope
-		else if ( e.getSource() == show_vip_vs_t ) {
-			setType(TYPE_VIP_VS_T);
-		}
-		else if ( e.getSource() == show_v_vs_i ) {
-			setType(TYPE_V_VS_I);
-		}
-		else if ( e.getSource() == show_x_vs_y ) {
-			setType(TYPE_X_VS_Y);
-		}
+		else if ( e.getSource() == show_vip_vs_t )
+			setType(ScopeType.VIP_VS_T);
+		else if ( e.getSource() == show_v_vs_i )
+			setType(ScopeType.V_VS_I);
+		else if ( e.getSource() == show_x_vs_y )
+			setType(ScopeType.X_VS_Y);
 		
 	}
 	
 	/* ********************************************************* */
 	/* Component Listener Implementation                         */
 	/* ********************************************************* */
-	@Override
-	public void componentShown(ComponentEvent e) { canvas.repaint(); }
-	
-	@Override
-	public void componentHidden(ComponentEvent e) {
+	@Override public void componentShown(ComponentEvent e) { canvas.repaint(); }
+	@Override public void componentHidden(ComponentEvent e) {
 		if ( this == sim.selected_scope ) {
 			sim.selected_scope = null;
 		}
 		sim.scopes.remove(this);
 		dispose();
 	}
-	
-	@Override
-	public void componentMoved(ComponentEvent e) {}
-	
-	@Override
-	public void componentResized(ComponentEvent e) {
+	@Override public void componentMoved(ComponentEvent e) {}
+	@Override public void componentResized(ComponentEvent e) {
 		handleResize();
 		resetGraph();
 		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
@@ -493,28 +484,13 @@ class Oscilloscope extends JFrame implements
 	/* Window Listener Implementation                            */
 	/* ********************************************************* */
 	
-	@Override
-	public void windowActivated(WindowEvent e) {
-		sim.selected_scope = this;
-	}
-
-	@Override
-	public void windowClosed(WindowEvent e) {}
-
-	@Override
-	public void windowClosing(WindowEvent e) {}
-
-	@Override
-	public void windowDeactivated(WindowEvent e) {}
-
-	@Override
-	public void windowDeiconified(WindowEvent e) {}
-
-	@Override
-	public void windowIconified(WindowEvent e) {}
-
-	@Override
-	public void windowOpened(WindowEvent e) {}
+	@Override public void windowActivated(WindowEvent e) { sim.selected_scope = this; }
+	@Override public void windowClosed(WindowEvent e) {}
+	@Override public void windowClosing(WindowEvent e) {}
+	@Override public void windowDeactivated(WindowEvent e) {}
+	@Override public void windowDeiconified(WindowEvent e) {}
+	@Override public void windowIconified(WindowEvent e) {}
+	@Override public void windowOpened(WindowEvent e) {}
 
 	
 	/* ********************************************************* */
@@ -538,19 +514,19 @@ class Oscilloscope extends JFrame implements
 		
 		m = new JMenu("Amplitude Range");
 		mb.add(m);
-		m.add(v_scale_up = new JMenuItem("Voltage Range 2x"));
-		m.add(v_scale_down = new JMenuItem("Voltage Range 1/2x"));
+		m.add(v_range_up = new JMenuItem("Voltage Range 2x"));
+		m.add(v_range_down = new JMenuItem("Voltage Range 1/2x"));
 		m.addSeparator();
-		m.add(i_scale_up = new JMenuItem("Current Range 2x"));
-		m.add(i_scale_down = new JMenuItem("Current Range 1/2x"));
+		m.add(i_range_up = new JMenuItem("Current Range 2x"));
+		m.add(i_range_down = new JMenuItem("Current Range 1/2x"));
 		m.addSeparator();
-		m.add(p_scale_up = new JMenuItem("Power Range 2x"));
-		m.add(p_scale_down = new JMenuItem("Power Range 1/2x"));
+		m.add(p_range_up = new JMenuItem("Power Range 2x"));
+		m.add(p_range_down = new JMenuItem("Power Range 1/2x"));
 		m.addSeparator();
-		m.add(all_scales_up = new JMenuItem("All Ranges 2x"));
-		m.add(all_scales_down = new JMenuItem("All Ranges 1/2x"));
+		m.add(all_ranges_up = new JMenuItem("All Ranges 2x"));
+		m.add(all_ranges_down = new JMenuItem("All Ranges 1/2x"));
 		m.addSeparator();
-		m.add(max_scale = new JMenuItem("Max Scale"));
+		m.add(fit_ranges = new JMenuItem("Fit Ranges"));
 		for ( int i = 0; i < m.getItemCount(); i++ ) {
 			if ( m.getMenuComponent(i) instanceof JMenuItem )
 				((JMenuItem) m.getMenuComponent(i)).addActionListener(this);
