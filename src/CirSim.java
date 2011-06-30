@@ -3,26 +3,22 @@
 // For information about the theory behind this, see Electronic Circuit & System Simulation Methods by Pillage
 
 import java.awt.*;
-import java.awt.image.*;
-
-import javax.imageio.ImageIO;
-import javax.swing.*;
-import javax.swing.event.*;
-
-import java.util.Iterator;
-import java.util.Vector;
-import java.io.File;
-import java.util.Random;
-import java.lang.Math;
-import java.net.URL;
 import java.awt.event.*;
-import java.io.FilterInputStream;
+import java.awt.image.*;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.StringTokenizer;
+import java.io.File;
+import java.io.FilterInputStream;
+import java.lang.Math;
 import java.lang.reflect.Constructor;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.util.Iterator;
+import java.util.Random;
+import java.util.StringTokenizer;
+import java.util.Vector;
+import javax.swing.*;
+import javax.swing.event.*;
 
 public class CirSim extends JFrame
   implements ComponentListener, ActionListener, AdjustmentListener, ChangeListener, 
