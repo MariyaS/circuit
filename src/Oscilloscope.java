@@ -46,15 +46,12 @@ class Oscilloscope extends JFrame implements
 	private int time_scale;
 	private double[] range;
 	
-	private static final int DEFAULT_TIME_SCALE = 64;
-	private static final double DEFAULT_VOLTAGE_RANGE = 5;
-	private static final double DEFAULT_CURRENT_RANGE = 0.1;
-	private static final double DEFAULT_POWER_RANGE = 0.5;
-	
 	static enum ScopeType { VIP_VS_T, V_VS_I, X_VS_Y }
 	private ScopeType scope_type;
 	
+	private static final int DEFAULT_TIME_SCALE = 64;
 	static enum Value { VOLTAGE, CURRENT, POWER }
+	private static final double[] default_range = { 5, 0.1, 0.5 };
 	static final String[] value_units = { "V", "A", "W" };
 	
 	// Menu items
@@ -106,9 +103,8 @@ class Oscilloscope extends JFrame implements
 	// Reset to default time and amplitude scales
 	private void resetScales() {
 		time_scale = DEFAULT_TIME_SCALE;
-		range[Value.VOLTAGE.ordinal()] = DEFAULT_VOLTAGE_RANGE;
-		range[Value.CURRENT.ordinal()] = DEFAULT_CURRENT_RANGE;
-		range[Value.POWER.ordinal()] = DEFAULT_POWER_RANGE;
+		for ( Value v : Value.values() )
+			range[v.ordinal()] = default_range[v.ordinal()];
 	}
 	
 	/* ******************************************************************************************
@@ -377,6 +373,28 @@ class Oscilloscope extends JFrame implements
 		info_window_gfx = (Graphics2D) this.getGraphics().create(0, this.getHeight()-OscilloscopeLayout.INFO_AREA_HEIGHT, this.getWidth(), OscilloscopeLayout.INFO_AREA_HEIGHT);
 	}
 	
+	public void fitRanges() {
+		
+		for ( Value v : Value.values() ) {
+			double max_abs_value = Double.MIN_VALUE;
+			for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
+				OscilloscopeWaveform wf = wfi.next();
+				max_abs_value = Math.max(max_abs_value, Math.max(Math.abs(wf.getPeakValue(v)), Math.abs(wf.getNegativePeakValue(v))));
+			}
+			double r = default_range[v.ordinal()];
+			if ( r < max_abs_value ) {
+			while ( r < max_abs_value )
+				r *= 2;
+			} else {
+				while ( r >= max_abs_value )
+					r /= 2;
+				r *= 2;
+			}
+			range[v.ordinal()] = r * 2;
+		}
+		resetGraph();
+	}
+	
 	public void setType(ScopeType new_type) {;
 		switch (new_type) {
 			case VIP_VS_T:	show_vip_vs_t.setSelected(true);	break;
@@ -473,7 +491,8 @@ class Oscilloscope extends JFrame implements
 			setRange(Value.VOLTAGE, getRange(Value.VOLTAGE) / 2);
 			setRange(Value.CURRENT, getRange(Value.CURRENT) / 2);
 			setRange(Value.POWER, getRange(Value.POWER) / 2);
-		}
+		} else if ( e.getSource() == fit_ranges )
+			fitRanges();
 		
 		// Change value shown on scope
 		else if ( e.getSource() == show_vip_vs_t )

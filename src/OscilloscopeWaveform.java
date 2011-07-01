@@ -202,20 +202,21 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			return peak;
 		}
 		else {
-			for ( double v : max_values[value.ordinal()] )
-				peak = Math.max(v, peak);
+			for ( int i = (size.width-columns_visible+1); i < size.width; i++ )
+				peak = Math.max(peak, max_values[value.ordinal()][mod(last_column+i, size.width)]);
 		}
 		*/
 		
-		for ( double v : max_values[value.ordinal()] )
-			peak = Math.max(v, peak);
+		for ( int i = (size.width-columns_visible+1); i < size.width; i++ )
+			peak = Math.max(peak, max_values[value.ordinal()][mod(last_column+i, size.width)]);
+
 		return peak;
 	}
 	
 	public double getNegativePeakValue(Oscilloscope.Value value) {
 		double npeak = Double.MAX_VALUE;
-		for ( double v : min_values[value.ordinal()] )
-			npeak = Math.min(v, npeak);
+		for ( int i = (size.width-columns_visible+1); i < size.width; i++ )
+			npeak = Math.min(npeak, max_values[value.ordinal()][mod(last_column+i, size.width)]);
 		return npeak;
 	}
 	
