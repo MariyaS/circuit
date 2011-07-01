@@ -47,12 +47,13 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		String info[] = new String[10];
 		elm.getInfo(info);
 		label = new JLabel("<html>" +  
-				info[0].substring(0, 1).toUpperCase().concat(info[0].substring(1)) +  // capitalize type of element
-				"<br>" +
-				"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.VOLTAGE.ordinal()]) + ">\u25FC V</font>\t" +
-				"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.CURRENT.ordinal()]) + ">\u25FC I</font>\t" +
-				"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.POWER.ordinal()]) + ">\u25FC P</font>"
-			);
+			info[0].substring(0, 1).toUpperCase().concat(info[0].substring(1)) +  // capitalize type of element
+			"<br>" +
+			"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.VOLTAGE.ordinal()]) + ">\u25FC V</font>\t" +
+			"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.CURRENT.ordinal()]) + ">\u25FC I</font>\t" +
+			"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.POWER.ordinal()]) + ">\u25FC P</font>"
+		);
+		label.setFont(Oscilloscope.label_font);
 		
 		// Element popup menu
 		menu = buildMenu();

@@ -23,12 +23,14 @@ class Oscilloscope extends JFrame implements
 	private static final Color bg_color = Color.WHITE;
 	private static final Color grid_color = new Color(0x80,0x80,0x80);
 	
-	private static final Font label_font = UIManager.getFont("Label.font");
+	static final Font label_font = new Font("SansSerif", 0, 10);
 	private static final Font selected_label_font = new Font(label_font.getName(), Font.BOLD, label_font.getSize());
 	private static final Font grid_label_font = label_font.deriveFont(9.0f);
 	private static final Font info_font = label_font.deriveFont(10.0f);
 	private static final NumberFormat display_format = DecimalFormat.getInstance();
 	static { display_format.setMinimumFractionDigits(2); }
+	
+	Dimension window_size;
 	
 	private OscilloscopeCanvas canvas;
 	Dimension canvas_size;
@@ -256,15 +258,15 @@ class Oscilloscope extends JFrame implements
 			x = 3;
 			if ( !peak_str.isEmpty() ) {
 				gfx.drawString(peak_str, x, font_height*3);
-				x += Math.round(fm.getStringBounds(peak_str, gfx).getWidth()) + 10;
+				x += Math.round(fm.getStringBounds(peak_str, gfx).getWidth()) + 15;
 			}
 			if ( !npeak_str.isEmpty() ) {
 				gfx.drawString(npeak_str, x, font_height*3);
-				x += Math.round(fm.getStringBounds(npeak_str, gfx).getWidth()) + 10;
+				x += Math.round(fm.getStringBounds(npeak_str, gfx).getWidth()) + 15;
 			}
 			if ( !freq_str.isEmpty() ) {
 				gfx.drawString(freq_str, x, font_height*3);
-				x += Math.round(fm.getStringBounds(freq_str, gfx).getWidth()) + 10;
+				x += Math.round(fm.getStringBounds(freq_str, gfx).getWidth()) + 15;
 			}
 		}
 		
@@ -274,7 +276,7 @@ class Oscilloscope extends JFrame implements
 	private void drawCurrentTime(Graphics gfx) {
 		String time = getUnitText(sim.t, "s");
 		FontMetrics fm = gfx.getFontMetrics();
-		gfx.drawString(time, this.getWidth()-(int)fm.getStringBounds(time, gfx).getWidth()-3, fm.getHeight());
+		gfx.drawString(time, canvas_size.width-(int)fm.getStringBounds(time, gfx).getWidth()-3, fm.getHeight());
 	}
 	
 	/* ******************************************************************************************
@@ -338,6 +340,8 @@ class Oscilloscope extends JFrame implements
 	}
 		
 	public void removeElement(OscilloscopeWaveform wf) {
+		if ( selected_wf == wf )
+			selected_wf = null;
 		remove(wf.label);
 		waveforms.remove(wf);
 		validate();
@@ -371,7 +375,7 @@ class Oscilloscope extends JFrame implements
 		info_img_gfx.setFont(info_font);
 		info_img_gfx.setBackground(bg_color);
 		
-		info_window_gfx = (Graphics2D) this.getGraphics().create(0, this.getHeight()-OscilloscopeLayout.INFO_AREA_HEIGHT, this.getWidth(), OscilloscopeLayout.INFO_AREA_HEIGHT);
+		info_window_gfx = (Graphics2D) this.getGraphics().create(this.getInsets().left, this.getHeight()-this.getInsets().bottom-OscilloscopeLayout.INFO_AREA_HEIGHT, canvas_size.width, OscilloscopeLayout.INFO_AREA_HEIGHT);
 	}
 	
 	public void fitRanges() {
