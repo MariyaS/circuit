@@ -228,12 +228,12 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		
 		int zero1 = -1;
 		int zero2 = -1;
-		
-		// Calculate average period in scope window.
-		for ( int i = 2; i < size.width; i++ ) {
-			if ( Math.signum(max_values[index][mod(last_column+i-1,size.width)]) > Math.signum(max_values[index][mod(last_column+i,size.width)]) ) {
+	
+		// Calculate average time between zero crossings.
+		for ( int i = (size.width-columns_visible+1); i < size.width; i++ ) {
+			if ( Math.signum(min_values[index][mod(last_column+i,size.width)]) != Math.signum(max_values[index][mod(last_column+i,size.width)]) ) {
 				zero2 = zero1;
-				zero1 = mod(last_column+i+1,size.width);
+				zero1 = mod(last_column+i,size.width);
 				if ( zero2 != -1 && zero1 > zero2 ) {
 					avg_period += zero1 - zero2;
 					avg_period2 += (zero1 - zero2) * (zero1 - zero2);
@@ -241,7 +241,6 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 				}
 			}
 		}
-
 		avg_period /= period_count;
 		avg_period2 /= period_count;
 		
@@ -250,7 +249,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		if ( period_count < 1 || std_dev > 2 )
 			return 0;
 		else
-			return 1 / (avg_period * scope.getTimeScale() * scope.getTimeStep() );
+			return  (1 / (avg_period * scope.getTimeScale() * scope.getTimeStep() )) / 2;
 	}
 	
 	/* ******************************************************************************************
