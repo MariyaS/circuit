@@ -1882,7 +1882,7 @@ public class CirSim extends JFrame
 		String ac = e.getActionCommand();
 		
 		if (e.getSource() == addToScope && menuElm != null ) {
-			if ( selected_scope == null ) {
+			if ( selected_scope == null || scopes.isEmpty() ) {
 				if ( scopes.size() == 0 ) {
 					scopes.add(new Oscilloscope(this));
 				}
@@ -2232,6 +2232,7 @@ public class CirSim extends JFrame
 		    	scopes.get(j).dispose();
 		    }
 		    scopes.clear();
+		    selected_scope = null;
 		}
 		cv.repaint();
 		int p;
