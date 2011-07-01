@@ -19,6 +19,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	private int columns_visible;
 	private boolean redraw_needed;
 	
+	private double value[];
 	private double[][] min_values;
 	private double[][] max_values;
 	
@@ -37,6 +38,8 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		v_color = randomColor();
 		i_color = randomColor();
 		p_color = randomColor();
+		
+		value = new double[Oscilloscope.Value.values().length];
 		
 		String info[] = new String[10];
 		elm.getInfo(info);
@@ -118,24 +121,19 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		counter++;
 		
 		// Update min/max voltage, current, power
-		double v = elm.getVoltageDiff();
-		if ( v > max_values[Oscilloscope.Value.VOLTAGE.ordinal()][last_column] )
-			max_values[Oscilloscope.Value.VOLTAGE.ordinal()][last_column] = v;
-		else if ( v < min_values[Oscilloscope.Value.VOLTAGE.ordinal()][last_column] )
-			min_values[Oscilloscope.Value.VOLTAGE.ordinal()][last_column] = v;
-		double i = elm.getCurrent();
-		if ( i > max_values[Oscilloscope.Value.CURRENT.ordinal()][last_column] )
-			max_values[Oscilloscope.Value.CURRENT.ordinal()][last_column] = i;
-		else if ( i < min_values[Oscilloscope.Value.CURRENT.ordinal()][last_column] )
-			min_values[Oscilloscope.Value.CURRENT.ordinal()][last_column] = i;
-		double p = elm.getPower();
-		if ( p > max_values[Oscilloscope.Value.POWER.ordinal()][last_column] )
-			max_values[Oscilloscope.Value.POWER.ordinal()][last_column] = p;
-		else if ( p < min_values[Oscilloscope.Value.POWER.ordinal()][last_column] )
-			min_values[Oscilloscope.Value.POWER.ordinal()][last_column] = p;
-		
+		value[Oscilloscope.Value.VOLTAGE.ordinal()] = elm.getVoltageDiff();
+		value[Oscilloscope.Value.CURRENT.ordinal()] = elm.getCurrent();
+		value[Oscilloscope.Value.POWER.ordinal()] = elm.getPower();
+		for ( Oscilloscope.Value v : Oscilloscope.Value.values() ) {
+			int n = v.ordinal();
+			if ( value[n] > max_values[n][last_column] )
+				max_values[n][last_column] = value[n];
+			if ( value[n] < min_values[n][last_column] )
+				min_values[n][last_column] = value[n];
+		}
+
 		if ( counter == scope.getTimeScale() ) {
-			last_column = (last_column + 1) % size.width;
+			last_column = mod(last_column + 1, size.width);
 			columns_visible = Math.min(columns_visible+1, size.width);
 			setLastColumn();
 			counter = 0;
@@ -154,8 +152,8 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		for ( int col = size.width-1; col > (size.width - columns_visible); col-- ) {
 			for ( Oscilloscope.Value value : Oscilloscope.Value.values() ) {
 				if ( showingValue(value) ) {
-					max_y = Math.min((int) Math.round(size.height/2 - (min_values[value.ordinal()][(last_column+1+col) % size.width] / scope.getRange(value) * size.height)), size.height-1);
-					min_y = Math.max((int) Math.round(size.height/2 - (max_values[value.ordinal()][(last_column+1+col) % size.width] / scope.getRange(value) * size.height)), 0);
+					max_y = Math.min((int) Math.round(size.height/2 - (min_values[value.ordinal()][mod(last_column+1+col, size.width)] / scope.getRange(value) * size.height)), size.height-1);
+					min_y = Math.max((int) Math.round(size.height/2 - (max_values[value.ordinal()][mod(last_column+1+col, size.width)] / scope.getRange(value) * size.height)), 0);
 					for ( int row = min_y; row <= max_y; row++ )
 						pixels[row * size.width + col] = getColor(value).getRGB();
 				}
@@ -165,6 +163,94 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		img_src.newPixels();
 		
 		redraw_needed = false;
+	}
+	
+	private int mod(int x, int y) {
+	    int result = x % y;
+	    if (result < 0)
+	        result += y;
+	    return result;
+	}
+	
+	public double getPeakValue(Oscilloscope.Value value) {
+		double peak = Double.MIN_VALUE;
+		
+		/* Peak of most recent crest
+		int index = value.ordinal();
+		int zero1 = -1;
+		int zero2 = -1;
+		int i;
+		for ( i = 0; i < columns_visible-2; i++ ) {
+			if ( Math.signum(max_values[index][mod(last_column-2-i,size.width)]) > Math.signum(max_values[index][mod(last_column-1-i,size.width)]) ) {
+				zero1 = mod(last_column-1-i, size.width);
+				break;
+			}
+		}
+		for ( i++; i < columns_visible-2; i++ ) {
+			if ( Math.signum(max_values[index][mod(last_column-2-i,size.width)]) < Math.signum(max_values[index][mod(last_column-1-i,size.width)]) ) {
+				zero2 = mod(last_column-1-i, size.width);
+				break;
+			}
+		}
+		
+		if ( zero1 > 0 && zero2 > 0 ) {
+			double peak = Double.MIN_VALUE;
+			for ( i = zero2; i < zero1; i++ ) {
+				if ( max_values[index][i] > peak )
+					peak = max_values[index][i];
+			}
+			return peak;
+		}
+		else {
+			for ( double v : max_values[value.ordinal()] )
+				peak = Math.max(v, peak);
+		}
+		*/
+		
+		for ( double v : max_values[value.ordinal()] )
+			peak = Math.max(v, peak);
+		return peak;
+	}
+	
+	public double getNegativePeakValue(Oscilloscope.Value value) {
+		double npeak = Double.MAX_VALUE;
+		for ( double v : min_values[value.ordinal()] )
+			npeak = Math.min(v, npeak);
+		return npeak;
+	}
+	
+	public double getFrequency(Oscilloscope.Value value) {
+		int index = value.ordinal();
+		
+		double avg_period = 0;
+		double avg_period2 = 0;
+		int period_count = 0;
+		
+		int zero1 = -1;
+		int zero2 = -1;
+		
+		// Calculate average period in scope window.
+		for ( int i = 2; i < size.width; i++ ) {
+			if ( Math.signum(max_values[index][mod(last_column+i-1,size.width)]) > Math.signum(max_values[index][mod(last_column+i,size.width)]) ) {
+				zero2 = zero1;
+				zero1 = mod(last_column+i+1,size.width);
+				if ( zero2 != -1 && zero1 > zero2 ) {
+					avg_period += zero1 - zero2;
+					avg_period2 += (zero1 - zero2) * (zero1 - zero2);
+					period_count++;
+				}
+			}
+		}
+
+		avg_period /= period_count;
+		avg_period2 /= period_count;
+		
+		// Don't show period if standard deviation is too high.
+		double std_dev = Math.sqrt(avg_period2 - avg_period * avg_period);
+		if ( period_count < 1 || std_dev > 2 )
+			return 0;
+		else
+			return 1 / (avg_period * scope.getTimeScale() * scope.getTimeStep() );
 	}
 	
 	/* ******************************************************************************************
@@ -249,7 +335,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		
 		// Left clicking displays instantaneous info about this element
 		else if ( e.getButton() == MouseEvent.BUTTON1 )
-			scope.setSelectedElement(this);
+			scope.setSelectedWaveform(this);
 	}
 	@Override public void mouseReleased(MouseEvent e) {}
 

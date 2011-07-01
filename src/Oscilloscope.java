@@ -18,7 +18,7 @@ class Oscilloscope extends JFrame implements
 	// Waveforms to display
 	private Vector<OscilloscopeWaveform> waveforms;
 	private Iterator<OscilloscopeWaveform> wfi;
-	private CircuitElm selected_elm;
+	private OscilloscopeWaveform selected_wf;
 	
 	private static final Color bg_color = Color.WHITE;
 	private static final Color grid_color = new Color(0x80,0x80,0x80);
@@ -55,6 +55,7 @@ class Oscilloscope extends JFrame implements
 	private ScopeType scope_type;
 	
 	static enum Value { VOLTAGE, CURRENT, POWER }
+	static final String[] value_units = { "V", "A", "W" };
 	
 	// Menu items
 	private JMenuItem reset;
@@ -73,17 +74,14 @@ class Oscilloscope extends JFrame implements
 		// Initialize variables
 		sim = s;
 		waveforms = new Vector<OscilloscopeWaveform>();
-		selected_elm = null;
-		
-		scope_type = ScopeType.VIP_VS_T;
+		selected_wf = null;
 		
 		// Setup window
 		setTitle("Oscilloscope");
 		setJMenuBar(buildMenu());
 		setLayout(new OscilloscopeLayout());
 		setBackground(bg_color);
-		setSize(600,450);
-		setMinimumSize(new Dimension(500, 300));
+		setSize(getPreferredSize());
 		Point p = sim.getLocation();
 		setLocation( p.x+sim.getWidth(), p.y+50 );
 		addWindowListener(this);
@@ -95,9 +93,11 @@ class Oscilloscope extends JFrame implements
 		range = new double[Value.values().length];
 		resetScales();
 		
+		scope_type = ScopeType.VIP_VS_T;
+		
 		// Show window
 		setVisible(true);
-		handleResize(); // Necessary to allocate gridImage before drawScope is called
+		handleResize(); // Necessary to allocate main_img and info_img before drawScope is called
 	}
 	
 	/* ******************************************************************************************
@@ -203,7 +203,7 @@ class Oscilloscope extends JFrame implements
 	 * ******************************************************************************************/
 	private void drawElementInfo(Graphics gfx) {
 		String info[] = new String[10];
-		selected_elm.getInfo(info);
+		selected_wf.elm.getInfo(info);
 		
 		FontMetrics fm = gfx.getFontMetrics();
 		int font_height = fm.getHeight();
@@ -218,6 +218,61 @@ class Oscilloscope extends JFrame implements
 			else
 				x += Math.round(fm.getStringBounds(info[i], gfx).getWidth()) + 10;
 		}
+		
+		// +/- peak values, frequency
+		if ( selected_wf.showingValue(Value.VOLTAGE) || selected_wf.showingValue(Value.CURRENT) || selected_wf.showingValue(Value.POWER) ) {
+			String peak_str = "";
+			if ( show_peak.getState() ) {
+				peak_str += "Peak: ";
+				for ( Value v : Value.values() ) {
+					if ( selected_wf.showingValue(v) )
+						peak_str += getUnitText(selected_wf.getPeakValue(v), value_units[v.ordinal()]) + " | ";
+				}
+				peak_str = peak_str.substring(0, peak_str.length()-3);
+			}
+			
+			String npeak_str = "";
+			if ( show_n_peak.getState() ) {
+				npeak_str += "Neg Peak: ";
+				for ( Value v : Value.values() ) {
+					if ( selected_wf.showingValue(v) )
+						npeak_str += getUnitText(selected_wf.getNegativePeakValue(v), value_units[v.ordinal()]) + " | ";
+				}
+				npeak_str = npeak_str.substring(0, npeak_str.length()-3);
+			}
+			
+			String freq_str = "";
+			if ( show_freq.getState() ) {
+				freq_str += "Freq: ";
+				for ( Value v : Value.values() ) {
+					if ( selected_wf.showingValue(v) ) {
+						double f = selected_wf.getFrequency(v);
+						if ( f != 0 )
+							freq_str += getUnitText(selected_wf.getFrequency(v), "Hz") + " | ";
+						else
+							freq_str += "? | ";
+					}
+						
+				}
+				freq_str = freq_str.substring(0, freq_str.length()-3);
+			}
+			
+			x = 3;
+			if ( !peak_str.isEmpty() ) {
+				gfx.drawString(peak_str, x, font_height*3);
+				x += Math.round(fm.getStringBounds(peak_str, gfx).getWidth()) + 10;
+			}
+			if ( !npeak_str.isEmpty() ) {
+				gfx.drawString(npeak_str, x, font_height*3);
+				x += Math.round(fm.getStringBounds(npeak_str, gfx).getWidth()) + 10;
+			}
+			if ( !freq_str.isEmpty() ) {
+				gfx.drawString(freq_str, x, font_height*3);
+				x += Math.round(fm.getStringBounds(freq_str, gfx).getWidth()) + 10;
+			}
+		}
+		
+		
 	}
 	
 	private void drawCurrentTime(Graphics gfx) {
@@ -258,7 +313,7 @@ class Oscilloscope extends JFrame implements
 		
 		// Draw element info and current time
 		info_img_gfx.clearRect(0, 0, info_img.getWidth(), info_img.getHeight());
-		if ( selected_elm != null )
+		if ( selected_wf != null )
 			drawElementInfo(info_img_gfx);
 		drawCurrentTime(info_img_gfx);
 		
@@ -292,8 +347,8 @@ class Oscilloscope extends JFrame implements
 		repaint();	
 	}
 	
-	public void setSelectedElement(OscilloscopeWaveform wf) {
-		selected_elm = wf.elm;
+	public void setSelectedWaveform(OscilloscopeWaveform wf) {
+		selected_wf = wf;
 		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
 			wfi.next().label.setFont(label_font);
 		wf.label.setFont(Oscilloscope.selected_label_font);
@@ -313,13 +368,13 @@ class Oscilloscope extends JFrame implements
 		main_img_gfx.setFont(grid_label_font);
 		main_img_gfx.setBackground(bg_color);
 		
-		info_img = new BufferedImage(canvas_size.width, 40, BufferedImage.TYPE_INT_ARGB);
+		info_img = new BufferedImage(canvas_size.width, OscilloscopeLayout.INFO_AREA_HEIGHT, BufferedImage.TYPE_INT_ARGB);
 		info_img_gfx = (Graphics2D) info_img.getGraphics();
 		info_img_gfx.setColor(Color.BLACK);
 		info_img_gfx.setFont(info_font);
 		info_img_gfx.setBackground(bg_color);
 		
-		info_window_gfx = (Graphics2D) this.getGraphics().create(0, this.getHeight()-40, this.getWidth(), 40);
+		info_window_gfx = (Graphics2D) this.getGraphics().create(0, this.getHeight()-OscilloscopeLayout.INFO_AREA_HEIGHT, this.getWidth(), OscilloscopeLayout.INFO_AREA_HEIGHT);
 	}
 	
 	public void setType(ScopeType new_type) {;
@@ -344,6 +399,10 @@ class Oscilloscope extends JFrame implements
 	}
 	
 	public double getRange(Value value) { return range[value.ordinal()]; }
+	
+	public double getTime() { return sim.t; }
+	
+	public double getTimeStep() { return sim.timeStep; }
 	
 	/* ******************************************************************************************
 	 * *                                                                                        *
