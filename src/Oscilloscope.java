@@ -331,6 +331,7 @@ class Oscilloscope extends JFrame implements
 		waveforms.add(new OscilloscopeWaveform(elm, this));
 	}
 	
+	// Only called from readSetup.
 	public void addElement(CircuitElm elm, int flags) {
 		addElement(elm);
 		waveforms.lastElement().setShow(flags);
@@ -379,7 +380,8 @@ class Oscilloscope extends JFrame implements
 			double max_abs_value = Double.MIN_VALUE;
 			for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
 				OscilloscopeWaveform wf = wfi.next();
-				max_abs_value = Math.max(max_abs_value, Math.max(Math.abs(wf.getPeakValue(v)), Math.abs(wf.getNegativePeakValue(v))));
+				if ( wf.showingValue(v) )
+					max_abs_value = Math.max(max_abs_value, Math.max(Math.abs(wf.getPeakValue(v)), Math.abs(wf.getNegativePeakValue(v))));
 			}
 			double r = default_range[v.ordinal()];
 			if ( r < max_abs_value ) {
