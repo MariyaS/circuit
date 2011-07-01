@@ -10,7 +10,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	CircuitElm elm;
 	private Oscilloscope scope;
 	
-	private Color v_color, i_color, p_color;
+	Color[] wave_color;
 	
 	Image wf_img;
 	private MemoryImageSource img_src;
@@ -35,29 +35,32 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		scope = o;
 		reset(scope.canvas_size);
 		
-		v_color = randomColor();
-		i_color = randomColor();
-		p_color = randomColor();
-		
+		// Allocate memory for storing current values
 		value = new double[Oscilloscope.Value.values().length];
 		
+		// Randomize wave colors
+		wave_color = new Color[Oscilloscope.Value.values().length];
+		for ( Oscilloscope.Value v : Oscilloscope.Value.values() )
+			wave_color[v.ordinal()] = randomColor();
+		
+		// Setup label
 		String info[] = new String[10];
 		elm.getInfo(info);
-		
 		label = new JLabel("<html>" +  
 				info[0].substring(0, 1).toUpperCase().concat(info[0].substring(1)) +  // capitalize type of element
 				"<br>" +
-				"<font color=#" + colorToHex(v_color) + ">\u25FC V</font>\t" +
-				"<font color=#" + colorToHex(i_color) + ">\u25FC I</font>\t" +
-				"<font color=#" + colorToHex(p_color) + ">\u25FC P</font>"
+				"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.VOLTAGE.ordinal()]) + ">\u25FC V</font>\t" +
+				"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.CURRENT.ordinal()]) + ">\u25FC I</font>\t" +
+				"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.POWER.ordinal()]) + ">\u25FC P</font>"
 			);
 		
-		// Popup menu for removing element
+		// Element popup menu
 		menu = buildMenu();
 		label.add(menu);
 		label.addMouseListener(this);
 		label.setPreferredSize(new Dimension(110, 30));
 		
+		// Add label to window
 		scope.add(label);
 		scope.validate();
 		scope.repaint();
@@ -76,7 +79,6 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	}
 	
 	public void reset() {
-
 		// Clear image
 		Arrays.fill(pixels, 0);
 		img_src.newPixels();
@@ -142,7 +144,6 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	}
 	
 	public void redraw() {
-		
 		if ( ! redraw_needed )
 			return;
 		
@@ -173,8 +174,6 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	}
 	
 	public double getPeakValue(Oscilloscope.Value value) {
-		double peak = Double.MIN_VALUE;
-		
 		/* Peak of most recent crest
 		int index = value.ordinal();
 		int zero1 = -1;
@@ -206,10 +205,9 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 				peak = Math.max(peak, max_values[value.ordinal()][mod(last_column+i, size.width)]);
 		}
 		*/
-		
+		double peak = Double.MIN_VALUE;
 		for ( int i = (size.width-columns_visible+1); i < size.width; i++ )
 			peak = Math.max(peak, max_values[value.ordinal()][mod(last_column+i, size.width)]);
-
 		return peak;
 	}
 	
@@ -290,35 +288,39 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	}
 	
 	private Color getColor(Oscilloscope.Value value) {
-		switch (value) {
-			case VOLTAGE:	return v_color;
-			case CURRENT:	return i_color;
-			case POWER:		return p_color;
-			default:		throw new Error("Attempting to get invalid color");
-		}
+		return wave_color[value.ordinal()];
 	}
 	
 	/* ********************************************************* */
 	/* Create menu (shown by right clicking on label)            */
 	/* ********************************************************* */
 	private PopupMenu buildMenu() {
-		PopupMenu m = new PopupMenu();
+		PopupMenu menu = new PopupMenu();
 		
 		// Checkboxes to tell which values to show
-		m.add(show_v = new CheckboxMenuItem("Show Voltage"));
-		m.add(show_i = new CheckboxMenuItem("Show Current"));
-		m.add(show_p = new CheckboxMenuItem("Show Power"));
+		menu.add(show_v = new CheckboxMenuItem("Show Voltage"));
+		menu.add(show_i = new CheckboxMenuItem("Show Current"));
+		menu.add(show_p = new CheckboxMenuItem("Show Power"));
 		show_v.setState(true); // Show voltage by default
+		menu.addSeparator();
 		
-		m.addSeparator();
+		Menu color_menu = new Menu("Change Colors");
+		for ( Oscilloscope.Value v : Oscilloscope.Value.values() ) {
+			MenuItem mi = new MenuItem(v.name().substring(0,1) + v.name().substring(1).toLowerCase() + " Color");
+			mi.setActionCommand("SET_COLOR_" + v.name());
+			mi.addActionListener(this);
+			color_menu.add(mi);
+		}
+		menu.add(color_menu);
+		menu.addSeparator();
 		
 		// Remove element from scope
 		MenuItem removeItem = new MenuItem("Remove from Scope");
 		removeItem.addActionListener(this);
 		removeItem.setActionCommand("REMOVE");
-		m.add(removeItem);
+		menu.add(removeItem);
 		
-		return m;
+		return menu;
 	}
 	
 	/* ******************************************************************************************
@@ -346,5 +348,19 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	@Override public void actionPerformed(ActionEvent e) {
 		if ( e.getActionCommand().equals("REMOVE") )
 			scope.removeElement(this);
+		
+		else if ( e.getActionCommand().substring(0, 9).equals("SET_COLOR") ) {
+			int v = Oscilloscope.Value.valueOf(e.getActionCommand().substring(10)).ordinal();
+			wave_color[v] = JColorChooser.showDialog(this.scope, "Choose New Color", wave_color[v]);
+			String info[] = new String[10];
+			elm.getInfo(info);
+			label.setText("<html>" +  
+					info[0].substring(0, 1).toUpperCase().concat(info[0].substring(1)) +  // capitalize type of element
+					"<br>" +
+					"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.VOLTAGE.ordinal()]) + ">\u25FC V</font>\t" +
+					"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.CURRENT.ordinal()]) + ">\u25FC I</font>\t" +
+					"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.POWER.ordinal()]) + ">\u25FC P</font>"
+				);
+		}
 	}
 }
