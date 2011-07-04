@@ -23,6 +23,8 @@ class LegacyScopeSupport {
 		boolean plot_2d;
 		boolean plot_xy;
 		
+		boolean stacked;
+		
 		int scope_id;
 		
 		LegacyScopeInfo(StringTokenizer st) {
@@ -106,6 +108,7 @@ class LegacyScopeSupport {
 					s_to_os_map[p] = num_scopes++;
 				unplaced_scopes.get(i).scope_id = s_to_os_map[p];
 				placed_scopes.add(unplaced_scopes.remove(i));
+				placed_scopes.lastElement().stacked = true;
 				i--; // since elements shift left when one is removed
 			}
 		}
@@ -173,6 +176,7 @@ class LegacyScopeSupport {
 					o.setType(Oscilloscope.ScopeType.X_VS_Y);
 				} else {
 					o.setType(Oscilloscope.ScopeType.VIP_VS_T);
+					if ( lsi.stacked == true ) { o.stack(); }
 				}
 				sim.scopes.add(o);
 				scope_setup[lsi.scope_id] = true;

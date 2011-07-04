@@ -105,8 +105,14 @@ class Oscilloscope extends JFrame implements
 	 * ******************************************************************************************/
 	// Clear the waveform image when changing time or amplitude scales
 	private void resetGraph() {
-		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
-			wfi.next().reset(canvas_size);
+		if ( stack_scopes.getState() == false ) {
+			for ( wfi = waveforms.iterator(); wfi.hasNext(); )
+				wfi.next().reset(canvas_size);
+		} else {
+			Dimension wf_size = new Dimension(canvas_size.width, canvas_size.height / waveforms.size());
+			for ( wfi = waveforms.iterator(); wfi.hasNext(); )
+				wfi.next().reset(wf_size);
+		}
 	}
 	
 	/* ******************************************************************************************
@@ -114,16 +120,16 @@ class Oscilloscope extends JFrame implements
 	 * ******************************************************************************************/
 	private void drawTimeGridlines(Graphics gfx) {
 		
-		double ts = sim.timeStep * time_scale;  // Timestep adjusted for current scale
-		double tstart = sim.t - ts * canvas_size.width;  // Time at the far left of the scope window
+		double ts = sim.timeStep * time_scale;  		// Timestep adjusted for current scale
+		double tstart = sim.t - ts * canvas_size.width;	// Time at the far left of the scope window
 
 		// Calculate step between gridlines (in time)
-		double grid_step = 1e-15;	// Time between gridlines
-		while ( grid_step/ts < 25 )  // Using ts * constant here makes gridline
-			grid_step *= 10;					  // spacing independent of window size
-		if ( grid_step/ts > 80 )	// Make sure gridlines aren't too far apart
+		double grid_step = 1e-15;
+		while ( grid_step/ts < 25 ) 
+			grid_step *= 10;
+		if ( grid_step/ts > 80 )		// Make sure gridlines aren't too far apart
 			grid_step /= 2;
-		else if ( grid_step/ts < 35 )  // Make sure gridlines aren't too close together
+		else if ( grid_step/ts < 35 )	// Make sure gridlines aren't too close together
 			grid_step *= 2;
 		
 		double tx = sim.t - (sim.t % grid_step);
@@ -136,15 +142,15 @@ class Oscilloscope extends JFrame implements
 		int lx = canvas_size.width;
 		int ln;
 		for ( int i = 0; ; i++ ) {
-			t = tx - i * grid_step; // time at gridline
+			t = tx - i * grid_step;	// Time at gridline
 			if ( t < 0 || t < tstart )
 				break;
 			
-			lx = (int) Math.round((t - tstart) / ts); // pixel position of gridline
+			lx = (int) Math.round((t - tstart) / ts);	// Pixel position of gridline
 			gfx.drawLine(lx, 0, lx, canvas_size.height);
 			
 			// Mark time every other gridline
-			ln = (int) Math.round(t / grid_step ); // gridline number (since beginning of time)
+			ln = (int) Math.round(t / grid_step ); // Gridline number (since beginning of time)
 			if ( ln % 2 == 0 )
 				gfx.drawString(getUnitText(t, "s"), lx+2, canvas_size.height-2);
 		}
@@ -275,39 +281,58 @@ class Oscilloscope extends JFrame implements
 			wfi.next().timeStep();
 	}
 	
-	// Where the magic happens
 	public void drawScope(Graphics canvas_gfx) {		
 		
-		// Clear main image
-		main_img_gfx.clearRect(0, 0, canvas_size.width, canvas_size.height);
+		switch (scope_type) {
+		case VIP_VS_T:
 		
-		// Draw gridlines
-		drawTimeGridlines(main_img_gfx);
-		if ( show_grid.getState() )
-			drawHorizontalGridlines(main_img_gfx);
-		
-		// Draw waveforms
-		for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
-			OscilloscopeWaveform wf = wfi.next();
-			wf.redraw();
-			main_img_gfx.drawImage(wf.wf_img, 0, 0, null);
+			// Clear main image
+			main_img_gfx.clearRect(0, 0, canvas_size.width, canvas_size.height);
+			
+			// Draw gridlines
+			drawTimeGridlines(main_img_gfx);
+			
+			if ( stack_scopes.getState() == false ) {
+				if ( show_grid.getState() )
+					drawHorizontalGridlines(main_img_gfx);
+				
+				// Draw waveforms
+				for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
+					OscilloscopeWaveform wf = wfi.next();
+					wf.redraw();
+					main_img_gfx.drawImage(wf.wf_img, 0, 0, null);
+				}
+				
+				// Draw labels
+				if ( showingValue(Value.VOLTAGE) || showingValue(Value.CURRENT) || showingValue(Value.POWER) )
+					drawLabels(main_img_gfx);
+			
+			} else {
+				int y = 0;
+				for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
+					OscilloscopeWaveform wf = wfi.next();
+					wf.redraw();
+					main_img_gfx.drawImage(wf.wf_img, 0, y, null);
+					y += canvas_size.height / waveforms.size();
+				}
+				
+			}
+				
+			// Clear info area
+			info_img_gfx.clearRect(0, 0, info_img.getWidth(), info_img.getHeight());
+			
+			// Draw element info and current time
+			if ( selected_wf != null )
+				drawElementInfo(info_img_gfx);
+			drawCurrentTime(info_img_gfx);
+			
+			// Update window
+			canvas_gfx.drawImage(main_img, 0, 0, null);
+			info_window_gfx.drawImage(info_img, 0, 0, null);
+			
+			break;
 		}
 		
-		// Draw labels
-		if ( showingValue(Value.VOLTAGE) || showingValue(Value.CURRENT) || showingValue(Value.POWER) )
-			drawLabels(main_img_gfx);
-		
-		// Clear info area
-		info_img_gfx.clearRect(0, 0, info_img.getWidth(), info_img.getHeight());
-		
-		// Draw element info and current time
-		if ( selected_wf != null )
-			drawElementInfo(info_img_gfx);
-		drawCurrentTime(info_img_gfx);
-		
-		// Update window
-		canvas_gfx.drawImage(main_img, 0, 0, null);
-		info_window_gfx.drawImage(info_img, 0, 0, null);
 		canvas.repaint();
 	}
 	
@@ -350,6 +375,10 @@ class Oscilloscope extends JFrame implements
 		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
 			wfi.next().label.setFont(label_font);
 		wf.label.setFont(Oscilloscope.selected_label_font);
+	}
+	
+	public void stack() {
+		stack_scopes.setState(true);
 	}
 	
 	/* ******************************************************************************************
@@ -507,7 +536,7 @@ class Oscilloscope extends JFrame implements
 		
 		// Stack scopes
 		else if ( e.getSource() == stack_scopes )
-			System.out.println( ((JCheckBoxMenuItem) e.getSource()).getState() );
+			resetGraph();
 	}
 	
 	/* ********************************************************* */
