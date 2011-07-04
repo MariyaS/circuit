@@ -24,8 +24,8 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	private double[][] max_values;
 	
 	JLabel label;
-	private PopupMenu menu;
-	private CheckboxMenuItem show_v, show_i, show_p;
+	private JPopupMenu menu;
+	private JCheckBoxMenuItem show_v, show_i, show_p;
 	
 	private Dimension size;
 	private int counter;
@@ -290,19 +290,19 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	/* ********************************************************* */
 	/* Create menu (shown by right clicking on label)            */
 	/* ********************************************************* */
-	private PopupMenu buildMenu() {
-		PopupMenu menu = new PopupMenu();
+	private JPopupMenu buildMenu() {
+		JPopupMenu menu = new JPopupMenu();
 		
 		// Checkboxes to tell which values to show
-		menu.add(show_v = new CheckboxMenuItem("Show Voltage"));
-		menu.add(show_i = new CheckboxMenuItem("Show Current"));
-		menu.add(show_p = new CheckboxMenuItem("Show Power"));
+		menu.add(show_v = new JCheckBoxMenuItem("Show Voltage"));
+		menu.add(show_i = new JCheckBoxMenuItem("Show Current"));
+		menu.add(show_p = new JCheckBoxMenuItem("Show Power"));
 		show_v.setState(true); // Show voltage by default
 		menu.addSeparator();
 		
-		Menu color_menu = new Menu("Change Colors");
+		JMenu color_menu = new JMenu("Change Colors");
 		for ( Oscilloscope.Value v : Oscilloscope.Value.values() ) {
-			MenuItem mi = new MenuItem(v.name().substring(0,1) + v.name().substring(1).toLowerCase() + " Color");
+			JMenuItem mi = new JMenuItem(v.name().substring(0,1) + v.name().substring(1).toLowerCase() + " Color");
 			mi.setActionCommand("SET_COLOR_" + v.name());
 			mi.addActionListener(this);
 			color_menu.add(mi);
@@ -311,7 +311,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		menu.addSeparator();
 		
 		// Remove element from scope
-		MenuItem removeItem = new MenuItem("Remove from Scope");
+		JMenuItem removeItem = new JMenuItem("Remove from Scope");
 		removeItem.addActionListener(this);
 		removeItem.setActionCommand("REMOVE");
 		menu.add(removeItem);
