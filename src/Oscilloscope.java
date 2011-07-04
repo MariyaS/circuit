@@ -169,15 +169,9 @@ class Oscilloscope extends JFrame implements
 			if ( i == 0 ) {
 				str = "0.00";
 			} else {
-				if ( showingValue(Value.VOLTAGE) )
-					str = str.concat(getUnitText(range[Value.VOLTAGE.ordinal()]/8 * i,"V"));
-				if ( showingValue(Value.CURRENT) ) {
-					if ( !str.isEmpty() ) { str = str.concat(" | "); }
-					str = str.concat(getUnitText(range[Value.CURRENT.ordinal()]/8 * i,"A"));
-				}
-				if ( showingValue(Value.POWER) ) {
-					if ( !str.isEmpty() ) { str = str.concat(" | "); }
-					str = str.concat(getUnitText(range[Value.POWER.ordinal()]/8 * i,"W"));
+				for ( Value v : Value.values() ) {
+					if ( showingValue(v) )
+						str += getUnitText(range[v.ordinal()]/8 * i, value_units[v.ordinal()]) + " | ";
 				}
 			}
 			r = gfx.getFontMetrics().getStringBounds(str, gfx);
