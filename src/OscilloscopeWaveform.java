@@ -270,6 +270,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	 * *                                                                                        *
 	 * ******************************************************************************************/
 	public void setShow(int flags) {
+		show_p.setState((flags & 4) != 0);
 		show_v.setState((flags & 2) != 0);
 		show_i.setState((flags & 1) != 0);
 	}
