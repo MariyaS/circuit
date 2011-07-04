@@ -30,8 +30,6 @@ class Oscilloscope extends JFrame implements
 	private static final NumberFormat display_format = DecimalFormat.getInstance();
 	static { display_format.setMinimumFractionDigits(2); }
 	
-	Dimension window_size;
-	
 	private OscilloscopeCanvas canvas;
 	Dimension canvas_size;
 	
@@ -79,7 +77,7 @@ class Oscilloscope extends JFrame implements
 		setTitle("Oscilloscope");
 		setJMenuBar(buildMenu());
 		setLayout(new OscilloscopeLayout());
-		setBackground(bg_color);
+		getContentPane().setBackground(bg_color);
 		setSize(getPreferredSize());
 		Point p = sim.getLocation();
 		setLocation( p.x+sim.getWidth(), p.y+50 );
@@ -191,7 +189,10 @@ class Oscilloscope extends JFrame implements
 			}
 			r = gfx.getFontMetrics().getStringBounds(str, gfx);
 			int offset = (i > 0) ? 5 : 2;
+			
+			// Clear area behind label
 			gfx.clearRect(3, canvas_size.height/2-canvas_size.height/8*i-offset-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
+			
 			gfx.drawString(str, 3, Math.round(canvas_size.height/2-canvas_size.height/8*i-offset));
 		}
 	}
@@ -309,8 +310,10 @@ class Oscilloscope extends JFrame implements
 		if ( showingValue(Value.VOLTAGE) || showingValue(Value.CURRENT) || showingValue(Value.POWER) )
 			drawLabels(main_img_gfx);
 		
-		// Draw element info and current time
+		// Clear info area
 		info_img_gfx.clearRect(0, 0, info_img.getWidth(), info_img.getHeight());
+		
+		// Draw element info and current time
 		if ( selected_wf != null )
 			drawElementInfo(info_img_gfx);
 		drawCurrentTime(info_img_gfx);
