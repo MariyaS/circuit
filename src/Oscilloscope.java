@@ -114,7 +114,7 @@ class Oscilloscope extends JFrame implements
 	// Clear the waveform image when changing time or amplitude scales
 	private void resetGraph() {
 		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
-			wfi.next().reset();
+			wfi.next().reset(canvas_size);
 	}
 	
 	/* ******************************************************************************************

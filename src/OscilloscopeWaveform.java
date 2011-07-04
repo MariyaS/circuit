@@ -33,7 +33,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	OscilloscopeWaveform( CircuitElm e, Oscilloscope o ) {
 		elm = e;
 		scope = o;
-		reset();
+		reset(scope.canvas_size);
 		
 		// Allocate memory for storing current values
 		value = new double[Oscilloscope.Value.values().length];
@@ -79,10 +79,10 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		max_values[Oscilloscope.Value.POWER.ordinal()][last_column] = elm.getPower();
 	}
 	
-	public void reset() {
+	public void reset(Dimension new_size) {
 		
-		if ( size != scope.canvas_size ) {
-			size = scope.canvas_size;
+		if ( size != new_size ) {
+			size = new_size;
 			
 			// Allocate new image
 			pixels = new int[size.width * size.height];
