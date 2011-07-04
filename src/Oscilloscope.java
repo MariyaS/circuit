@@ -330,6 +330,13 @@ class Oscilloscope extends JFrame implements
 			System.out.println("Scope accepts maximum of " + MAX_ELEMENTS + " elements");
 			return;
 		}
+		
+		// Do not allow duplicate elements
+		for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
+			if ( wfi.next().elm == elm )
+				return;
+		}
+		
 		waveforms.add(new OscilloscopeWaveform(elm, this));
 	}
 	
