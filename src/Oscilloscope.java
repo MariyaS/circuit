@@ -330,22 +330,22 @@ class Oscilloscope extends JFrame implements
 				}
 				
 			}
-				
-			// Clear info area
-			info_img_gfx.clearRect(0, 0, info_img.getWidth(), info_img.getHeight());
-			
-			// Draw element info and current time
-			if ( selected_wf != null )
-				drawElementInfo(info_img_gfx);
-			drawCurrentTime(info_img_gfx);
-			
-			// Update window
-			canvas_gfx.drawImage(main_img, 0, 0, null);
-			info_window_gfx.drawImage(info_img, 0, 0, null);
 			
 			break;
 		}
+				
+		// Clear info area
+		info_img_gfx.clearRect(0, 0, info_img.getWidth(), info_img.getHeight());
 		
+		// Draw element info and current time
+		if ( selected_wf != null )
+			drawElementInfo(info_img_gfx);
+		drawCurrentTime(info_img_gfx);
+		
+		// Update window
+		canvas_gfx.drawImage(main_img, 0, 0, null);
+		info_window_gfx.drawImage(info_img, 0, 0, null);
+
 		canvas.repaint();
 	}
 	
@@ -436,6 +436,7 @@ class Oscilloscope extends JFrame implements
 	
 	/**
 	 * Scale Y axis ranges to fit data.
+	 * Starts from default ranges and adjusts by factor of 2 to find minimum range into which all data currently displayed can fit.
 	 */
 	public void fitRanges() {
 		
@@ -471,6 +472,7 @@ class Oscilloscope extends JFrame implements
 			case X_VS_Y:	show_x_vs_y.setSelected(true);		break;
 		}
 		scope_type = new_type;
+		resetGraph();
 	}
 	
 	/**

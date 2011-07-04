@@ -176,7 +176,7 @@ class LegacyScopeSupport {
 					o.setType(Oscilloscope.ScopeType.X_VS_Y);
 				} else {
 					o.setType(Oscilloscope.ScopeType.VIP_VS_T);
-					if ( lsi.stacked == true ) { o.stack(); }
+					o.setStack(lsi.stacked);
 				}
 				sim.scopes.add(o);
 				scope_setup[lsi.scope_id] = true;
