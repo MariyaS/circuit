@@ -65,6 +65,7 @@ class Oscilloscope extends JFrame implements
 	private ButtonGroup show_options;
 	private JRadioButtonMenuItem show_vip_vs_t, show_v_vs_i, show_x_vs_y;
 	private JCheckBoxMenuItem show_peak, show_n_peak, show_freq, show_grid;
+	private JCheckBoxMenuItem stack_scopes;
 	
 	Oscilloscope(CirSim s) {
 		
@@ -517,6 +518,10 @@ class Oscilloscope extends JFrame implements
 			setType(ScopeType.V_VS_I);
 		else if ( e.getSource() == show_x_vs_y )
 			setType(ScopeType.X_VS_Y);
+		
+		// Stack scopes
+		else if ( e.getSource() == stack_scopes )
+			System.out.println( ((JCheckBoxMenuItem) e.getSource()).getState() );
 	}
 	
 	/* ********************************************************* */
@@ -533,8 +538,6 @@ class Oscilloscope extends JFrame implements
 	@Override public void componentResized(ComponentEvent e) {
 		handleResize();
 		resetGraph();
-		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
-			wfi.next().reset(canvas_size);
 		canvas.repaint();
 	}
 	
@@ -612,6 +615,11 @@ class Oscilloscope extends JFrame implements
 		m.addSeparator();
 		m.add(show_grid = new JCheckBoxMenuItem("Gridlines"));
 		show_grid.setState(true);
+		
+		m = new JMenu("Stack");
+		mb.add(m);
+		m.add(stack_scopes = new JCheckBoxMenuItem("Stack All"));
+		stack_scopes.addActionListener(this);
 		
 		return mb;
 	}

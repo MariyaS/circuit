@@ -33,7 +33,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	OscilloscopeWaveform( CircuitElm e, Oscilloscope o ) {
 		elm = e;
 		scope = o;
-		reset(scope.canvas_size);
+		reset();
 		
 		// Allocate memory for storing current values
 		value = new double[Oscilloscope.Value.values().length];
@@ -80,30 +80,25 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	}
 	
 	public void reset() {
+		
+		if ( size != scope.canvas_size ) {
+			size = scope.canvas_size;
+			
+			// Allocate new image
+			pixels = new int[size.width * size.height];
+			img_src = new MemoryImageSource(size.width, size.height, pixels, 0, size.width);
+			img_src.setAnimated(true);
+			img_src.setFullBufferUpdates(true);
+			wf_img = scope.createImage(img_src);
+			
+			// Allocate arrays for scope values
+			min_values = new double[Oscilloscope.Value.values().length][size.width];
+			max_values = new double[Oscilloscope.Value.values().length][size.width];
+		}
+		
 		// Clear image
 		Arrays.fill(pixels, 0);
 		img_src.newPixels();
-		
-		last_column = 0;
-		columns_visible = 0;
-		setLastColumn();
-		counter = 0;
-		redraw_needed = true;
-	}
-	
-	public void reset( Dimension s ) {
-		size = s;
-		
-		// Allocate new image
-		pixels = new int[size.width * size.height];
-		img_src = new MemoryImageSource(size.width, size.height, pixels, 0, size.width);
-		img_src.setAnimated(true);
-		img_src.setFullBufferUpdates(true);
-		wf_img = scope.createImage(img_src);
-		
-		// Allocate arrays for scope values
-		min_values = new double[Oscilloscope.Value.values().length][size.width];
-		max_values = new double[Oscilloscope.Value.values().length][size.width];
 		
 		last_column = 0;
 		columns_visible = 0;
