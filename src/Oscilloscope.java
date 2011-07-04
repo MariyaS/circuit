@@ -116,6 +116,7 @@ class Oscilloscope extends JFrame implements
 			for ( wfi = waveforms.iterator(); wfi.hasNext(); )
 				wfi.next().reset(wf_size);
 		}
+		main_img_gfx.clearRect(0, 0, canvas_size.width, canvas_size.height);
 	}
 	
 	/**
