@@ -88,24 +88,16 @@ class Oscilloscope extends JFrame implements
 		add(canvas);
 		
 		// Initialize scales
+		time_scale = DEFAULT_TIME_SCALE;
 		range = new double[Value.values().length];
-		resetScales();
+		for ( Value v : Value.values() )
+			range[v.ordinal()] = default_range[v.ordinal()];
 		
 		scope_type = ScopeType.VIP_VS_T;
 		
 		// Show window
 		setVisible(true);
 		handleResize(); // Necessary to allocate main_img and info_img before drawScope is called
-	}
-	
-	/* ******************************************************************************************
-	 * *                                                                                        *
-	 * ******************************************************************************************/
-	// Reset to default time and amplitude scales
-	private void resetScales() {
-		time_scale = DEFAULT_TIME_SCALE;
-		for ( Value v : Value.values() )
-			range[v.ordinal()] = default_range[v.ordinal()];
 	}
 	
 	/* ******************************************************************************************
@@ -477,8 +469,8 @@ class Oscilloscope extends JFrame implements
 	@Override public void actionPerformed(ActionEvent e) {
 		// Reset
 		if ( e.getSource() == reset ) {
-			resetScales();
-			resetGraph();
+			time_scale = DEFAULT_TIME_SCALE;
+			fitRanges();
 		}
 		
 		// Change time scale
