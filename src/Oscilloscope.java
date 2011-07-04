@@ -15,7 +15,9 @@ class Oscilloscope extends JFrame implements
 	
 	private static final int MAX_ELEMENTS = 10;
 	
-	// Waveforms to display
+	/**
+	 * Waveforms displayed in scope.
+	 */
 	private Vector<OscilloscopeWaveform> waveforms;
 	private Iterator<OscilloscopeWaveform> wfi;
 	private OscilloscopeWaveform selected_wf;
@@ -41,8 +43,10 @@ class Oscilloscope extends JFrame implements
 	
 	private Graphics2D info_window_gfx;
 
-	// Number of time steps per scope pixel
-	// Variable named 'speed' in the original Scope class
+	/**
+	 * Number of time steps per scope pixel.
+	 * This variable was named 'speed' in the original Scope class.
+	 */
 	private int time_scale;
 	private double[] range;
 	
@@ -54,7 +58,6 @@ class Oscilloscope extends JFrame implements
 	private static final double[] default_range = { 5, 0.1, 0.5 };
 	static final String[] value_units = { "V", "A", "W" };
 	
-	// Menu items
 	private JMenuItem reset;
 	private JMenuItem t_scale_up, t_scale_down;
 	private JMenuItem v_range_up, v_range_down;
@@ -100,10 +103,10 @@ class Oscilloscope extends JFrame implements
 		handleResize(); // Necessary to allocate main_img and info_img before drawScope is called
 	}
 	
-	/* ******************************************************************************************
-	 * *                                                                                        *
-	 * ******************************************************************************************/
-	// Clear the waveform image when changing time or amplitude scales
+	/**
+	 * Clear all waveforms associated with this scope.
+	 * Also resizes the waveforms if needed after a stack/unstack.
+	 */
 	private void resetGraph() {
 		if ( stack_scopes.getState() == false ) {
 			for ( wfi = waveforms.iterator(); wfi.hasNext(); )
@@ -115,9 +118,11 @@ class Oscilloscope extends JFrame implements
 		}
 	}
 	
-	/* ******************************************************************************************
-	 * *                                                                                        *
-	 * ******************************************************************************************/
+	/**
+	 * Draw gridlines for the time axis.
+	 * Labels every other line.
+	 * @param gfx The graphics object to draw on.
+	 */
 	private void drawTimeGridlines(Graphics gfx) {
 		
 		double ts = sim.timeStep * time_scale;  		// Timestep adjusted for current scale
@@ -156,43 +161,47 @@ class Oscilloscope extends JFrame implements
 		}
 	}
 	
-	/* ******************************************************************************************
-	 * *                                                                                        *
-	 * ******************************************************************************************/
+	/**
+	 * Draw gridlines for Y axis.
+	 * Draws 8 lines.  Also labels the lines based on which values are shown in the scope.
+	 * @param gfx The graphics object to draw on.
+	 */
 	private void drawHorizontalGridlines(Graphics gfx) {
+		
+		// Draw lines
 		for ( int i = 1; i <= 7; i++ )
 			gfx.drawLine(0, i * canvas_size.height/8, canvas_size.width, i * canvas_size.height/8);
-	}
-	
-	/* ******************************************************************************************
-	 * *                                                                                        *
-	 * ******************************************************************************************/
-	private void drawLabels(Graphics gfx) {
-		String str;
-		Rectangle2D r;
-		for ( int i = 3; i >= -3; i-- ) {
-			str = "";
-			if ( i == 0 ) {
-				str = "0.00";
-			} else {
-				for ( Value v : Value.values() ) {
-					if ( showingValue(v) )
-						str += getUnitText(range[v.ordinal()]/8 * i, value_units[v.ordinal()]) + " | ";
+		
+		// Draw labels
+		if ( showingValue(Value.VOLTAGE) || showingValue(Value.CURRENT) || showingValue(Value.POWER) ) {
+			String str;
+			Rectangle2D r;
+			for ( int i = 3; i >= -3; i-- ) {
+				str = "";
+				if ( i == 0 ) {
+					str = "0.00";
+				} else {
+					for ( Value v : Value.values() ) {
+						if ( showingValue(v) )
+							str += getUnitText(range[v.ordinal()]/8 * i, value_units[v.ordinal()]) + " | ";
+					}
 				}
+				r = gfx.getFontMetrics().getStringBounds(str, gfx);
+				int offset = (i > 0) ? 5 : 2;
+				
+				// Clear area behind label
+				gfx.clearRect(3, canvas_size.height/2-canvas_size.height/8*i-offset-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
+				
+				gfx.drawString(str, 3, Math.round(canvas_size.height/2-canvas_size.height/8*i-offset));
 			}
-			r = gfx.getFontMetrics().getStringBounds(str, gfx);
-			int offset = (i > 0) ? 5 : 2;
-			
-			// Clear area behind label
-			gfx.clearRect(3, canvas_size.height/2-canvas_size.height/8*i-offset-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
-			
-			gfx.drawString(str, 3, Math.round(canvas_size.height/2-canvas_size.height/8*i-offset));
 		}
 	}
 	
-	/* ******************************************************************************************
-	 * *                                                                                        *
-	 * ******************************************************************************************/
+	/**
+	 * Displays element info for the currently selected element.
+	 * Also displays +/- peak values and frequency.
+	 * @param gfx The graphics object to draw on.
+	 */
 	private void drawElementInfo(Graphics gfx) {
 		String info[] = new String[10];
 		selected_wf.elm.getInfo(info);
@@ -267,20 +276,28 @@ class Oscilloscope extends JFrame implements
 		
 	}
 	
+	/**
+	 * Displays current time of scope.  Equal to sim.t.
+	 * @param gfx The graphics object to draw on.
+	 */
 	private void drawCurrentTime(Graphics gfx) {
 		String time = getUnitText(sim.t, "s");
 		FontMetrics fm = gfx.getFontMetrics();
 		gfx.drawString(time, canvas_size.width-(int)fm.getStringBounds(time, gfx).getWidth()-3, fm.getHeight());
 	}
 	
-	/* ******************************************************************************************
-	 * *                                                                                        *
-	 * ******************************************************************************************/
+	/**
+	 * Update min/max values for the rightmost pixel of each waveform in the scope.
+	 */
 	public void timeStep() {
 		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
 			wfi.next().timeStep();
 	}
 	
+	/**
+	 * Repaint the main drawing area of the scope.
+	 * @param canvas_gfx The graphics object for the OscilloscopeCanvas.
+	 */
 	public void drawScope(Graphics canvas_gfx) {		
 		
 		switch (scope_type) {
@@ -302,10 +319,6 @@ class Oscilloscope extends JFrame implements
 					wf.redraw();
 					main_img_gfx.drawImage(wf.wf_img, 0, 0, null);
 				}
-				
-				// Draw labels
-				if ( showingValue(Value.VOLTAGE) || showingValue(Value.CURRENT) || showingValue(Value.POWER) )
-					drawLabels(main_img_gfx);
 			
 			} else {
 				int y = 0;
@@ -336,9 +349,11 @@ class Oscilloscope extends JFrame implements
 		canvas.repaint();
 	}
 	
-	/* ******************************************************************************************
-	 * *                                                                                        *
-	 * ******************************************************************************************/
+	/**
+	 * Add an element to the scope.
+	 * Prevents duplicate elements from being added.
+	 * @param elm The element to be added
+	 */
 	public void addElement(CircuitElm elm) {
 		// This was to keep labels from overflowing onto the canvas when the scope window is small.
 		if ( waveforms.size() >= MAX_ELEMENTS ) {
@@ -355,12 +370,21 @@ class Oscilloscope extends JFrame implements
 		waveforms.add(new OscilloscopeWaveform(elm, this));
 	}
 	
-	// Only called from readSetup.
+	/**
+	 * Add an element to the scope and set which values to show for that element.
+	 * Only called from CirSim.readSetup.
+	 * @param elm The element to be added.
+	 * @param flags The values to be shown. (1 = current, 2 = voltage, 4 = power)
+	 */
 	public void addElement(CircuitElm elm, int flags) {
 		addElement(elm);
 		waveforms.lastElement().setShow(flags);
 	}
-		
+	
+	/**
+	 * Remove an element from the scope.
+	 * @param wf The waveform to be removed.
+	 */
 	public void removeElement(OscilloscopeWaveform wf) {
 		if ( selected_wf == wf )
 			selected_wf = null;
@@ -370,6 +394,10 @@ class Oscilloscope extends JFrame implements
 		repaint();	
 	}
 	
+	/**
+	 * Select a waveform to show info about.
+	 * @param wf The waveform to select.
+	 */
 	public void setSelectedWaveform(OscilloscopeWaveform wf) {
 		selected_wf = wf;
 		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
@@ -377,15 +405,17 @@ class Oscilloscope extends JFrame implements
 		wf.label.setFont(Oscilloscope.selected_label_font);
 	}
 	
-	public void stack() {
-		stack_scopes.setState(true);
+	/**
+	 * Stack/unstack waveforms in scope.
+	 * @param stack True to stack, false to unstack.
+	 */
+	public void setStack(boolean stack) {
+		stack_scopes.setState(stack);
 	}
 	
-	/* ******************************************************************************************
-	 * *                                                                                        *
-	 * ******************************************************************************************/
-	// Called whenever the canvas is resized and also during Oscilloscope's
-	// constructor
+	/**
+	 * Allocate new images and resize graphics objects when the scope window is resized.
+	 */
 	private void handleResize() {
 		canvas_size = canvas.getSize();
 		
@@ -404,6 +434,9 @@ class Oscilloscope extends JFrame implements
 		info_window_gfx = (Graphics2D) this.getGraphics().create(this.getInsets().left, this.getHeight()-this.getInsets().bottom-OscilloscopeLayout.INFO_AREA_HEIGHT, canvas_size.width, OscilloscopeLayout.INFO_AREA_HEIGHT);
 	}
 	
+	/**
+	 * Scale Y axis ranges to fit data.
+	 */
 	public void fitRanges() {
 		
 		for ( Value v : Value.values() ) {
@@ -427,6 +460,10 @@ class Oscilloscope extends JFrame implements
 		resetGraph();
 	}
 	
+	/**
+	 * Set type of scope
+	 * @param new_type VIP_VS_T (voltage/current/power vs time), V_VS_I (voltage vs current), or X_VS_Y (arbitrary vs arbitrary)
+	 */
 	public void setType(ScopeType new_type) {;
 		switch (new_type) {
 			case VIP_VS_T:	show_vip_vs_t.setSelected(true);	break;
@@ -436,27 +473,56 @@ class Oscilloscope extends JFrame implements
 		scope_type = new_type;
 	}
 	
+	/**
+	 * Set time scale of scope
+	 * @param new_scale New time scale
+	 */
 	public void setTimeScale(int new_scale) {
 		time_scale = new_scale;
 		resetGraph();
 	}
 	
+	/**
+	 * Returns time scale of scope.
+	 * @return Time scale
+	 */
 	public int getTimeScale() { return time_scale; }
 	
+	/**
+	 * Set Y axis range of scope
+	 * @param value The value to set the range for
+	 * @param new_range The new range
+	 */
 	public void setRange(Value value, double new_range) {
 		range[value.ordinal()] = new_range;
 		resetGraph();
 	}
 	
+	/**
+	 * Returns the Y axis range for the specified value.
+	 * @param value Value to get range for
+	 * @return Range for the specified value.
+	 */
 	public double getRange(Value value) { return range[value.ordinal()]; }
 	
+	/**
+	 * Returns current time of scope.
+	 * Equal to sim.t.
+	 * @return Current time of scope.
+	 */
 	public double getTime() { return sim.t; }
 	
+	/**
+	 * Returns scope's time step.
+	 * @return Scope's time step.
+	 */
 	public double getTimeStep() { return sim.timeStep; }
 	
-	/* ******************************************************************************************
-	 * *                                                                                        *
-	 * ******************************************************************************************/
+	/**
+	 * Whether or not the specified value is shown for any waveform in the scope
+	 * @param value The value to test
+	 * @return true if the value is shown for any waveform, false if not
+	 */
 	public boolean showingValue(Value value) {
 		for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
 			if ( wfi.next().showingValue(value) )
@@ -465,6 +531,12 @@ class Oscilloscope extends JFrame implements
 		return false;
 	}
 	
+	/**
+	 * Format a value into a string with a unit attached. 
+	 * @param value
+	 * @param unit
+	 * @return
+	 */
 	static private String getUnitText(double value, String unit) {
 		double va = Math.abs(value);
 		if (va < 1e-14)
@@ -569,9 +641,10 @@ class Oscilloscope extends JFrame implements
 	@Override public void windowOpened(WindowEvent e) {}
 
 	
-	/* ********************************************************* */
-	/* Create menu bar                                           */
-	/* ********************************************************* */
+	/**
+	 * Create scope's menu bar.
+	 * @return
+	 */
 	private JMenuBar buildMenu() {
 		
 		JMenuBar mb = new JMenuBar();
