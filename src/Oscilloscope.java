@@ -25,7 +25,7 @@ class Oscilloscope extends JFrame implements
 	private static final Color bg_color = Color.WHITE;
 	private static final Color grid_color = new Color(0x80,0x80,0x80);
 	
-	static final Font label_font = new Font("SansSerif", 0, 10);
+	static final Font label_font = new Font("SansSerif", 0, 12);
 	private static final Font selected_label_font = new Font(label_font.getName(), Font.BOLD, label_font.getSize());
 	private static final Font grid_label_font = label_font.deriveFont(9.0f);
 	private static final Font info_font = label_font.deriveFont(10.0f);
@@ -141,7 +141,15 @@ class Oscilloscope extends JFrame implements
 		double tx = sim.t - (sim.t % grid_step);
 		
 		// Draw X axis
-		gfx.drawRect(0, canvas_size.height/2, canvas_size.width, 1);
+		if ( stack_scopes.getState() == false ) {
+			gfx.drawRect(0, canvas_size.height/2, canvas_size.width, 1);
+		} else {
+			int y = canvas_size.height / waveforms.size() / 2;
+			for ( int i = 0; i < waveforms.size(); i++ ) {
+				gfx.drawRect(0, y, canvas_size.width, 1);
+				y+= canvas_size.height / waveforms.size();
+			}
+		}
 		
 		// Draw grid lines parallel to Y axis
 		double t;
@@ -169,31 +177,66 @@ class Oscilloscope extends JFrame implements
 	 */
 	private void drawHorizontalGridlines(Graphics gfx) {
 		
-		// Draw lines
-		for ( int i = 1; i <= 7; i++ )
-			gfx.drawLine(0, i * canvas_size.height/8, canvas_size.width, i * canvas_size.height/8);
-		
-		// Draw labels
-		if ( showingValue(Value.VOLTAGE) || showingValue(Value.CURRENT) || showingValue(Value.POWER) ) {
-			String str;
-			Rectangle2D r;
-			for ( int i = 3; i >= -3; i-- ) {
-				str = "";
-				if ( i == 0 ) {
-					str = "0.00";
-				} else {
-					for ( Value v : Value.values() ) {
-						if ( showingValue(v) )
-							str += getUnitText(range[v.ordinal()]/8 * i, value_units[v.ordinal()]) + " | ";
+		if ( stack_scopes.getState() == false ) {
+			// Draw lines
+			for ( int i = 1; i <= 7; i++ )
+				gfx.drawLine(0, i * canvas_size.height/8, canvas_size.width, i * canvas_size.height/8);
+			
+			// Draw labels
+			if ( showingValue(Value.VOLTAGE) || showingValue(Value.CURRENT) || showingValue(Value.POWER) ) {
+				String str;
+				Rectangle2D r;
+				for ( int i = 3; i >= -3; i-- ) {
+					str = "";
+					if ( i == 0 ) {
+						str = "0.00";
+					} else {
+						for ( Value v : Value.values() ) {
+							if ( showingValue(v) )
+								str += getUnitText(range[v.ordinal()]/8 * i, value_units[v.ordinal()]) + " | ";
+						}
 					}
+					str = str.substring(0, str.length()-3);
+					r = gfx.getFontMetrics().getStringBounds(str, gfx);
+					int offset = (i > 0) ? 5 : 2;
+					
+					// Clear area behind label
+					gfx.clearRect(3, canvas_size.height/2-canvas_size.height/8*i-offset-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
+					
+					gfx.drawString(str, 3, Math.round(canvas_size.height/2-canvas_size.height/8*i-offset));
 				}
-				r = gfx.getFontMetrics().getStringBounds(str, gfx);
-				int offset = (i > 0) ? 5 : 2;
+			}
+		} else {
+			for ( int i = 0; i < waveforms.size(); i++ ) {
+				int y = i * canvas_size.height / waveforms.size();
+				gfx.drawLine(0, y, canvas_size.width, y);
+			}
+			gfx.drawLine(0, canvas_size.height-1, canvas_size.width, canvas_size.height-1);
+			
+			for ( int i = 0; i < waveforms.size(); i++ ) {
+				String str = "";
+				for ( Value v : Value.values() ) {
+					if ( showingValue(v) )
+						str += getUnitText(range[v.ordinal()]/2, value_units[v.ordinal()]) + " | ";
+				}
+				str = str.substring(0,str.length()-3);
 				
-				// Clear area behind label
-				gfx.clearRect(3, canvas_size.height/2-canvas_size.height/8*i-offset-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
+				Rectangle2D r = gfx.getFontMetrics().getStringBounds(str, gfx);
+				gfx.clearRect(3, i * canvas_size.height / waveforms.size()+2, (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight()));
+				gfx.drawString(str, 3, i * canvas_size.height / waveforms.size() + (int) Math.ceil(r.getHeight()));
+			}
+			
+			for ( int i = 1; i <= waveforms.size(); i++ ) {
+				String str = "";
+				for ( Value v : Value.values() ) {
+					if ( showingValue(v) )
+						str += getUnitText(-range[v.ordinal()]/2, value_units[v.ordinal()]) + " | ";
+				}
+				str = str.substring(0,str.length()-3);
 				
-				gfx.drawString(str, 3, Math.round(canvas_size.height/2-canvas_size.height/8*i-offset));
+				Rectangle2D r = gfx.getFontMetrics().getStringBounds(str, gfx);
+				gfx.clearRect(3, i * canvas_size.height / waveforms.size() - (int) Math.ceil(r.getHeight()) - 3, (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight()));
+				gfx.drawString(str, 3, i * canvas_size.height / waveforms.size() - 3);
 			}
 		}
 	}
@@ -310,11 +353,11 @@ class Oscilloscope extends JFrame implements
 			// Draw gridlines
 			drawTimeGridlines(main_img_gfx);
 			
-			if ( stack_scopes.getState() == false ) {
-				if ( show_grid.getState() )
-					drawHorizontalGridlines(main_img_gfx);
-				
-				// Draw waveforms
+			
+			if ( show_grid.getState() )
+				drawHorizontalGridlines(main_img_gfx);
+			
+			if ( stack_scopes.getState() == false ) {	
 				for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
 					OscilloscopeWaveform wf = wfi.next();
 					wf.redraw();
@@ -369,6 +412,9 @@ class Oscilloscope extends JFrame implements
 		}
 		
 		waveforms.add(new OscilloscopeWaveform(elm, this));
+		
+		if ( stack_scopes.getState() )
+			resetGraph();
 	}
 	
 	/**
@@ -392,7 +438,10 @@ class Oscilloscope extends JFrame implements
 		remove(wf.label);
 		waveforms.remove(wf);
 		validate();
-		repaint();	
+		repaint();
+		
+		if ( stack_scopes.getState() )
+			resetGraph();
 	}
 	
 	/**
