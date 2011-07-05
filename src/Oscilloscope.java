@@ -19,7 +19,6 @@ class Oscilloscope extends JFrame implements
 	 * Waveforms displayed in scope.
 	 */
 	private Vector<OscilloscopeWaveform> waveforms;
-	private Iterator<OscilloscopeWaveform> wfi;
 	private OscilloscopeWaveform selected_wf;
 	
 	private static final Color bg_color = Color.WHITE;
@@ -111,10 +110,10 @@ class Oscilloscope extends JFrame implements
 	private void resetGraph() {
 		if ( scope_type == ScopeType.VIP_VS_T && stack_scopes.getState() == true && !waveforms.isEmpty() ) {
 			Dimension wf_size = new Dimension(canvas_size.width, canvas_size.height / waveforms.size());
-			for ( wfi = waveforms.iterator(); wfi.hasNext(); )
+			for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); )
 				wfi.next().reset(wf_size);
 		} else {
-			for ( wfi = waveforms.iterator(); wfi.hasNext(); )
+			for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); )
 				wfi.next().reset(canvas_size);
 		}
 		main_img_gfx.clearRect(0, 0, canvas_size.width, canvas_size.height);
@@ -395,7 +394,7 @@ class Oscilloscope extends JFrame implements
 	 * Update min/max values for the rightmost pixel of each waveform in the scope.
 	 */
 	public void timeStep() {
-		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
+		for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); )
 			wfi.next().timeStep();
 	}
 	
@@ -417,14 +416,14 @@ class Oscilloscope extends JFrame implements
 			drawTimeGridlines(main_img_gfx);
 			
 			if ( stack_scopes.getState() == false ) {
-				for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
+				for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); ) {
 					OscilloscopeWaveform wf = wfi.next();
 					wf.redraw();
 					main_img_gfx.drawImage(wf.wf_img, 0, 0, null);
 				}
 			} else {
 				int y = 0;
-				for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
+				for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); ) {
 					OscilloscopeWaveform wf = wfi.next();
 					wf.redraw();
 					main_img_gfx.drawImage(wf.wf_img, 0, y, null);
@@ -435,7 +434,7 @@ class Oscilloscope extends JFrame implements
 			break;
 		case I_VS_V:
 			Graphics g = main_img_gfx.create();
-			for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
+			for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); ) {
 				OscilloscopeWaveform wf = wfi.next();
 				if ( wf.isShowing() ) {
 					wf.redraw();
@@ -478,7 +477,7 @@ class Oscilloscope extends JFrame implements
 		}
 		
 		// Do not allow duplicate elements
-		for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
+		for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); ) {
 			if ( wfi.next().elm == elm )
 				return;
 		}
@@ -522,7 +521,7 @@ class Oscilloscope extends JFrame implements
 	 */
 	public void setSelectedWaveform(OscilloscopeWaveform wf) {
 		selected_wf = wf;
-		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
+		for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); )
 			wfi.next().label.setFont(label_font);
 		wf.label.setFont(Oscilloscope.selected_label_font);
 	}
@@ -572,7 +571,7 @@ class Oscilloscope extends JFrame implements
 		
 		for ( Value v : Value.values() ) {
 			double max_abs_value = Double.MIN_VALUE;
-			for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
+			for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); ) {
 				OscilloscopeWaveform wf = wfi.next();
 				if ( wf.showingValue(v) )
 					max_abs_value = Math.max(max_abs_value, Math.max(Math.abs(wf.getPeakValue(v)), Math.abs(wf.getNegativePeakValue(v))));
@@ -602,7 +601,7 @@ class Oscilloscope extends JFrame implements
 			case X_VS_Y:	show_x_vs_y.setSelected(true);		break;
 		}
 		scope_type = new_type;
-		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
+		for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); )
 			wfi.next().setType(new_type);
 		resetGraph();
 	}
@@ -664,7 +663,7 @@ class Oscilloscope extends JFrame implements
 	 * @return true if the value is shown for any waveform, false if not
 	 */
 	public boolean showingValue(Value value) {
-		for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
+		for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); ) {
 			if ( wfi.next().showingValue(value) )
 				return true;
 		}
