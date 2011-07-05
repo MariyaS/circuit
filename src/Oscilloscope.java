@@ -26,7 +26,7 @@ class Oscilloscope extends JFrame implements
 	private static final Color grid_color = new Color(0x80,0x80,0x80);
 	
 	static final Font label_font = new Font("SansSerif", 0, 12);
-	private static final Font selected_label_font = new Font(label_font.getName(), Font.BOLD, label_font.getSize());
+	static final Font selected_label_font = new Font(label_font.getName(), Font.BOLD, label_font.getSize());
 	private static final Font grid_label_font = label_font.deriveFont(9.0f);
 	private static final Font info_font = label_font.deriveFont(10.0f);
 	private static final NumberFormat display_format = DecimalFormat.getInstance();
@@ -456,6 +456,12 @@ class Oscilloscope extends JFrame implements
 	}
 	
 	/**
+	 * Return the currently selected waveform.
+	 * @return Selected waveform
+	 */
+	public OscilloscopeWaveform getSelectedWaveform() { return selected_wf; }
+	
+	/**
 	 * Stack/unstack waveforms in scope.
 	 * @param stack True to stack, false to unstack.
 	 */
@@ -522,8 +528,16 @@ class Oscilloscope extends JFrame implements
 			case X_VS_Y:	show_x_vs_y.setSelected(true);		break;
 		}
 		scope_type = new_type;
+		for ( wfi = waveforms.iterator(); wfi.hasNext(); )
+			wfi.next().setType(new_type);
 		resetGraph();
 	}
+	
+	/**
+	 * Returns type of scope
+	 * @return VIP_VS_T, V_VS_I, or X_VS_Y
+	 */
+	public ScopeType getType() { return scope_type; }
 	
 	/**
 	 * Set time scale of scope
@@ -617,7 +631,7 @@ class Oscilloscope extends JFrame implements
 		// Reset
 		if ( e.getSource() == reset ) {
 			time_scale = DEFAULT_TIME_SCALE;
-			fitRanges();
+			resetGraph();
 		}
 		
 		// Change time scale

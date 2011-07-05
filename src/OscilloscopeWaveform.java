@@ -10,14 +10,14 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	CircuitElm elm;
 	private Oscilloscope scope;
 	
-	Color[] wave_color;
-	
 	Image wf_img;
 	private MemoryImageSource img_src;
 	private int[] pixels;
+	private Color[] wave_color;
 	private int last_column;
 	private int columns_visible;
 	private boolean redraw_needed;
+	private Oscilloscope.ScopeType type;
 	
 	private double value[];
 	private double[][] min_values;
@@ -25,7 +25,10 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	
 	JLabel label;
 	private JPopupMenu menu;
+	private JPopupMenu[] type_menus;
+	private JCheckBoxMenuItem show;
 	private JCheckBoxMenuItem show_v, show_i, show_p;
+	private Color elm_color;
 	
 	private Dimension size;
 	private int counter;
@@ -43,26 +46,63 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		for ( Oscilloscope.Value v : Oscilloscope.Value.values() )
 			wave_color[v.ordinal()] = randomColor();
 		
+		type_menus = new JPopupMenu[Oscilloscope.ScopeType.values().length];
+		elm_color = randomColor();
+		
+		type_menus[Oscilloscope.ScopeType.VIP_VS_T.ordinal()] = buildMenu_VIP_VS_T();
+		type_menus[Oscilloscope.ScopeType.V_VS_I.ordinal()] = buildMenu_V_VS_I();
+		
 		// Setup label
-		String info[] = new String[10];
-		elm.getInfo(info);
-		label = new JLabel("<html>" +  
-			info[0].substring(0, 1).toUpperCase().concat(info[0].substring(1)) +  // capitalize type of element
-			"<br>" +
-			"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.VOLTAGE.ordinal()]) + ">\u25FC V</font>\t" +
-			"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.CURRENT.ordinal()]) + ">\u25FC I</font>\t" +
-			"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.POWER.ordinal()]) + ">\u25FC P</font>"
-		);
-		label.setFont(Oscilloscope.label_font);
+		label = new JLabel();
+		setType(scope.getType());
 		
 		// Element popup menu
-		menu = buildMenu();
-		label.add(menu);
 		label.addMouseListener(this);
 		label.setPreferredSize(new Dimension(110, 30));
 		
 		// Add label to window
 		scope.add(label);
+		scope.validate();
+		scope.repaint();
+	}
+	
+	private void setLabel() {
+		String info[] = new String[10];
+		elm.getInfo(info);
+		
+		switch (type) {
+		case VIP_VS_T:
+			label.setText("<html>" +  
+					info[0].substring(0, 1).toUpperCase().concat(info[0].substring(1)) +  // capitalize type of element
+					"<br>" +
+					"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.VOLTAGE.ordinal()]) + ">\u25FC V</font>\t" +
+					"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.CURRENT.ordinal()]) + ">\u25FC I</font>\t" +
+					"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.POWER.ordinal()]) + ">\u25FC P</font>"
+				);
+			break;
+		case V_VS_I:
+			label.setText("<html><font color=#" + colorToHex(elm_color) + ">" +
+					info[0].substring(0, 1).toUpperCase().concat(info[0].substring(1)) +  // capitalize type of element
+					"</font>"
+				);
+			break;
+		case X_VS_Y:
+			break;
+		}
+		
+		if ( this == scope.getSelectedWaveform() )
+			label.setFont(Oscilloscope.selected_label_font);
+		else
+			label.setFont(Oscilloscope.label_font);
+	}
+	
+	public void setType(Oscilloscope.ScopeType new_type) {
+		type = new_type;
+		
+		setLabel();
+		
+		menu = type_menus[new_type.ordinal()];
+		
 		scope.validate();
 		scope.repaint();
 	}
@@ -291,7 +331,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	/* ********************************************************* */
 	/* Create menu (shown by right clicking on label)            */
 	/* ********************************************************* */
-	private JPopupMenu buildMenu() {
+	private JPopupMenu buildMenu_VIP_VS_T() {
 		JPopupMenu menu = new JPopupMenu();
 		
 		// Checkboxes to tell which values to show
@@ -309,6 +349,28 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			color_menu.add(mi);
 		}
 		menu.add(color_menu);
+		menu.addSeparator();
+		
+		// Remove element from scope
+		JMenuItem removeItem = new JMenuItem("Remove from Scope");
+		removeItem.addActionListener(this);
+		removeItem.setActionCommand("REMOVE");
+		menu.add(removeItem);
+		
+		return menu;
+	}
+	
+	private JPopupMenu buildMenu_V_VS_I() {
+		JPopupMenu menu = new JPopupMenu();
+		
+		menu.add(show = new JCheckBoxMenuItem("Show"));
+		show.setState(true); // show this element by default
+		menu.addSeparator();
+		
+		JMenuItem mi = new JMenuItem("Change Color");
+		mi.setActionCommand("SET_COLOR");
+		mi.addActionListener(this);
+		menu.add(mi);
 		menu.addSeparator();
 		
 		// Remove element from scope
@@ -347,17 +409,16 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			scope.removeElement(this);
 		
 		else if ( e.getActionCommand().substring(0, 9).equals("SET_COLOR") ) {
-			int v = Oscilloscope.Value.valueOf(e.getActionCommand().substring(10)).ordinal();
-			wave_color[v] = JColorChooser.showDialog(this.scope, "Choose New Color", wave_color[v]);
-			String info[] = new String[10];
-			elm.getInfo(info);
-			label.setText("<html>" +  
-					info[0].substring(0, 1).toUpperCase().concat(info[0].substring(1)) +  // capitalize type of element
-					"<br>" +
-					"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.VOLTAGE.ordinal()]) + ">\u25FC V</font>\t" +
-					"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.CURRENT.ordinal()]) + ">\u25FC I</font>\t" +
-					"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.POWER.ordinal()]) + ">\u25FC P</font>"
-				);
+			switch (type) {
+			case VIP_VS_T:
+				int v = Oscilloscope.Value.valueOf(e.getActionCommand().substring(10)).ordinal();
+				wave_color[v] = JColorChooser.showDialog(scope, "Choose New Color", wave_color[v]);
+				break;
+			case V_VS_I:
+				elm_color = JColorChooser.showDialog(scope, "Choose New Color", elm_color);
+				break;
+			}
+			setLabel();
 		}
 	}
 }
