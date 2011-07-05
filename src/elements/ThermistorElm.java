@@ -4,12 +4,13 @@
 
 import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
 class ThermistorElm extends CircuitElm {
     double minresistance, maxresistance;
     double resistance;
-    Scrollbar slider;
-    Label label;
+    JSlider slider;
+    JLabel label;
     public ThermistorElm(int xx, int yy) {
 	super(xx, yy);
 	maxresistance = 1e9;
@@ -30,10 +31,10 @@ class ThermistorElm extends CircuitElm {
     }
     Point ps3, ps4;
     void createSlider() {
-	sim.main.add(label = new Label("Temperature", Label.CENTER));
+	CirSim.main.add(label = new JLabel("Temperature", JLabel.CENTER));
 	int value = 50;
-	sim.main.add(slider = new Scrollbar(Scrollbar.HORIZONTAL, value, 1, 0, 101));
-	sim.main.validate();
+	CirSim.main.add(slider = new JSlider(JSlider.HORIZONTAL, 0, 101, value));
+	CirSim.main.validate();
     }
     void setPoints() {
 	super.setPoints();
@@ -42,8 +43,9 @@ class ThermistorElm extends CircuitElm {
 	ps4 = new Point();
     }
     void delete() {
-	sim.main.remove(label);
-	sim.main.remove(slider);
+	CirSim.main.remove(label);
+	CirSim.main.remove(slider);
+	CirSim.main.validate();
     }
     
     void draw(Graphics g) {

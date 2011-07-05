@@ -1,13 +1,14 @@
 import java.awt.*;
-import java.awt.event.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
+import javax.swing.event.*;
 
-class PotElm extends CircuitElm implements AdjustmentListener {
+class PotElm extends CircuitElm implements ChangeListener {
     double position, maxResistance, resistance1, resistance2;
     double current1, current2, current3;
     double curcount1, curcount2, curcount3;
-    Scrollbar slider;
-    Label label;
+    JSlider slider;
+    JLabel label;
     String sliderText;
     public PotElm(int xx, int yy) {
 	super(xx, yy);
@@ -37,19 +38,20 @@ class PotElm extends CircuitElm implements AdjustmentListener {
     String dump() { return super.dump() + " " + maxResistance + " " +
 	    position + " " + sliderText; }
     void createSlider() {
-	sim.main.add(label = new Label(sliderText, Label.CENTER));
+	CirSim.main.add(label = new JLabel(sliderText, JLabel.CENTER));
 	int value = (int) (position*100);
-	sim.main.add(slider = new Scrollbar(Scrollbar.HORIZONTAL, value, 1, 0, 101));
-	sim.main.validate();
-	slider.addAdjustmentListener(this);
+	CirSim.main.add(slider = new JSlider(JSlider.HORIZONTAL, 0, 101, value));
+	CirSim.main.validate();
+	slider.addChangeListener(this);
     }
-    public void adjustmentValueChanged(AdjustmentEvent e) {
-	sim.analyzeFlag = true;
-	setPoints();
+    public void stateChanged(ChangeEvent e) {
+    	sim.analyzeFlag = true;
+    	setPoints();
     }
     void delete() {
-	sim.main.remove(label);
-	sim.main.remove(slider);
+	CirSim.main.remove(label);
+	CirSim.main.remove(slider);
+	CirSim.main.validate();
     }
     Point post3, corner2, arrowPoint, midpoint, arrow1, arrow2;
     Point ps3, ps4;

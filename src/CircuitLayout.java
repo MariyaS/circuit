@@ -80,11 +80,11 @@ class CircuitLayout implements LayoutManager {
 					m.setLocation(componentLocations[i]);
 					m.setSize(d);
 				} else {
-					if (m instanceof Label) {
+					if (m instanceof JLabel) {
 						m.setLocation(p);
 						m.setForeground(Color.BLACK);
 					}
-					else if ( m instanceof Scrollbar ) {
+					else if (m instanceof JSlider) {
 						m.setLocation(p.x, p.y+15);
 						p.translate(sbarwidth + 10, 0);
 					}
