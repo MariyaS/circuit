@@ -1,12 +1,13 @@
 import java.awt.*;
 import java.awt.event.*;
+import javax.swing.*;
 
-class ImportDialog extends Dialog implements ActionListener {
+class ImportDialog extends JDialog implements ActionListener {
 	private static final long serialVersionUID = 6440664629044363653L;
 	
 	CirSim cframe;
-    Button importButton, closeButton;
-    TextArea text;
+    JButton importButton, closeButton;
+    JTextArea text;
     boolean isURL;
 	
     ImportDialog(CirSim f, String str, boolean url) {
@@ -14,14 +15,14 @@ class ImportDialog extends Dialog implements ActionListener {
 		isURL = url;
 		cframe = f;
 		setLayout(new ImportDialogLayout());
-		add(text = new TextArea(str, 10, 60, TextArea.SCROLLBARS_BOTH));
-		importButton = new Button("Import");
+		add(new JScrollPane(text = new JTextArea(str, 10, 60)));
+		importButton = new JButton("Import");
 		if (!isURL)
 		    add(importButton);
 		importButton.addActionListener(this);
-		add(closeButton = new Button("Close"));
+		add(closeButton = new JButton("Close"));
 		closeButton.addActionListener(this);
-		Point x = cframe.main.getLocationOnScreen();
+		Point x = CirSim.main.getLocationOnScreen();
 		setSize(400, 300);
 		Dimension d = getSize();
 		setLocation(x.x + (cframe.winSize.width-d.width)/2,
@@ -45,7 +46,7 @@ class ImportDialog extends Dialog implements ActionListener {
 		if (ev.getID() == Event.WINDOW_DESTROY) {
 		    CirSim.main.requestFocus();
 		    setVisible(false);
-		    cframe.impDialog = null;
+		    CirSim.impDialog = null;
 		}
 		super.processEvent(ev);
     }
