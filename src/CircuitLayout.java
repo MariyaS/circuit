@@ -28,7 +28,7 @@ class CircuitLayout implements LayoutManager {
 		
 		// getComponent(0) returns the main circuit canvas 
 		target.getComponent(0).setLocation(insets.left, insets.top+45);
-		target.getComponent(0).setSize(targetw, targeth-45);
+		target.getComponent(0).setSize(targetw, targeth-75);
 		
 		// target.getComponent
 		// i    component
@@ -59,7 +59,7 @@ class CircuitLayout implements LayoutManager {
 		
 		// Set positions and sizes of all GUI elements belonging to the container
 		System.out.println(target.getComponentCount());
-		Point p = new Point(topleft.x+targetw-(sbarwidth+5), topleft.y+40);
+		Point p = new Point(topleft.x, topleft.y+targeth-30);
 		for (int i = 1; i < target.getComponentCount(); i++) {
 		    Component m = target.getComponent(i);
 		    if (m.isVisible()) {
@@ -80,9 +80,16 @@ class CircuitLayout implements LayoutManager {
 					m.setLocation(componentLocations[i]);
 					m.setSize(d);
 				} else {
-					m.setLocation(p);
-					m.setSize(d);
-					p.translate(0, 20);
+					if (m instanceof Label) {
+						m.setLocation(p);
+						m.setForeground(Color.BLACK);
+					}
+					else if ( m instanceof Scrollbar ) {
+						m.setLocation(p.x, p.y+15);
+						p.translate(sbarwidth + 10, 0);
+					}
+					m.setSize(sbarwidth, 15);
+					
 				}
 		    }
 		}
