@@ -436,8 +436,10 @@ class Oscilloscope extends JFrame implements
 		case I_VS_V:
 			for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
 				OscilloscopeWaveform wf = wfi.next();
-				wf.redraw();
-				main_img_gfx.drawImage(wf.wf_img, 0, 0, null);
+				if ( wf.isShowing() ) {
+					wf.redraw();
+					main_img_gfx.drawImage(wf.wf_img, 0, 0, null);
+				}
 			}
 		}
 		

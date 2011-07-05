@@ -368,6 +368,10 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		show_i.setState((flags & 1) != 0);
 	}
 	
+	public boolean isShowing() {
+		return show.getState();
+	}
+	
 	public boolean showingValue(Oscilloscope.Value value) {
 		switch(value) {
 			case VOLTAGE:	return show_v.getState();
