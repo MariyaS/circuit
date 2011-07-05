@@ -171,7 +171,7 @@ class LegacyScopeSupport {
 				o.setRange(Oscilloscope.Value.VOLTAGE, lsi.voltage_range);
 				o.setRange(Oscilloscope.Value.CURRENT, lsi.current_range);
 				if ( lsi.plot_2d ) {
-					o.setType(Oscilloscope.ScopeType.V_VS_I);
+					o.setType(Oscilloscope.ScopeType.I_VS_V);
 				} else if ( lsi.plot_xy ) {
 					o.setType(Oscilloscope.ScopeType.X_VS_Y);
 				} else {

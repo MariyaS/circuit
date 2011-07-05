@@ -50,7 +50,7 @@ class Oscilloscope extends JFrame implements
 	private int time_scale;
 	private double[] range;
 	
-	static enum ScopeType { VIP_VS_T, V_VS_I, X_VS_Y }
+	static enum ScopeType { VIP_VS_T, I_VS_V, X_VS_Y }
 	private ScopeType scope_type;
 	
 	private static final int DEFAULT_TIME_SCALE = 64;
@@ -142,7 +142,7 @@ class Oscilloscope extends JFrame implements
 				gfx.drawLine(0, canvas_size.height-1, canvas_size.width, canvas_size.height-1);
 			}
 			break;
-		case V_VS_I:
+		case I_VS_V:
 			gfx.drawRect(0, canvas_size.height/2, canvas_size.width, 1);
 			gfx.drawRect(canvas_size.width/2, 0, 1, canvas_size.height);
 			break;
@@ -204,7 +204,7 @@ class Oscilloscope extends JFrame implements
 					gfx.drawLine(0, i * canvas_size.height/8, canvas_size.width, i * canvas_size.height/8);
 			}
 			break;
-		case V_VS_I:
+		case I_VS_V:
 			for ( int i = 1; i <= 7; i++ ) {
 				gfx.drawLine(0, i * canvas_size.height/8, canvas_size.width, i * canvas_size.height/8);
 				gfx.drawLine(i * canvas_size.width/8, 0, i * canvas_size.width/8, canvas_size.height);
@@ -275,28 +275,29 @@ class Oscilloscope extends JFrame implements
 				}
 			}
 			break;
-		case V_VS_I:
+		case I_VS_V:
 			FontMetrics fm = gfx.getFontMetrics();
 			
 			String str = getUnitText(range[Value.VOLTAGE.ordinal()]/2, value_units[Value.VOLTAGE.ordinal()]);
 			Rectangle2D r = gfx.getFontMetrics().getStringBounds(str, gfx);
-			gfx.clearRect(canvas_size.width/2+3, -fm.getDescent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
-			gfx.drawString(str, canvas_size.width/2 + 3, fm.getAscent());
-			
-			str = getUnitText(-range[Value.VOLTAGE.ordinal()]/2, value_units[Value.VOLTAGE.ordinal()]);
-			r = gfx.getFontMetrics().getStringBounds(str, gfx);
-			gfx.clearRect(canvas_size.width/2+3, canvas_size.height-fm.getAscent()-fm.getDescent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
-			gfx.drawString(str, canvas_size.width/2 + 3, canvas_size.height-fm.getDescent());
-			
-			str = getUnitText(-range[Value.CURRENT.ordinal()]/2, value_units[Value.CURRENT.ordinal()]);
-			r = gfx.getFontMetrics().getStringBounds(str, gfx);
 			gfx.clearRect(3, canvas_size.height/2-fm.getDescent()-fm.getAscent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
 			gfx.drawString(str,3, canvas_size.height/2-fm.getDescent());
 			
-			str = getUnitText(-range[Value.CURRENT.ordinal()]/2, value_units[Value.CURRENT.ordinal()]);
+			
+			str = getUnitText(-range[Value.VOLTAGE.ordinal()]/2, value_units[Value.VOLTAGE.ordinal()]);
 			r = gfx.getFontMetrics().getStringBounds(str, gfx);
 			gfx.clearRect(canvas_size.width-3-(int) Math.ceil(r.getWidth()), canvas_size.height/2-fm.getDescent()-fm.getAscent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
 			gfx.drawString(str,canvas_size.width-3-(int) Math.ceil(r.getWidth()), canvas_size.height/2-fm.getDescent());
+			
+			str = getUnitText(-range[Value.CURRENT.ordinal()]/2, value_units[Value.CURRENT.ordinal()]);
+			r = gfx.getFontMetrics().getStringBounds(str, gfx);
+			gfx.clearRect(canvas_size.width/2+3, -fm.getDescent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
+			gfx.drawString(str, canvas_size.width/2 + 3, fm.getAscent());
+			
+			str = getUnitText(-range[Value.CURRENT.ordinal()]/2, value_units[Value.CURRENT.ordinal()]);
+			r = gfx.getFontMetrics().getStringBounds(str, gfx);
+			gfx.clearRect(canvas_size.width/2+3, canvas_size.height-fm.getAscent()-fm.getDescent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
+			gfx.drawString(str, canvas_size.width/2 + 3, canvas_size.height-fm.getDescent());
 			break;
 		}
 	}
@@ -432,7 +433,7 @@ class Oscilloscope extends JFrame implements
 				
 			}
 			break;
-		case V_VS_I:
+		case I_VS_V:
 			for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
 				OscilloscopeWaveform wf = wfi.next();
 				wf.redraw();
@@ -589,7 +590,7 @@ class Oscilloscope extends JFrame implements
 	public void setType(ScopeType new_type) {;
 		switch (new_type) {
 			case VIP_VS_T:	show_vip_vs_t.setSelected(true);	break;
-			case V_VS_I:	show_v_vs_i.setSelected(true);		break;
+			case I_VS_V:	show_v_vs_i.setSelected(true);		break;
 			case X_VS_Y:	show_x_vs_y.setSelected(true);		break;
 		}
 		scope_type = new_type;
@@ -733,7 +734,7 @@ class Oscilloscope extends JFrame implements
 		else if ( e.getSource() == show_vip_vs_t )
 			setType(ScopeType.VIP_VS_T);
 		else if ( e.getSource() == show_v_vs_i )
-			setType(ScopeType.V_VS_I);
+			setType(ScopeType.I_VS_V);
 		else if ( e.getSource() == show_x_vs_y )
 			setType(ScopeType.X_VS_Y);
 		
@@ -817,7 +818,7 @@ class Oscilloscope extends JFrame implements
 		show_options = new ButtonGroup();
 		m.add(show_vip_vs_t = new JRadioButtonMenuItem("Voltage/Current/Power"));
 		show_vip_vs_t.setActionCommand("SHOW_VCP");
-		m.add(show_v_vs_i = new JRadioButtonMenuItem("Plot V vs I"));
+		m.add(show_v_vs_i = new JRadioButtonMenuItem("Plot I vs V"));
 		show_v_vs_i.setActionCommand("SHOW_V_VS_I");
 		m.add(show_x_vs_y = new JRadioButtonMenuItem("Plot X vs Y"));
 		show_x_vs_y.setActionCommand("SHOW_X_VS_Y");

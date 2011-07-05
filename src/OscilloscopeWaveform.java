@@ -52,7 +52,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		elm_color = randomColor();
 		
 		type_menus[Oscilloscope.ScopeType.VIP_VS_T.ordinal()] = buildMenu_VIP_VS_T();
-		type_menus[Oscilloscope.ScopeType.V_VS_I.ordinal()] = buildMenu_V_VS_I();
+		type_menus[Oscilloscope.ScopeType.I_VS_V.ordinal()] = buildMenu_V_VS_I();
 		
 		// Setup label
 		label = new JLabel();
@@ -82,7 +82,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 					"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.POWER.ordinal()]) + ">\u25FC P</font>"
 				);
 			break;
-		case V_VS_I:
+		case I_VS_V:
 			label.setText("<html><font color=#" + colorToHex(elm_color) + ">" +
 					info[0].substring(0, 1).toUpperCase().concat(info[0].substring(1)) +  // capitalize type of element
 					"</font>"
@@ -184,11 +184,11 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			counter = 0;
 			redraw_needed = true;
 			
-			if ( scope.getType() == Oscilloscope.ScopeType.V_VS_I) {
-				double avg_i = (max_values[Oscilloscope.Value.CURRENT.ordinal()][mod(last_column,size.width)] + min_values[Oscilloscope.Value.CURRENT.ordinal()][mod(last_column,size.width)]) / 2;
-				int current_x = (int) Math.round(size.width/2 + avg_i / scope.getRange(Oscilloscope.Value.CURRENT) * size.width);
-				double avg_v = (max_values[Oscilloscope.Value.VOLTAGE.ordinal()][mod(last_column,size.width)] + min_values[Oscilloscope.Value.VOLTAGE.ordinal()][mod(last_column,size.width)]) / 2;
-				int current_y = (int) Math.round(size.height/2 - avg_v / scope.getRange(Oscilloscope.Value.VOLTAGE) * size.height);
+			if ( scope.getType() == Oscilloscope.ScopeType.I_VS_V ) {
+				double avg_i = (max_values[Oscilloscope.Value.CURRENT.ordinal()][mod(last_column-1,size.width)] + min_values[Oscilloscope.Value.CURRENT.ordinal()][mod(last_column,size.width)]) / 2;
+				int current_y = (int) Math.round(size.height/2 + avg_i / scope.getRange(Oscilloscope.Value.CURRENT) * size.height);
+				double avg_v = (max_values[Oscilloscope.Value.VOLTAGE.ordinal()][mod(last_column-1,size.width)] + min_values[Oscilloscope.Value.VOLTAGE.ordinal()][mod(last_column,size.width)]) / 2;
+				int current_x = (int) Math.round(size.width/2 - avg_v / scope.getRange(Oscilloscope.Value.VOLTAGE) * size.width);
 				
 				if ( last_draw_point.x != -1 && last_draw_point.y != -1 ) {
 					if (last_draw_point.x == current_x && last_draw_point.y == current_y) {
@@ -247,7 +247,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			
 			img_src.newPixels();
 			break;
-		case V_VS_I:
+		case I_VS_V:
 			img_src.newPixels();
 			break;
 		}
@@ -467,7 +467,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 				int v = Oscilloscope.Value.valueOf(e.getActionCommand().substring(10)).ordinal();
 				wave_color[v] = JColorChooser.showDialog(scope, "Choose New Color", wave_color[v]);
 				break;
-			case V_VS_I:
+			case I_VS_V:
 				Color old_color = elm_color;
 				elm_color = JColorChooser.showDialog(scope, "Choose New Color", elm_color);
 				for ( int i = 0; i < pixels.length; i++ ) {
