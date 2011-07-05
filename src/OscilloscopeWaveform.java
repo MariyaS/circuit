@@ -255,6 +255,10 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		redraw_needed = false;
 	}
 	
+	public Point drawPosition() {
+		return last_draw_point;
+	}
+	
 	private int mod(int x, int y) {
 	    int result = x % y;
 	    if (result < 0)
@@ -380,6 +384,8 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		}
 		return false;
 	}
+	
+	public Color getColor() { return elm_color; }
 	
 	private Color getColor(Oscilloscope.Value value) {
 		return wave_color[value.ordinal()];

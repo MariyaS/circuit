@@ -109,13 +109,13 @@ class Oscilloscope extends JFrame implements
 	 * Also resizes the waveforms if needed after a stack/unstack.
 	 */
 	private void resetGraph() {
-		if ( stack_scopes.getState() == false ) {
-			for ( wfi = waveforms.iterator(); wfi.hasNext(); )
-				wfi.next().reset(canvas_size);
-		} else {
+		if ( scope_type == ScopeType.VIP_VS_T && stack_scopes.getState() == true ) {
 			Dimension wf_size = new Dimension(canvas_size.width, canvas_size.height / waveforms.size());
 			for ( wfi = waveforms.iterator(); wfi.hasNext(); )
 				wfi.next().reset(wf_size);
+		} else {
+			for ( wfi = waveforms.iterator(); wfi.hasNext(); )
+				wfi.next().reset(canvas_size);
 		}
 		main_img_gfx.clearRect(0, 0, canvas_size.width, canvas_size.height);
 	}
@@ -434,11 +434,15 @@ class Oscilloscope extends JFrame implements
 			}
 			break;
 		case I_VS_V:
+			Graphics g = main_img_gfx.create();
 			for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
 				OscilloscopeWaveform wf = wfi.next();
 				if ( wf.isShowing() ) {
 					wf.redraw();
 					main_img_gfx.drawImage(wf.wf_img, 0, 0, null);
+					Point p = wf.drawPosition();
+					g.setColor(wf.getColor());
+					g.fillOval(p.x-3, p.y-3, 7, 7);
 				}
 			}
 		}
@@ -535,6 +539,8 @@ class Oscilloscope extends JFrame implements
 	 */
 	public void setStack(boolean stack) {
 		stack_scopes.setState(stack);
+		if (scope_type == ScopeType.VIP_VS_T)
+			resetGraph();
 	}
 	
 	/**
@@ -741,7 +747,7 @@ class Oscilloscope extends JFrame implements
 			setType(ScopeType.X_VS_Y);
 		
 		// Stack scopes
-		else if ( e.getSource() == stack_scopes )
+		else if ( e.getSource() == stack_scopes && scope_type == ScopeType.VIP_VS_T )
 			resetGraph();
 	}
 	
