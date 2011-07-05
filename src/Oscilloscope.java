@@ -67,7 +67,8 @@ class Oscilloscope extends JFrame implements
 	private JMenuItem fit_ranges;
 	private ButtonGroup show_options;
 	private JRadioButtonMenuItem show_vip_vs_t, show_v_vs_i, show_x_vs_y;
-	private JCheckBoxMenuItem show_peak, show_n_peak, show_freq, show_grid;
+	private JCheckBoxMenuItem show_peak, show_n_peak, show_freq;
+	private JCheckBoxMenuItem show_grid, show_labels;
 	private JCheckBoxMenuItem stack_scopes;
 	
 	Oscilloscope(CirSim s) {
@@ -120,6 +121,35 @@ class Oscilloscope extends JFrame implements
 	}
 	
 	/**
+	 * Draw scope axes.
+	 * In v/i/p mode, draws X axes
+	 * In v/i/p stacked mode, also draws separators between waveforms
+	 * In v vs i mode, draws X and Y axes
+	 * @param gfx The Graphics object to draw on
+	 */
+	private void drawAxes(Graphics gfx) {
+		switch (scope_type) {
+		case VIP_VS_T:
+			if ( stack_scopes.getState() == false)
+				gfx.drawRect(0, canvas_size.height/2, canvas_size.width, 1);
+			else {
+				for ( int i = 0; i < waveforms.size(); i++ ) {
+					int y = i * canvas_size.height / waveforms.size();
+					gfx.drawLine(0, y, canvas_size.width, y);
+					y = i * canvas_size.height / waveforms.size() + canvas_size.height / waveforms.size() / 2;
+					gfx.drawRect(0, y, canvas_size.width, 1);
+				}
+				gfx.drawLine(0, canvas_size.height-1, canvas_size.width, canvas_size.height-1);
+			}
+			break;
+		case V_VS_I:
+			gfx.drawRect(0, canvas_size.height/2, canvas_size.width, 1);
+			gfx.drawRect(canvas_size.width/2, 0, 1, canvas_size.height);
+			break;
+		}
+	}
+	
+	/**
 	 * Draw gridlines for the time axis.
 	 * Labels every other line.
 	 * @param gfx The graphics object to draw on.
@@ -140,18 +170,7 @@ class Oscilloscope extends JFrame implements
 		
 		double tx = sim.t - (sim.t % grid_step);
 		
-		// Draw X axis
-		if ( stack_scopes.getState() == false ) {
-			gfx.drawRect(0, canvas_size.height/2, canvas_size.width, 1);
-		} else {
-			int y = canvas_size.height / waveforms.size() / 2;
-			for ( int i = 0; i < waveforms.size(); i++ ) {
-				gfx.drawRect(0, y, canvas_size.width, 1);
-				y+= canvas_size.height / waveforms.size();
-			}
-		}
-		
-		// Draw grid lines parallel to Y axis
+		// Draw grid lines
 		double t;
 		int lx = canvas_size.width;
 		int ln;
@@ -171,73 +190,114 @@ class Oscilloscope extends JFrame implements
 	}
 	
 	/**
-	 * Draw gridlines for Y axis.
-	 * Draws 8 lines.  Also labels the lines based on which values are shown in the scope.
+	 * Draw gridlines.
+	 * In v/i/p vs t unstacked mode, draws 8 gridlines parallel to X axis
+	 * In v/i/p vs t stacked mode, does nothing
+	 * In v vs i mode, draws 8 gridlines in each direction
 	 * @param gfx The graphics object to draw on.
 	 */
-	private void drawHorizontalGridlines(Graphics gfx) {
-		
-		if ( stack_scopes.getState() == false ) {
-			// Draw lines
-			for ( int i = 1; i <= 7; i++ )
+	private void drawGridlines(Graphics gfx) {
+		switch ( scope_type ) {
+		case VIP_VS_T:
+			if ( stack_scopes.getState() == false ) {
+				for ( int i = 1; i <= 7; i++ )
+					gfx.drawLine(0, i * canvas_size.height/8, canvas_size.width, i * canvas_size.height/8);
+			}
+			break;
+		case V_VS_I:
+			for ( int i = 1; i <= 7; i++ ) {
 				gfx.drawLine(0, i * canvas_size.height/8, canvas_size.width, i * canvas_size.height/8);
-			
-			// Draw labels
-			if ( showingValue(Value.VOLTAGE) || showingValue(Value.CURRENT) || showingValue(Value.POWER) ) {
-				String str;
-				Rectangle2D r;
-				for ( int i = 3; i >= -3; i-- ) {
-					str = "";
-					if ( i == 0 ) {
-						str = "0.00";
-					} else {
-						for ( Value v : Value.values() ) {
-							if ( showingValue(v) )
-								str += getUnitText(range[v.ordinal()]/8 * i, value_units[v.ordinal()]) + " | ";
+				gfx.drawLine(i * canvas_size.width/8, 0, i * canvas_size.width/8, canvas_size.height);
+			}
+			break;
+		}
+	}
+	
+	/**
+	 * Draw gridline labels
+	 * In v/i/p unstacked mode, draws labels at each gridline with the value at that line
+	 * In v/i/p stacked mode, draws min/max value of each waveform
+	 * In v vs i mode, draws min/max voltage and current
+	 * @param gfx The graphics object to draw on
+	 */
+	private void drawGridLabels(Graphics gfx) {
+		switch (scope_type) {
+		case VIP_VS_T:
+			if ( stack_scopes.getState() == false ) {
+				if ( showingValue(Value.VOLTAGE) || showingValue(Value.CURRENT) || showingValue(Value.POWER) ) {
+					String str;
+					Rectangle2D r;
+					for ( int i = 3; i >= -3; i-- ) {
+						str = "";
+						if ( i == 0 ) {
+							str = "0.00";
+						} else {
+							for ( Value v : Value.values() ) {
+								if ( showingValue(v) )
+									str += getUnitText(range[v.ordinal()]/8 * i, value_units[v.ordinal()]) + " | ";
+							}
 						}
+						str = str.substring(0, str.length()-3);
+						r = gfx.getFontMetrics().getStringBounds(str, gfx);
+						int offset = (i > 0) ? 5 : 2;
+						
+						// Clear area behind label
+						gfx.clearRect(3, canvas_size.height/2-canvas_size.height/8*i-offset-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
+						
+						gfx.drawString(str, 3, Math.round(canvas_size.height/2-canvas_size.height/8*i-offset));
 					}
-					str = str.substring(0, str.length()-3);
-					r = gfx.getFontMetrics().getStringBounds(str, gfx);
-					int offset = (i > 0) ? 5 : 2;
+				}
+			} else {
+				for ( int i = 0; i < waveforms.size(); i++ ) {
+					String str = "";
+					for ( Value v : Value.values() ) {
+						if ( showingValue(v) )
+							str += getUnitText(range[v.ordinal()]/2, value_units[v.ordinal()]) + " | ";
+					}
+					str = str.substring(0,str.length()-3);
 					
-					// Clear area behind label
-					gfx.clearRect(3, canvas_size.height/2-canvas_size.height/8*i-offset-(int) Math.ceil(r.getHeight()), (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight())+2);
+					Rectangle2D r = gfx.getFontMetrics().getStringBounds(str, gfx);
+					gfx.clearRect(3, i * canvas_size.height / waveforms.size()+2, (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight()));
+					gfx.drawString(str, 3, i * canvas_size.height / waveforms.size() + (int) Math.ceil(r.getHeight()));
+				}
+				
+				for ( int i = 1; i <= waveforms.size(); i++ ) {
+					String str = "";
+					for ( Value v : Value.values() ) {
+						if ( showingValue(v) )
+							str += getUnitText(-range[v.ordinal()]/2, value_units[v.ordinal()]) + " | ";
+					}
+					str = str.substring(0,str.length()-3);
 					
-					gfx.drawString(str, 3, Math.round(canvas_size.height/2-canvas_size.height/8*i-offset));
+					Rectangle2D r = gfx.getFontMetrics().getStringBounds(str, gfx);
+					gfx.clearRect(3, i * canvas_size.height / waveforms.size() - (int) Math.ceil(r.getHeight()) - 1, (int) Math.ceil(r.getWidth()) + 2, (int) Math.ceil(r.getHeight()));
+					gfx.drawString(str, 3, i * canvas_size.height / waveforms.size() - 3);
 				}
 			}
-		} else {
-			for ( int i = 0; i < waveforms.size(); i++ ) {
-				int y = i * canvas_size.height / waveforms.size();
-				gfx.drawLine(0, y, canvas_size.width, y);
-			}
-			gfx.drawLine(0, canvas_size.height-1, canvas_size.width, canvas_size.height-1);
+			break;
+		case V_VS_I:
+			FontMetrics fm = gfx.getFontMetrics();
 			
-			for ( int i = 0; i < waveforms.size(); i++ ) {
-				String str = "";
-				for ( Value v : Value.values() ) {
-					if ( showingValue(v) )
-						str += getUnitText(range[v.ordinal()]/2, value_units[v.ordinal()]) + " | ";
-				}
-				str = str.substring(0,str.length()-3);
-				
-				Rectangle2D r = gfx.getFontMetrics().getStringBounds(str, gfx);
-				gfx.clearRect(3, i * canvas_size.height / waveforms.size()+2, (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight()));
-				gfx.drawString(str, 3, i * canvas_size.height / waveforms.size() + (int) Math.ceil(r.getHeight()));
-			}
+			String str = getUnitText(range[Value.VOLTAGE.ordinal()]/2, value_units[Value.VOLTAGE.ordinal()]);
+			Rectangle2D r = gfx.getFontMetrics().getStringBounds(str, gfx);
+			gfx.clearRect(canvas_size.width/2+3, -fm.getDescent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
+			gfx.drawString(str, canvas_size.width/2 + 3, fm.getAscent());
 			
-			for ( int i = 1; i <= waveforms.size(); i++ ) {
-				String str = "";
-				for ( Value v : Value.values() ) {
-					if ( showingValue(v) )
-						str += getUnitText(-range[v.ordinal()]/2, value_units[v.ordinal()]) + " | ";
-				}
-				str = str.substring(0,str.length()-3);
-				
-				Rectangle2D r = gfx.getFontMetrics().getStringBounds(str, gfx);
-				gfx.clearRect(3, i * canvas_size.height / waveforms.size() - (int) Math.ceil(r.getHeight()) - 3, (int) Math.ceil(r.getWidth()), (int) Math.ceil(r.getHeight()));
-				gfx.drawString(str, 3, i * canvas_size.height / waveforms.size() - 3);
-			}
+			str = getUnitText(-range[Value.VOLTAGE.ordinal()]/2, value_units[Value.VOLTAGE.ordinal()]);
+			r = gfx.getFontMetrics().getStringBounds(str, gfx);
+			gfx.clearRect(canvas_size.width/2+3, canvas_size.height-fm.getAscent()-fm.getDescent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
+			gfx.drawString(str, canvas_size.width/2 + 3, canvas_size.height-fm.getDescent());
+			
+			str = getUnitText(-range[Value.CURRENT.ordinal()]/2, value_units[Value.CURRENT.ordinal()]);
+			r = gfx.getFontMetrics().getStringBounds(str, gfx);
+			gfx.clearRect(3, canvas_size.height/2-fm.getDescent()-fm.getAscent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
+			gfx.drawString(str,3, canvas_size.height/2-fm.getDescent());
+			
+			str = getUnitText(-range[Value.CURRENT.ordinal()]/2, value_units[Value.CURRENT.ordinal()]);
+			r = gfx.getFontMetrics().getStringBounds(str, gfx);
+			gfx.clearRect(canvas_size.width-3-(int) Math.ceil(r.getWidth()), canvas_size.height/2-fm.getDescent()-fm.getAscent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
+			gfx.drawString(str,canvas_size.width-3-(int) Math.ceil(r.getWidth()), canvas_size.height/2-fm.getDescent());
+			break;
 		}
 	}
 	
@@ -344,26 +404,23 @@ class Oscilloscope extends JFrame implements
 	 */
 	public void drawScope(Graphics canvas_gfx) {		
 		
+		// Clear main image
+		main_img_gfx.clearRect(0, 0, canvas_size.width, canvas_size.height);
+		
+		drawAxes(main_img_gfx);
+		if ( show_grid.getState() )
+			drawGridlines(main_img_gfx);
+		
 		switch (scope_type) {
 		case VIP_VS_T:
-		
-			// Clear main image
-			main_img_gfx.clearRect(0, 0, canvas_size.width, canvas_size.height);
-			
-			// Draw gridlines
 			drawTimeGridlines(main_img_gfx);
 			
-			
-			if ( show_grid.getState() )
-				drawHorizontalGridlines(main_img_gfx);
-			
-			if ( stack_scopes.getState() == false ) {	
+			if ( stack_scopes.getState() == false ) {
 				for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
 					OscilloscopeWaveform wf = wfi.next();
 					wf.redraw();
 					main_img_gfx.drawImage(wf.wf_img, 0, 0, null);
 				}
-			
 			} else {
 				int y = 0;
 				for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
@@ -374,10 +431,18 @@ class Oscilloscope extends JFrame implements
 				}
 				
 			}
-			
 			break;
+		case V_VS_I:
+			for ( wfi = waveforms.iterator(); wfi.hasNext(); ) {
+				OscilloscopeWaveform wf = wfi.next();
+				wf.redraw();
+				main_img_gfx.drawImage(wf.wf_img, 0, 0, null);
+			}
 		}
-				
+		
+		if ( show_labels.getState() )
+			drawGridLabels(main_img_gfx);
+		
 		// Clear info area
 		info_img_gfx.clearRect(0, 0, info_img.getWidth(), info_img.getHeight());
 		
@@ -769,6 +834,8 @@ class Oscilloscope extends JFrame implements
 		m.addSeparator();
 		m.add(show_grid = new JCheckBoxMenuItem("Gridlines"));
 		show_grid.setState(true);
+		m.add(show_labels = new JCheckBoxMenuItem("Grid Labels"));
+		show_labels.setState(true);
 		
 		m = new JMenu("Stack");
 		mb.add(m);

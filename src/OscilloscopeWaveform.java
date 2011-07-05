@@ -16,6 +16,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	private Color[] wave_color;
 	private int last_column;
 	private int columns_visible;
+	private Point last_draw_point;
 	private boolean redraw_needed;
 	private Oscilloscope.ScopeType type;
 	
@@ -36,6 +37,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	OscilloscopeWaveform( CircuitElm e, Oscilloscope o ) {
 		elm = e;
 		scope = o;
+		last_draw_point = new Point(-1, -1);
 		reset(scope.canvas_size);
 		
 		// Allocate memory for storing current values
@@ -140,6 +142,9 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		Arrays.fill(pixels, 0);
 		img_src.newPixels();
 		
+		last_draw_point.x = -1;
+		last_draw_point.y = -1;
+		
 		last_column = 0;
 		columns_visible = 0;
 		setLastColumn();
@@ -169,6 +174,8 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			if ( value[n] < min_values[n][last_column] )
 				min_values[n][last_column] = value[n];
 		}
+		
+		
 
 		if ( counter == scope.getTimeScale() ) {
 			last_column = mod(last_column + 1, size.width);
@@ -176,6 +183,45 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			setLastColumn();
 			counter = 0;
 			redraw_needed = true;
+			
+			if ( scope.getType() == Oscilloscope.ScopeType.V_VS_I) {
+				double avg_i = (max_values[Oscilloscope.Value.CURRENT.ordinal()][mod(last_column,size.width)] + min_values[Oscilloscope.Value.CURRENT.ordinal()][mod(last_column,size.width)]) / 2;
+				int current_x = (int) Math.round(size.width/2 + avg_i / scope.getRange(Oscilloscope.Value.CURRENT) * size.width);
+				double avg_v = (max_values[Oscilloscope.Value.VOLTAGE.ordinal()][mod(last_column,size.width)] + min_values[Oscilloscope.Value.VOLTAGE.ordinal()][mod(last_column,size.width)]) / 2;
+				int current_y = (int) Math.round(size.height/2 - avg_v / scope.getRange(Oscilloscope.Value.VOLTAGE) * size.height);
+				
+				if ( last_draw_point.x != -1 && last_draw_point.y != -1 ) {
+					if (last_draw_point.x == current_x && last_draw_point.y == current_y) {
+					    int index = current_x + size.width * current_y;
+					    if ( index >= 0 && index < pixels.length && current_x >= 0 && current_x < size.width && current_y >= 0 && current_y < size.height )
+				    		pixels[index] = elm_color.getRGB();
+					} else if (Math.abs(current_y-last_draw_point.y) > Math.abs(current_x-last_draw_point.x)) {
+					    // y difference is greater, so we step along y's
+					    // from min to max y and calculate x for each step
+					    double sgn = Math.signum(current_y-last_draw_point.y);
+					    int x, y;
+					    for (y = last_draw_point.y; y != current_y+sgn; y += sgn) {
+					    	x = last_draw_point.x+(current_x-last_draw_point.x)*(y-last_draw_point.y)/(current_y-last_draw_point.y);
+					    	int index = x + size.width * y;
+					    	if ( index >= 0 && index < pixels.length && x >= 0 && x < size.width && y >= 0 && y < size.height )
+					    		pixels[index] = elm_color.getRGB();
+					    }
+					} else {
+					    // x difference is greater, so we step along x's
+					    // from min to max x and calculate y for each step
+					    double sgn = Math.signum(current_x-last_draw_point.x);
+					    int x, y;
+					    for (x = last_draw_point.x; x != current_x+sgn; x += sgn) {
+					    	y = last_draw_point.y+(current_y-last_draw_point.y)*(x-last_draw_point.x)/(current_x-last_draw_point.x);
+					    	int index = x + size.width * y;
+					    	if ( index >= 0 && index < pixels.length && x >= 0 && x < size.width && y >= 0 && y < size.height )
+					    		pixels[index] = elm_color.getRGB();
+					    }
+					}	
+				}
+				last_draw_point.x = current_x;
+				last_draw_point.y = current_y;
+			}
 		}
 	}
 	
@@ -183,21 +229,28 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		if ( ! redraw_needed )
 			return;
 		
-		Arrays.fill(pixels, 0);
-		
-		int max_y, min_y;
-		for ( int col = size.width-1; col > (size.width - columns_visible); col-- ) {
-			for ( Oscilloscope.Value value : Oscilloscope.Value.values() ) {
-				if ( showingValue(value) ) {
-					max_y = Math.min((int) Math.round(size.height/2 - (min_values[value.ordinal()][mod(last_column+1+col, size.width)] / scope.getRange(value) * size.height)), size.height-1);
-					min_y = Math.max((int) Math.round(size.height/2 - (max_values[value.ordinal()][mod(last_column+1+col, size.width)] / scope.getRange(value) * size.height)), 0);
-					for ( int row = min_y; row <= max_y; row++ )
-						pixels[row * size.width + col] = getColor(value).getRGB();
-				}
-			}			
+		switch (type) {
+		case VIP_VS_T:
+			Arrays.fill(pixels, 0);
+			
+			int max_y, min_y;
+			for ( int col = size.width-1; col > (size.width - columns_visible); col-- ) {
+				for ( Oscilloscope.Value value : Oscilloscope.Value.values() ) {
+					if ( showingValue(value) ) {
+						max_y = Math.min((int) Math.round(size.height/2 - (min_values[value.ordinal()][mod(last_column+1+col, size.width)] / scope.getRange(value) * size.height)), size.height-1);
+						min_y = Math.max((int) Math.round(size.height/2 - (max_values[value.ordinal()][mod(last_column+1+col, size.width)] / scope.getRange(value) * size.height)), 0);
+						for ( int row = min_y; row <= max_y; row++ )
+							pixels[row * size.width + col] = getColor(value).getRGB();
+					}
+				}			
+			}
+			
+			img_src.newPixels();
+			break;
+		case V_VS_I:
+			img_src.newPixels();
+			break;
 		}
-		
-		img_src.newPixels();
 		
 		redraw_needed = false;
 	}
@@ -415,7 +468,12 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 				wave_color[v] = JColorChooser.showDialog(scope, "Choose New Color", wave_color[v]);
 				break;
 			case V_VS_I:
+				Color old_color = elm_color;
 				elm_color = JColorChooser.showDialog(scope, "Choose New Color", elm_color);
+				for ( int i = 0; i < pixels.length; i++ ) {
+					if ( pixels[i] == old_color.getRGB() )
+						pixels[i] = elm_color.getRGB();
+				}
 				break;
 			}
 			setLabel();
