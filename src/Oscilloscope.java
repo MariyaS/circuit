@@ -109,7 +109,7 @@ class Oscilloscope extends JFrame implements
 	 * Also resizes the waveforms if needed after a stack/unstack.
 	 */
 	private void resetGraph() {
-		if ( scope_type == ScopeType.VIP_VS_T && stack_scopes.getState() == true ) {
+		if ( scope_type == ScopeType.VIP_VS_T && stack_scopes.getState() == true && !waveforms.isEmpty() ) {
 			Dimension wf_size = new Dimension(canvas_size.width, canvas_size.height / waveforms.size());
 			for ( wfi = waveforms.iterator(); wfi.hasNext(); )
 				wfi.next().reset(wf_size);
@@ -278,13 +278,13 @@ class Oscilloscope extends JFrame implements
 		case I_VS_V:
 			FontMetrics fm = gfx.getFontMetrics();
 			
-			String str = getUnitText(range[Value.VOLTAGE.ordinal()]/2, value_units[Value.VOLTAGE.ordinal()]);
+			String str = getUnitText(-range[Value.VOLTAGE.ordinal()]/2, value_units[Value.VOLTAGE.ordinal()]);
 			Rectangle2D r = gfx.getFontMetrics().getStringBounds(str, gfx);
 			gfx.clearRect(3, canvas_size.height/2-fm.getDescent()-fm.getAscent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
 			gfx.drawString(str,3, canvas_size.height/2-fm.getDescent());
 			
 			
-			str = getUnitText(-range[Value.VOLTAGE.ordinal()]/2, value_units[Value.VOLTAGE.ordinal()]);
+			str = getUnitText(range[Value.VOLTAGE.ordinal()]/2, value_units[Value.VOLTAGE.ordinal()]);
 			r = gfx.getFontMetrics().getStringBounds(str, gfx);
 			gfx.clearRect(canvas_size.width-3-(int) Math.ceil(r.getWidth()), canvas_size.height/2-fm.getDescent()-fm.getAscent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
 			gfx.drawString(str,canvas_size.width-3-(int) Math.ceil(r.getWidth()), canvas_size.height/2-fm.getDescent());
@@ -294,7 +294,7 @@ class Oscilloscope extends JFrame implements
 			gfx.clearRect(canvas_size.width/2+3, -fm.getDescent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
 			gfx.drawString(str, canvas_size.width/2 + 3, fm.getAscent());
 			
-			str = getUnitText(-range[Value.CURRENT.ordinal()]/2, value_units[Value.CURRENT.ordinal()]);
+			str = getUnitText(range[Value.CURRENT.ordinal()]/2, value_units[Value.CURRENT.ordinal()]);
 			r = gfx.getFontMetrics().getStringBounds(str, gfx);
 			gfx.clearRect(canvas_size.width/2+3, canvas_size.height-fm.getAscent()-fm.getDescent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
 			gfx.drawString(str, canvas_size.width/2 + 3, canvas_size.height-fm.getDescent());

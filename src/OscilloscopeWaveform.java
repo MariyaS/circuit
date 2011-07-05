@@ -186,9 +186,9 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			
 			if ( scope.getType() == Oscilloscope.ScopeType.I_VS_V ) {
 				double avg_i = (max_values[Oscilloscope.Value.CURRENT.ordinal()][mod(last_column-1,size.width)] + min_values[Oscilloscope.Value.CURRENT.ordinal()][mod(last_column,size.width)]) / 2;
-				int current_y = (int) Math.round(size.height/2 + avg_i / scope.getRange(Oscilloscope.Value.CURRENT) * size.height);
+				int current_y = (int) Math.round(size.height/2 - avg_i / scope.getRange(Oscilloscope.Value.CURRENT) * size.height);
 				double avg_v = (max_values[Oscilloscope.Value.VOLTAGE.ordinal()][mod(last_column-1,size.width)] + min_values[Oscilloscope.Value.VOLTAGE.ordinal()][mod(last_column,size.width)]) / 2;
-				int current_x = (int) Math.round(size.width/2 - avg_v / scope.getRange(Oscilloscope.Value.VOLTAGE) * size.width);
+				int current_x = (int) Math.round(size.width/2 + avg_v / scope.getRange(Oscilloscope.Value.VOLTAGE) * size.width);
 				
 				if ( last_draw_point.x != -1 && last_draw_point.y != -1 ) {
 					if (last_draw_point.x == current_x && last_draw_point.y == current_y) {
