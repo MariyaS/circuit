@@ -21,7 +21,7 @@ import javax.swing.*;
 import javax.swing.event.*;
 
 public class CirSim extends JFrame
-  implements ComponentListener, ActionListener, AdjustmentListener, ChangeListener, 
+  implements ComponentListener, ActionListener, ChangeListener, 
   MouseMotionListener, MouseListener, ItemListener, KeyListener {
     
 	private static final long serialVersionUID = 8695504609720370005L;
@@ -43,7 +43,6 @@ public class CirSim extends JFrame
 
     MenuItem exportItem, exportLinkItem, importItem, exitItem, undoItem, redoItem,
 	cutItem, copyItem, pasteItem, selectAllItem, optionsItem;
-    Menu optionsMenu;
     JCheckBox stoppedCheck;
     JButton resetButton, dumpMatrixButton;
     JSlider speedBar, currentBar, powerBar;
@@ -52,8 +51,8 @@ public class CirSim extends JFrame
     CheckboxMenuItem dotsCheckItem, voltsCheckItem, powerCheckItem, smallGridCheckItem,
     showValuesCheckItem, conductanceCheckItem, euroResistorCheckItem, conventionCheckItem;
     PopupMenu elmMenu;
-    MenuItem elmEditMenuItem, elmCutMenuItem, elmCopyMenuItem, elmDeleteMenuItem, elmScopeMenuItem;
-    MenuItem addToScope;
+    MenuItem elmEditMenuItem, elmCutMenuItem, elmCopyMenuItem, elmDeleteMenuItem, elmScopeMenuItem, addToScope;
+    
     PopupMenu scopeMenu, transScopeMenu, mainMenu;
     CheckboxMenuItem scopeVMenuItem;
     CheckboxMenuItem scopeIMenuItem;
@@ -162,7 +161,6 @@ public class CirSim extends JFrame
     public void init() {
 		String euroResistor = null;
 		String useFrameStr = null;
-		boolean printable = false;
 		boolean convention = true;
 	
 		CircuitElm.initClass(this);
@@ -194,10 +192,7 @@ public class CirSim extends JFrame
 		    startLabel   = applet.getParameter("startLabel");
 		    euroResistor = applet.getParameter("euroResistors");
 		    useFrameStr  = applet.getParameter("useFrame");
-		    String x = applet.getParameter("whiteBackground");
-		    if (x != null && x.equalsIgnoreCase("true"))
-		    	printable = true;
-		    x = applet.getParameter("conventionalCurrent");
+		    String x = applet.getParameter("conventionalCurrent");
 		    if (x != null && x.equalsIgnoreCase("true"))
 		    	convention = false;
 		} catch (Exception e) { }
@@ -281,7 +276,7 @@ public class CirSim extends JFrame
 		m.add(getMenuItem("Stack All", "stackAll"));
 		m.add(getMenuItem("Unstack All", "unstackAll"));
 	
-		optionsMenu = m = new Menu("Options");
+		m = new Menu("Options");
 		if (useFrame)
 		    mb.add(m);
 		else
@@ -2086,16 +2081,6 @@ public class CirSim extends JFrame
 		return dump;
     }
     
-    // Triggered when scroll bars are changed
-    public void adjustmentValueChanged(AdjustmentEvent e) {
-    	Object src = e.getSource();
-    	if ( src instanceof Scrollbar )
-    		System.out.println(((Scrollbar) src).getValue());
-    	else if ( src instanceof JScrollBar )
-    		System.out.println(((JScrollBar) src).getValue());
-    	//System.out.print(((Scrollbar) e.getSource()).getValue() + "\n");
-    }
-    
     public void stateChanged(ChangeEvent e) {
     	System.out.println( ((JSlider) e.getSource()).getValue() );
     }
@@ -2767,7 +2752,7 @@ public class CirSim extends JFrame
 
     void doMainMenuChecks(Menu m) {
 		int i;
-		if (m == optionsMenu)
+		if (m.getLabel().equals("Options"))
 		    return;
 		for (i = 0; i != m.getItemCount(); i++) {
 		    MenuItem mc = m.getItem(i);
