@@ -46,6 +46,7 @@ class ThermistorElm extends CircuitElm {
 	CirSim.main.remove(label);
 	CirSim.main.remove(slider);
 	CirSim.main.validate();
+	CirSim.main.repaint();
     }
     
     void draw(Graphics g) {

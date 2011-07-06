@@ -52,6 +52,7 @@ class PotElm extends CircuitElm implements ChangeListener {
 	CirSim.main.remove(label);
 	CirSim.main.remove(slider);
 	CirSim.main.validate();
+	CirSim.main.repaint();
     }
     Point post3, corner2, arrowPoint, midpoint, arrow1, arrow2;
     Point ps3, ps4;

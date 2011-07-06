@@ -38,6 +38,7 @@ import javax.swing.*;
 	    CirSim.main.remove(label);
 	    CirSim.main.remove(slider);
 	    CirSim.main.validate();
+	    CirSim.main.repaint();
 	}
 	public EditInfo getEditInfo(int n) {
 	    if (n == 0)
