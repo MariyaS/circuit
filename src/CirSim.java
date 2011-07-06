@@ -35,9 +35,7 @@ public class CirSim extends JFrame
     public static final int sourceRadius = 7;
     public static final double freqMult = 3.14159265*2*4;
     
-    public String getAppletInfo() {
-    	return "Circuit by Paul Falstad";
-    }
+    public String getAppletInfo() { return "Circuit by Paul Falstad"; }
 
     static Container main;
 
@@ -2524,14 +2522,6 @@ public class CirSim extends JFrame
 		}
 		if (mi == smallGridCheckItem)
 		    setGrid();
-		if (mi == powerCheckItem) {
-		    if (powerCheckItem.getState())
-		    	voltsCheckItem.setState(false);
-		    else
-		    	voltsCheckItem.setState(true);
-		}
-		if (mi == voltsCheckItem && voltsCheckItem.getState())
-		    powerCheckItem.setState(false);
 		enableItems();
 		if (menuScope != -1) {
 		    Scope sc = original_scopes[menuScope];
@@ -2963,24 +2953,18 @@ public class CirSim extends JFrame
 		m = new JMenu("Edit");
 		m.add(undoItem = getMenuItem("Undo"));
 		undoItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, KeyEvent.CTRL_MASK));
-		//undoItem.setShortcut(new MenuShortcut(KeyEvent.VK_Z));
 		m.add(redoItem = getMenuItem("Redo"));
 		redoItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, KeyEvent.CTRL_MASK | KeyEvent.SHIFT_MASK));
-		//redoItem.setShortcut(new MenuShortcut(KeyEvent.VK_Z, true));
 		m.addSeparator();
 		m.add(cutItem = getMenuItem("Cut"));
 		cutItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_X, KeyEvent.CTRL_MASK));
-		//cutItem.setShortcut(new MenuShortcut(KeyEvent.VK_X));
 		m.add(copyItem = getMenuItem("Copy"));
 		copyItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, KeyEvent.CTRL_MASK));
-		//copyItem.setShortcut(new MenuShortcut(KeyEvent.VK_C));
 		m.add(pasteItem = getMenuItem("Paste"));
 		pasteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, KeyEvent.CTRL_MASK));
-		//pasteItem.setShortcut(new MenuShortcut(KeyEvent.VK_V));
 		pasteItem.setEnabled(false);
 		m.add(selectAllItem = getMenuItem("Select All"));
 		selectAllItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_A, KeyEvent.CTRL_MASK));
-		//selectAllItem.setShortcut(new MenuShortcut(KeyEvent.VK_A));
 	    mb.add(m);
 	
 		m = new JMenu("Scope");
@@ -2992,8 +2976,12 @@ public class CirSim extends JFrame
 		m = new JMenu("Options");
 	    mb.add(m);
 		m.add(dotsCheckItem = getCheckItem("Show Current", true));
+		
 		m.add(voltsCheckItem = getCheckItem("Show Voltage", true));
 		m.add(powerCheckItem = getCheckItem("Show Power"));
+		ButtonGroup show_options = new ButtonGroup();
+		show_options.add(voltsCheckItem);
+		show_options.add(powerCheckItem);
 		m.add(showValuesCheckItem = getCheckItem("Show Values", true));
 		//m.add(conductanceCheckItem = getCheckItem("Show Conductance"));
 		m.add(smallGridCheckItem = getCheckItem("Small Grid"));
@@ -3119,14 +3107,12 @@ public class CirSim extends JFrame
     JPopupMenu buildElementMenu() {
     	JPopupMenu m = new JPopupMenu();
     	
-    	m.add(elmEditMenuItem = new JMenuItem("Edit"));
-		m.add(elmScopeMenuItem = new JMenuItem("View in Scope"));
-		m.add(elmCutMenuItem = new JMenuItem("Cut"));
-		m.add(elmCopyMenuItem = new JMenuItem("Copy"));
-		m.add(elmDeleteMenuItem = new JMenuItem("Delete"));
-		m.add(addToScope = new JMenuItem("Add to new Scope"));
-		for ( int i = 0; i < m.getComponentCount(); i++ )
-			((JMenuItem) m.getComponent(i)).addActionListener(this);
+    	m.add(elmEditMenuItem = getMenuItem("Edit"));
+		m.add(elmScopeMenuItem = getMenuItem("View in Scope"));
+		m.add(elmCutMenuItem = getMenuItem("Cut"));
+		m.add(elmCopyMenuItem = getMenuItem("Copy"));
+		m.add(elmDeleteMenuItem = getMenuItem("Delete"));
+		m.add(addToScope = getMenuItem("Add to new Scope"));
 		
 		return m;
     }
@@ -3164,34 +3150,34 @@ public class CirSim extends JFrame
 		return m;
     }
     
-    JMenuItem getMenuItem(String s) {
+    private JMenuItem getMenuItem(String s) {
 		JMenuItem mi = new JMenuItem(s);
 		mi.addActionListener(this);
 		return mi;
     }
 
-    JMenuItem getMenuItem(String s, String ac) {
+    private JMenuItem getMenuItem(String s, String ac) {
 		JMenuItem mi = new JMenuItem(s);
 		mi.setActionCommand(ac);
 		mi.addActionListener(this);
 		return mi;
     }
 
-    JCheckBoxMenuItem getCheckItem(String s) {
+    private JCheckBoxMenuItem getCheckItem(String s) {
 		JCheckBoxMenuItem mi = new JCheckBoxMenuItem(s);
 		mi.addItemListener(this);
 		mi.setActionCommand("");
 		return mi;
     }
     
-    JCheckBoxMenuItem getCheckItem(String s, boolean b) {
+    private JCheckBoxMenuItem getCheckItem(String s, boolean b) {
     	JCheckBoxMenuItem mi = new JCheckBoxMenuItem(s, b);
 		mi.addItemListener(this);
 		mi.setActionCommand("");
 		return mi;
     }
 
-    JCheckBoxMenuItem getClassCheckItem(String s, String t) {
+    private JCheckBoxMenuItem getClassCheckItem(String s, String t) {
 		try {
 		    Class<?> c = Class.forName(t);
 		    CircuitElm elm = constructElement(c, 0, 0);
@@ -3211,21 +3197,21 @@ public class CirSim extends JFrame
 		return mi;
     }
     
-    JCheckBoxMenuItem getCheckItem(String s, String t) {
+    private JCheckBoxMenuItem getCheckItem(String s, String t) {
 		JCheckBoxMenuItem mi = new JCheckBoxMenuItem(s);
 		mi.addItemListener(this);
 		mi.setActionCommand(t);
 		return mi;
     }
 
-    CheckboxMenuItem getAWTCheckItem(String s) {
+    private CheckboxMenuItem getAWTCheckItem(String s) {
     	CheckboxMenuItem mi = new CheckboxMenuItem(s);
 		mi.addItemListener(this);
 		mi.setActionCommand("");
 		return mi;
     }
     
-    MenuItem getAWTMenuItem(String s, String ac) {
+    private MenuItem getAWTMenuItem(String s, String ac) {
 		MenuItem mi = new MenuItem(s);
 		mi.setActionCommand(ac);
 		mi.addActionListener(this);
