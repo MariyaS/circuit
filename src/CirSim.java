@@ -41,16 +41,16 @@ public class CirSim extends JFrame
 
     static Container main;
 
-    MenuItem exportItem, exportLinkItem, importItem, exitItem;
-    MenuItem undoItem, redoItem, cutItem, copyItem, pasteItem, selectAllItem, optionsItem;
-    Menu circuitsMenu;
+    JMenuItem exportItem, exportLinkItem, importItem, exitItem;
+    JMenuItem undoItem, redoItem, cutItem, copyItem, pasteItem, selectAllItem, optionsItem;
+    JMenu circuitsMenu;
     
     JCheckBox stoppedCheck;
     JButton resetButton, dumpMatrixButton;
     JSlider speedBar, currentBar, powerBar;
     JLabel powerLabel, titleLabel;
     
-    CheckboxMenuItem dotsCheckItem, voltsCheckItem, powerCheckItem, smallGridCheckItem,
+    JCheckBoxMenuItem dotsCheckItem, voltsCheckItem, powerCheckItem, smallGridCheckItem,
     showValuesCheckItem, conductanceCheckItem, euroResistorCheckItem, conventionCheckItem;
     
     JPopupMenu mainMenu;
@@ -236,7 +236,7 @@ public class CirSim extends JFrame
 		
 		// Create menu bar
 		if (useFrame)
-		    setMenuBar( buildMenuBar() );
+		    setJMenuBar( buildMenuBar() );
 		// TODO If useFrame is false, take all the menus from the menu bar and put them at the top of the main menu
 		
 		// Create popup menus
@@ -387,9 +387,9 @@ public class CirSim extends JFrame
     // because overriding paint removes the paintChildren call, which
     // causes other elements not to be drawn
     // http://java.sun.com/products/jfc/tsc/articles/painting/#callbacks
-    public void paintComponent(Graphics g) {
+    /*public void paintComponent(Graphics g) {
     	cv.repaint();
-    }
+    }*/
 
     static final int resct = 6;
     long lastTime = 0, lastFrameTime, lastIterTime, secTime = 0;
@@ -1676,8 +1676,7 @@ public class CirSim extends JFrame
 		}
 		if (ac.indexOf("setup ") == 0) {
 		    pushUndo();
-		    readSetupFile(ac.substring(6),
-				  ((MenuItem) e.getSource()).getLabel());
+		    readSetupFile(ac.substring(6), ((JMenuItem) e.getSource()).getText());
 		}
     }
 
@@ -1805,8 +1804,8 @@ public class CirSim extends JFrame
 		}
     }
     
-    void getSetupList(Menu menu, boolean retry) {
-		Menu stack[] = new Menu[6];
+    void getSetupList(JMenu menu, boolean retry) {
+		JMenu stack[] = new JMenu[6];
 		int stackptr = 0;
 		stack[stackptr++] = menu;
 		try {
@@ -1831,7 +1830,7 @@ public class CirSim extends JFrame
 			if (line.charAt(0) == '#')
 			    ;
 			else if (line.charAt(0) == '+') {
-			    Menu n = new Menu(line.substring(1));
+			    JMenu n = new JMenu(line.substring(1));
 			    menu.add(n);
 			    menu = stack[stackptr++] = n;
 			} else if (line.charAt(0) == '-') {
@@ -2950,10 +2949,10 @@ public class CirSim extends JFrame
 		main.add(titleLabel);
     }
     
-    MenuBar buildMenuBar() {
-    	MenuBar mb = new MenuBar();
+    JMenuBar buildMenuBar() {
+    	JMenuBar mb = new JMenuBar();
     	
-    	Menu m = new Menu("File");
+    	JMenu m = new JMenu("File");
 	    mb.add(m);
 		m.add(importItem = getMenuItem("Import"));
 		m.add(exportItem = getMenuItem("Export"));
@@ -2961,53 +2960,54 @@ public class CirSim extends JFrame
 		m.addSeparator();
 		m.add(exitItem   = getMenuItem("Exit"));
 	
-		m = new Menu("Edit");
+		m = new JMenu("Edit");
 		m.add(undoItem = getMenuItem("Undo"));
-		undoItem.setShortcut(new MenuShortcut(KeyEvent.VK_Z));
+		undoItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, KeyEvent.CTRL_MASK));
+		//undoItem.setShortcut(new MenuShortcut(KeyEvent.VK_Z));
 		m.add(redoItem = getMenuItem("Redo"));
-		redoItem.setShortcut(new MenuShortcut(KeyEvent.VK_Z, true));
+		redoItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, KeyEvent.CTRL_MASK | KeyEvent.SHIFT_MASK));
+		//redoItem.setShortcut(new MenuShortcut(KeyEvent.VK_Z, true));
 		m.addSeparator();
 		m.add(cutItem = getMenuItem("Cut"));
-		cutItem.setShortcut(new MenuShortcut(KeyEvent.VK_X));
+		cutItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_X, KeyEvent.CTRL_MASK));
+		//cutItem.setShortcut(new MenuShortcut(KeyEvent.VK_X));
 		m.add(copyItem = getMenuItem("Copy"));
-		copyItem.setShortcut(new MenuShortcut(KeyEvent.VK_C));
+		copyItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, KeyEvent.CTRL_MASK));
+		//copyItem.setShortcut(new MenuShortcut(KeyEvent.VK_C));
 		m.add(pasteItem = getMenuItem("Paste"));
-		pasteItem.setShortcut(new MenuShortcut(KeyEvent.VK_V));
+		pasteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, KeyEvent.CTRL_MASK));
+		//pasteItem.setShortcut(new MenuShortcut(KeyEvent.VK_V));
 		pasteItem.setEnabled(false);
 		m.add(selectAllItem = getMenuItem("Select All"));
-		selectAllItem.setShortcut(new MenuShortcut(KeyEvent.VK_A));
+		selectAllItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_A, KeyEvent.CTRL_MASK));
+		//selectAllItem.setShortcut(new MenuShortcut(KeyEvent.VK_A));
 	    mb.add(m);
 	
-		m = new Menu("Scope");
+		m = new JMenu("Scope");
 	    mb.add(m);
 		m.add(getMenuItem("New Scope", "newScope"));
 		m.add(getMenuItem("Stack All", "stackAll"));
 		m.add(getMenuItem("Unstack All", "unstackAll"));
 	
-		m = new Menu("Options");
+		m = new JMenu("Options");
 	    mb.add(m);
-		m.add(dotsCheckItem = getCheckItem("Show Current"));
-		dotsCheckItem.setState(true);
-		m.add(voltsCheckItem = getCheckItem("Show Voltage"));
-		voltsCheckItem.setState(true);
+		m.add(dotsCheckItem = getCheckItem("Show Current", true));
+		m.add(voltsCheckItem = getCheckItem("Show Voltage", true));
 		m.add(powerCheckItem = getCheckItem("Show Power"));
-		m.add(showValuesCheckItem = getCheckItem("Show Values"));
-		showValuesCheckItem.setState(true);
+		m.add(showValuesCheckItem = getCheckItem("Show Values", true));
 		//m.add(conductanceCheckItem = getCheckItem("Show Conductance"));
 		m.add(smallGridCheckItem = getCheckItem("Small Grid"));
 		String euroResistor = applet.getParameter("euroResistors");
 		boolean euro = (euroResistor != null && euroResistor.equalsIgnoreCase("true"));
-		m.add(euroResistorCheckItem = getCheckItem("European Resistors"));
-		euroResistorCheckItem.setState(euro);
+		m.add(euroResistorCheckItem = getCheckItem("European Resistors", euro));
 		boolean convention = true;
 		String x = applet.getParameter("conventionalCurrent");
 	    if (x != null && x.equalsIgnoreCase("true"))
 	    	convention = false;
-		m.add(conventionCheckItem = getCheckItem("Conventional Current Motion"));
-		conventionCheckItem.setState(convention);
+		m.add(conventionCheckItem = getCheckItem("Conventional Current Motion", convention));
 		m.add(optionsItem = getMenuItem("Other Options..."));
 		
-		circuitsMenu = new Menu("Circuits");
+		circuitsMenu = new JMenu("Circuits");
 	    mb.add(circuitsMenu);
 	    
 	    return mb;
@@ -3105,13 +3105,13 @@ public class CirSim extends JFrame
 		menu.add(otherMenu);
 		otherMenu.add(getClassCheckItem("Add Text", "TextElm"));
 		otherMenu.add(getClassCheckItem("Add Scope Probe", "ProbeElm"));
-		otherMenu.add(getJCheckItem("Drag All (Alt-drag)", "DragAll"));
-		otherMenu.add(getJCheckItem(isMac ? "Drag Row (Alt-S-drag, S-right)" : "Drag Row (S-right)", "DragRow"));
-		otherMenu.add(getJCheckItem(isMac ? "Drag Column (Alt-\u2318-drag, \u2318-right)" : "Drag Column (C-right)", "DragColumn"));
-		otherMenu.add(getJCheckItem("Drag Selected", "DragSelected"));
-		otherMenu.add(getJCheckItem("Drag Post (" + ctrlMetaKey + "-drag)", "DragPost"));
+		otherMenu.add(getCheckItem("Drag All (Alt-drag)", "DragAll"));
+		otherMenu.add(getCheckItem(isMac ? "Drag Row (Alt-S-drag, S-right)" : "Drag Row (S-right)", "DragRow"));
+		otherMenu.add(getCheckItem(isMac ? "Drag Column (Alt-\u2318-drag, \u2318-right)" : "Drag Column (C-right)", "DragColumn"));
+		otherMenu.add(getCheckItem("Drag Selected", "DragSelected"));
+		otherMenu.add(getCheckItem("Drag Post (" + ctrlMetaKey + "-drag)", "DragPost"));
 		
-		menu.add(getJCheckItem("Select/Drag Selected (space or Shift-drag)", "Select"));
+		menu.add(getCheckItem("Select/Drag Selected (space or Shift-drag)", "Select"));
 
 		return menu;
     }
@@ -3133,52 +3133,59 @@ public class CirSim extends JFrame
     
     PopupMenu buildScopeMenu(boolean t) {
 		PopupMenu m = new PopupMenu();
-		m.add(getMenuItem("Remove", "remove"));
-		m.add(getMenuItem("Speed 2x", "speed2"));
-		m.add(getMenuItem("Speed 1/2x", "speed1/2"));
-		m.add(getMenuItem("Scale 2x", "scale"));
-		m.add(getMenuItem("Max Scale", "maxscale"));
-		m.add(getMenuItem("Stack", "stack"));
-		m.add(getMenuItem("Unstack", "unstack"));
-		m.add(getMenuItem("Reset", "reset"));
+		m.add(getAWTMenuItem("Remove", "remove"));
+		m.add(getAWTMenuItem("Speed 2x", "speed2"));
+		m.add(getAWTMenuItem("Speed 1/2x", "speed1/2"));
+		m.add(getAWTMenuItem("Scale 2x", "scale"));
+		m.add(getAWTMenuItem("Max Scale", "maxscale"));
+		m.add(getAWTMenuItem("Stack", "stack"));
+		m.add(getAWTMenuItem("Unstack", "unstack"));
+		m.add(getAWTMenuItem("Reset", "reset"));
 		if (t) {
-		    m.add(scopeIbMenuItem = getCheckItem("Show Ib"));
-		    m.add(scopeIcMenuItem = getCheckItem("Show Ic"));
-		    m.add(scopeIeMenuItem = getCheckItem("Show Ie"));
-		    m.add(scopeVbeMenuItem = getCheckItem("Show Vbe"));
-		    m.add(scopeVbcMenuItem = getCheckItem("Show Vbc"));
-		    m.add(scopeVceMenuItem = getCheckItem("Show Vce"));
-		    m.add(scopeVceIcMenuItem = getCheckItem("Show Vce vs Ic"));
+		    m.add(scopeIbMenuItem = getAWTCheckItem("Show Ib"));
+		    m.add(scopeIcMenuItem = getAWTCheckItem("Show Ic"));
+		    m.add(scopeIeMenuItem = getAWTCheckItem("Show Ie"));
+		    m.add(scopeVbeMenuItem = getAWTCheckItem("Show Vbe"));
+		    m.add(scopeVbcMenuItem = getAWTCheckItem("Show Vbc"));
+		    m.add(scopeVceMenuItem = getAWTCheckItem("Show Vce"));
+		    m.add(scopeVceIcMenuItem = getAWTCheckItem("Show Vce vs Ic"));
 		} else {
-		    m.add(scopeVMenuItem = getCheckItem("Show Voltage"));
-		    m.add(scopeIMenuItem = getCheckItem("Show Current"));
-		    m.add(scopePowerMenuItem = getCheckItem("Show Power Consumed"));
-		    m.add(scopeMaxMenuItem = getCheckItem("Show Peak Value"));
-		    m.add(scopeMinMenuItem = getCheckItem("Show Negative Peak Value"));
-		    m.add(scopeFreqMenuItem = getCheckItem("Show Frequency"));
-		    m.add(scopeVIMenuItem = getCheckItem("Show V vs I"));
-		    m.add(scopeXYMenuItem = getCheckItem("Plot X/Y"));
-		    m.add(scopeSelectYMenuItem = getMenuItem("Select Y", "selecty"));
-		    m.add(scopeResistMenuItem = getCheckItem("Show Resistance"));
+		    m.add(scopeVMenuItem = getAWTCheckItem("Show Voltage"));
+		    m.add(scopeIMenuItem = getAWTCheckItem("Show Current"));
+		    m.add(scopePowerMenuItem = getAWTCheckItem("Show Power Consumed"));
+		    m.add(scopeMaxMenuItem = getAWTCheckItem("Show Peak Value"));
+		    m.add(scopeMinMenuItem = getAWTCheckItem("Show Negative Peak Value"));
+		    m.add(scopeFreqMenuItem = getAWTCheckItem("Show Frequency"));
+		    m.add(scopeVIMenuItem = getAWTCheckItem("Show V vs I"));
+		    m.add(scopeXYMenuItem = getAWTCheckItem("Plot X/Y"));
+		    m.add(scopeSelectYMenuItem = getAWTMenuItem("Select Y", "selecty"));
+		    m.add(scopeResistMenuItem = getAWTCheckItem("Show Resistance"));
 		}
 		return m;
     }
     
-    MenuItem getMenuItem(String s) {
-		MenuItem mi = new MenuItem(s);
+    JMenuItem getMenuItem(String s) {
+		JMenuItem mi = new JMenuItem(s);
 		mi.addActionListener(this);
 		return mi;
     }
 
-    MenuItem getMenuItem(String s, String ac) {
-		MenuItem mi = new MenuItem(s);
+    JMenuItem getMenuItem(String s, String ac) {
+		JMenuItem mi = new JMenuItem(s);
 		mi.setActionCommand(ac);
 		mi.addActionListener(this);
 		return mi;
     }
 
-    CheckboxMenuItem getCheckItem(String s) {
-		CheckboxMenuItem mi = new CheckboxMenuItem(s);
+    JCheckBoxMenuItem getCheckItem(String s) {
+		JCheckBoxMenuItem mi = new JCheckBoxMenuItem(s);
+		mi.addItemListener(this);
+		mi.setActionCommand("");
+		return mi;
+    }
+    
+    JCheckBoxMenuItem getCheckItem(String s, boolean b) {
+    	JCheckBoxMenuItem mi = new JCheckBoxMenuItem(s, b);
 		mi.addItemListener(this);
 		mi.setActionCommand("");
 		return mi;
@@ -3204,18 +3211,26 @@ public class CirSim extends JFrame
 		return mi;
     }
     
-    CheckboxMenuItem getCheckItem(String s, String t) {
-		CheckboxMenuItem mi = new CheckboxMenuItem(s);
+    JCheckBoxMenuItem getCheckItem(String s, String t) {
+		JCheckBoxMenuItem mi = new JCheckBoxMenuItem(s);
 		mi.addItemListener(this);
 		mi.setActionCommand(t);
 		return mi;
     }
-    
-    JCheckBoxMenuItem getJCheckItem(String s, String t) {
-    	JCheckBoxMenuItem mi = new JCheckBoxMenuItem(s);
-    	mi.addItemListener(this);
-    	mi.setActionCommand(t);
-    	return mi;
+
+    CheckboxMenuItem getAWTCheckItem(String s) {
+    	CheckboxMenuItem mi = new CheckboxMenuItem(s);
+		mi.addItemListener(this);
+		mi.setActionCommand("");
+		return mi;
     }
+    
+    MenuItem getAWTMenuItem(String s, String ac) {
+		MenuItem mi = new MenuItem(s);
+		mi.setActionCommand(ac);
+		mi.addActionListener(this);
+		return mi;
+    }
+
 
 }
