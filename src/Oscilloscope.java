@@ -406,6 +406,8 @@ class Oscilloscope extends JFrame implements
 		
 		// Clear main image
 		main_img_gfx.clearRect(0, 0, canvas_size.width, canvas_size.height);
+		main_img_gfx.setColor(grid_color);
+		main_img_gfx.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, 1.0f));
 		
 		drawAxes(main_img_gfx);
 		if ( show_grid.getState() )
@@ -416,15 +418,15 @@ class Oscilloscope extends JFrame implements
 			drawTimeGridlines(main_img_gfx);
 			
 			if ( stack_scopes.getState() == false ) {
-				for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); ) {
-					OscilloscopeWaveform wf = wfi.next();
+				for ( int i = 0; i < waveforms.size(); i++ ) {
+					OscilloscopeWaveform wf = waveforms.get(i);
 					wf.redraw();
 					main_img_gfx.drawImage(wf.wf_img, 0, 0, null);
 				}
 			} else {
 				int y = 0;
-				for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); ) {
-					OscilloscopeWaveform wf = wfi.next();
+				for ( int i = 0; i < waveforms.size(); i++ ) {
+					OscilloscopeWaveform wf = waveforms.get(i);
 					wf.redraw();
 					main_img_gfx.drawImage(wf.wf_img, 0, y, null);
 					y += canvas_size.height / waveforms.size();
@@ -434,8 +436,8 @@ class Oscilloscope extends JFrame implements
 			break;
 		case I_VS_V:
 			Graphics g = main_img_gfx.create();
-			for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); ) {
-				OscilloscopeWaveform wf = wfi.next();
+			for ( int i = 0; i < waveforms.size(); i++ ) {
+				OscilloscopeWaveform wf = waveforms.get(i);
 				if ( wf.isShowing() ) {
 					wf.redraw();
 					main_img_gfx.drawImage(wf.wf_img, 0, 0, null);
@@ -553,6 +555,7 @@ class Oscilloscope extends JFrame implements
 		main_img_gfx.setColor(grid_color);
 		main_img_gfx.setFont(grid_label_font);
 		main_img_gfx.setBackground(bg_color);
+		main_img_gfx.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, 1.0f));
 		
 		info_img = new BufferedImage(canvas_size.width, OscilloscopeLayout.INFO_AREA_HEIGHT, BufferedImage.TYPE_INT_ARGB);
 		info_img_gfx = (Graphics2D) info_img.getGraphics();
