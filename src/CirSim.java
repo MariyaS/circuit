@@ -41,8 +41,10 @@ public class CirSim extends JFrame
 
     static Container main;
 
-    MenuItem exportItem, exportLinkItem, importItem, exitItem, undoItem, redoItem,
-	cutItem, copyItem, pasteItem, selectAllItem, optionsItem;
+    MenuItem exportItem, exportLinkItem, importItem, exitItem;
+    MenuItem undoItem, redoItem, cutItem, copyItem, pasteItem, selectAllItem, optionsItem;
+    Menu circuitsMenu;
+    
     JCheckBox stoppedCheck;
     JButton resetButton, dumpMatrixButton;
     JSlider speedBar, currentBar, powerBar;
@@ -50,10 +52,13 @@ public class CirSim extends JFrame
     
     CheckboxMenuItem dotsCheckItem, voltsCheckItem, powerCheckItem, smallGridCheckItem,
     showValuesCheckItem, conductanceCheckItem, euroResistorCheckItem, conventionCheckItem;
+    
+    PopupMenu mainMenu;
+    
     PopupMenu elmMenu;
     MenuItem elmEditMenuItem, elmCutMenuItem, elmCopyMenuItem, elmDeleteMenuItem, elmScopeMenuItem, addToScope;
     
-    PopupMenu scopeMenu, transScopeMenu, mainMenu;
+    PopupMenu scopeMenu, transScopeMenu;
     CheckboxMenuItem scopeVMenuItem;
     CheckboxMenuItem scopeIMenuItem;
     CheckboxMenuItem scopeMaxMenuItem;
@@ -113,8 +118,7 @@ public class CirSim extends JFrame
     CircuitElm plotXElm, plotYElm;
     int draggingPost;
     SwitchElm heldSwitchElm;
-    double circuitMatrix[][], circuitRightSide[],
-	origRightSide[], origMatrix[][];
+    double circuitMatrix[][], circuitRightSide[], origRightSide[], origMatrix[][];
     RowInfo circuitRowInfo[];
     int circuitPermute[];
     boolean circuitNonLinear;
@@ -159,9 +163,7 @@ public class CirSim extends JFrame
     String baseURL = "http://www.falstad.com/circuit/";
     
     public void init() {
-		String euroResistor = null;
 		String useFrameStr = null;
-		boolean convention = true;
 	
 		CircuitElm.initClass(this);
 	
@@ -190,14 +192,10 @@ public class CirSim extends JFrame
 		    	pause = Integer.parseInt(param);
 		    startCircuit = applet.getParameter("startCircuit");
 		    startLabel   = applet.getParameter("startLabel");
-		    euroResistor = applet.getParameter("euroResistors");
 		    useFrameStr  = applet.getParameter("useFrame");
-		    String x = applet.getParameter("conventionalCurrent");
-		    if (x != null && x.equalsIgnoreCase("true"))
-		    	convention = false;
+		    
 		} catch (Exception e) { }
 		
-		boolean euro = (euroResistor != null && euroResistor.equalsIgnoreCase("true"));
 		useFrame = (useFrameStr == null || !useFrameStr.equalsIgnoreCase("false"));
 		if (useFrame) {
 		    main = this;
@@ -232,242 +230,29 @@ public class CirSim extends JFrame
 		cv.addKeyListener(this);
 		main.add(cv);
 	
-		mainMenu = new PopupMenu();
-		MenuBar mb = null;
-		if (useFrame)
-		    mb = new MenuBar();
-		Menu m = new Menu("File");
-		if (useFrame)
-		    mb.add(m);
-		else
-		    mainMenu.add(m);
-		m.add(importItem = getMenuItem("Import"));
-		m.add(exportItem = getMenuItem("Export"));
-		m.add(exportLinkItem = getMenuItem("Export Link"));
-		m.addSeparator();
-		m.add(exitItem   = getMenuItem("Exit"));
-	
-		m = new Menu("Edit");
-		m.add(undoItem = getMenuItem("Undo"));
-		undoItem.setShortcut(new MenuShortcut(KeyEvent.VK_Z));
-		m.add(redoItem = getMenuItem("Redo"));
-		redoItem.setShortcut(new MenuShortcut(KeyEvent.VK_Z, true));
-		m.addSeparator();
-		m.add(cutItem = getMenuItem("Cut"));
-		cutItem.setShortcut(new MenuShortcut(KeyEvent.VK_X));
-		m.add(copyItem = getMenuItem("Copy"));
-		copyItem.setShortcut(new MenuShortcut(KeyEvent.VK_C));
-		m.add(pasteItem = getMenuItem("Paste"));
-		pasteItem.setShortcut(new MenuShortcut(KeyEvent.VK_V));
-		pasteItem.setEnabled(false);
-		m.add(selectAllItem = getMenuItem("Select All"));
-		selectAllItem.setShortcut(new MenuShortcut(KeyEvent.VK_A));
-		if (useFrame)
-		    mb.add(m);
-		else
-		    mainMenu.add(m);
-	
-		m = new Menu("Scope");
-		if (useFrame)
-		    mb.add(m);
-		else
-		    mainMenu.add(m);
-		m.add(getMenuItem("New Scope", "newScope"));
-		m.add(getMenuItem("Stack All", "stackAll"));
-		m.add(getMenuItem("Unstack All", "unstackAll"));
-	
-		m = new Menu("Options");
-		if (useFrame)
-		    mb.add(m);
-		else
-		    mainMenu.add(m);
-		m.add(dotsCheckItem = getCheckItem("Show Current"));
-		dotsCheckItem.setState(true);
-		m.add(voltsCheckItem = getCheckItem("Show Voltage"));
-		voltsCheckItem.setState(true);
-		m.add(powerCheckItem = getCheckItem("Show Power"));
-		m.add(showValuesCheckItem = getCheckItem("Show Values"));
-		showValuesCheckItem.setState(true);
-		//m.add(conductanceCheckItem = getCheckItem("Show Conductance"));
-		m.add(smallGridCheckItem = getCheckItem("Small Grid"));
-		m.add(euroResistorCheckItem = getCheckItem("European Resistors"));
-		euroResistorCheckItem.setState(euro);
-		m.add(conventionCheckItem = getCheckItem("Conventional Current Motion"));
-		conventionCheckItem.setState(convention);
-		m.add(optionsItem = getMenuItem("Other Options..."));
+		/* **************************************************************
+		 * * Setup interface
+		 * **************************************************************/
 		
-		Menu circuitsMenu = new Menu("Circuits");
+		// Create menu bar
 		if (useFrame)
-		    mb.add(circuitsMenu);
-		else
-		    mainMenu.add(circuitsMenu);
-	
-		mainMenu.add(getClassCheckItem("Add Wire", "WireElm"));
-		mainMenu.add(getClassCheckItem("Add Resistor", "ResistorElm"));
+		    setMenuBar( buildMenuBar() );
+		// TODO If useFrame is false, take all the menus from the menu bar and put them at the top of the main menu
 		
-		Menu passMenu = new Menu("Passive Components");
-		mainMenu.add(passMenu);
-		passMenu.add(getClassCheckItem("Add Capacitor", "CapacitorElm"));
-		passMenu.add(getClassCheckItem("Add Inductor", "InductorElm"));
-		passMenu.add(getClassCheckItem("Add Switch", "SwitchElm"));
-		passMenu.add(getClassCheckItem("Add Push Switch", "PushSwitchElm"));
-		passMenu.add(getClassCheckItem("Add SPDT Switch", "Switch2Elm"));
-		passMenu.add(getClassCheckItem("Add Potentiometer", "PotElm"));
-		passMenu.add(getClassCheckItem("Add Transformer", "TransformerElm"));
-		passMenu.add(getClassCheckItem("Add Tapped Transformer", "TappedTransformerElm"));
-		passMenu.add(getClassCheckItem("Add Transmission Line", "TransLineElm"));
-		passMenu.add(getClassCheckItem("Add Relay", "RelayElm"));
-		passMenu.add(getClassCheckItem("Add Memristor", "MemristorElm"));
-		passMenu.add(getClassCheckItem("Add Spark Gap", "SparkGapElm"));
-		
-		Menu inputMenu = new Menu("Inputs/Outputs");
-		mainMenu.add(inputMenu);
-		inputMenu.add(getClassCheckItem("Add Ground", "GroundElm"));
-		inputMenu.add(getClassCheckItem("Add Voltage Source (2-terminal)", "DCVoltageElm"));
-		inputMenu.add(getClassCheckItem("Add A/C Source (2-terminal)", "ACVoltageElm"));
-		inputMenu.add(getClassCheckItem("Add Voltage Source (1-terminal)", "RailElm"));
-		inputMenu.add(getClassCheckItem("Add A/C Source (1-terminal)", "ACRailElm"));
-		inputMenu.add(getClassCheckItem("Add Square Wave (1-terminal)", "SquareRailElm"));
-		inputMenu.add(getClassCheckItem("Add Analog Output", "OutputElm"));
-		inputMenu.add(getClassCheckItem("Add Logic Input", "LogicInputElm"));
-		inputMenu.add(getClassCheckItem("Add Logic Output", "LogicOutputElm"));
-		inputMenu.add(getClassCheckItem("Add Clock", "ClockElm"));
-		inputMenu.add(getClassCheckItem("Add A/C Sweep", "SweepElm"));
-		inputMenu.add(getClassCheckItem("Add Var. Voltage", "VarRailElm"));
-		inputMenu.add(getClassCheckItem("Add Antenna", "AntennaElm"));
-		inputMenu.add(getClassCheckItem("Add Current Source", "CurrentElm"));
-		inputMenu.add(getClassCheckItem("Add LED", "LEDElm"));
-		inputMenu.add(getClassCheckItem("Add Lamp (beta)", "LampElm"));
-		
-		Menu activeMenu = new Menu("Active Components");
-		mainMenu.add(activeMenu);
-		activeMenu.add(getClassCheckItem("Add Diode", "DiodeElm"));
-		activeMenu.add(getClassCheckItem("Add Zener Diode", "ZenerElm"));
-		activeMenu.add(getClassCheckItem("Add Transistor (bipolar, NPN)", "NTransistorElm"));
-		activeMenu.add(getClassCheckItem("Add Transistor (bipolar, PNP)", "PTransistorElm"));
-		activeMenu.add(getClassCheckItem("Add Op Amp (- on top)", "OpAmpElm"));
-		activeMenu.add(getClassCheckItem("Add Op Amp (+ on top)", "OpAmpSwapElm"));
-		activeMenu.add(getClassCheckItem("Add MOSFET (n-channel)", "NMosfetElm"));
-		activeMenu.add(getClassCheckItem("Add MOSFET (p-channel)", "PMosfetElm"));
-		activeMenu.add(getClassCheckItem("Add JFET (n-channel)", "NJfetElm"));
-		activeMenu.add(getClassCheckItem("Add JFET (p-channel)", "PJfetElm"));
-		activeMenu.add(getClassCheckItem("Add Analog Switch (SPST)", "AnalogSwitchElm"));
-		activeMenu.add(getClassCheckItem("Add Analog Switch (SPDT)", "AnalogSwitch2Elm"));
-		activeMenu.add(getClassCheckItem("Add SCR", "SCRElm"));
-		//activeMenu.add(getClassCheckItem("Add Varactor/Varicap", "VaractorElm"));
-		activeMenu.add(getClassCheckItem("Add Tunnel Diode", "TunnelDiodeElm"));
-		activeMenu.add(getClassCheckItem("Add Triode", "TriodeElm"));
-		//activeMenu.add(getClassCheckItem("Add Diac", "DiacElm"));
-		//activeMenu.add(getClassCheckItem("Add Triac", "TriacElm"));
-		//activeMenu.add(getClassCheckItem("Add Photoresistor", "PhotoResistorElm"));
-		//activeMenu.add(getClassCheckItem("Add Thermistor", "ThermistorElm"));
-		activeMenu.add(getClassCheckItem("Add CCII+", "CC2Elm"));
-		activeMenu.add(getClassCheckItem("Add CCII-", "CC2NegElm"));
-	
-		Menu gateMenu = new Menu("Logic Gates");
-		mainMenu.add(gateMenu);
-		gateMenu.add(getClassCheckItem("Add Inverter", "InverterElm"));
-		gateMenu.add(getClassCheckItem("Add NAND Gate", "NandGateElm"));
-		gateMenu.add(getClassCheckItem("Add NOR Gate", "NorGateElm"));
-		gateMenu.add(getClassCheckItem("Add AND Gate", "AndGateElm"));
-		gateMenu.add(getClassCheckItem("Add OR Gate", "OrGateElm"));
-		gateMenu.add(getClassCheckItem("Add XOR Gate", "XorGateElm"));
-	
-		Menu chipMenu = new Menu("Chips");
-		mainMenu.add(chipMenu);
-		chipMenu.add(getClassCheckItem("Add D Flip-Flop", "DFlipFlopElm"));
-		chipMenu.add(getClassCheckItem("Add JK Flip-Flop", "JKFlipFlopElm"));
-		chipMenu.add(getClassCheckItem("Add 7 Segment LED", "SevenSegElm"));
-		chipMenu.add(getClassCheckItem("Add VCO", "VCOElm"));
-		chipMenu.add(getClassCheckItem("Add Phase Comparator", "PhaseCompElm"));
-		chipMenu.add(getClassCheckItem("Add Counter", "CounterElm"));
-		chipMenu.add(getClassCheckItem("Add Decade Counter", "DecadeElm"));
-		chipMenu.add(getClassCheckItem("Add 555 Timer", "TimerElm"));
-		chipMenu.add(getClassCheckItem("Add DAC", "DACElm"));
-		chipMenu.add(getClassCheckItem("Add ADC", "ADCElm"));
-		chipMenu.add(getClassCheckItem("Add Latch", "LatchElm"));
-		
-		Menu otherMenu = new Menu("Other");
-		mainMenu.add(otherMenu);
-		otherMenu.add(getClassCheckItem("Add Text", "TextElm"));
-		otherMenu.add(getClassCheckItem("Add Scope Probe", "ProbeElm"));
-		otherMenu.add(getCheckItem("Drag All (Alt-drag)", "DragAll"));
-		otherMenu.add(getCheckItem(
-				  isMac ? "Drag Row (Alt-S-drag, S-right)" :
-				  "Drag Row (S-right)",
-				  "DragRow"));
-		otherMenu.add(getCheckItem(
-				  isMac ? "Drag Column (Alt-\u2318-drag, \u2318-right)" :
-				  "Drag Column (C-right)",
-				  "DragColumn"));
-		otherMenu.add(getCheckItem("Drag Selected", "DragSelected"));
-		otherMenu.add(getCheckItem("Drag Post (" + ctrlMetaKey + "-drag)",
-					   "DragPost"));
-	
-		mainMenu.add(getCheckItem("Select/Drag Selected (space or Shift-drag)", "Select"));
+		// Create popup menus
+		mainMenu = buildMainMenu();
 		main.add(mainMenu);
+		
+		elmMenu = buildElementMenu();
+		main.add(elmMenu);
+		
+		scopeMenu = buildScopeMenu(false);
+		transScopeMenu = buildScopeMenu(true);
 	
-	
-		// ***************************************************************
-		// ** Add control elements (which end up in bar at right)
-		// ***************************************************************
+		// Create main controls
+		setupMainControls();
 		
-		// Background will show thorugh if Options->Clear Background is selected
-		main.setBackground(Color.WHITE);
-		
-		stoppedCheck = new JCheckBox();
-		ImageIcon pauseIcon = new ImageIcon("images/Pause.png");
-		stoppedCheck.setIcon(pauseIcon);
-		ImageIcon playIcon = new ImageIcon("images/Play.png");
-		stoppedCheck.setSelectedIcon(playIcon);
-		stoppedCheck.setToolTipText("Pause Simulation");
-		stoppedCheck.setSize(20,20);
-		stoppedCheck.addItemListener(this);
-		
-		resetButton = new JButton();
-		ImageIcon resetIcon = new ImageIcon("images/Reset.png");
-		resetButton.setIcon(resetIcon);
-		resetButton.setToolTipText("Reset Circuit");
-		resetButton.setFocusPainted(false);
-		resetButton.setBorderPainted(false);
-		resetButton.setContentAreaFilled(false);
-		resetButton.addActionListener(this);
-		
-		dumpMatrixButton = new JButton("Dump Matrix");
-		dumpMatrixButton.addActionListener(this);
-		
-		// The initial value seems to be changed somewhere else, so the 130 is arbitrary
-		speedBar = new JSlider( JSlider.HORIZONTAL, 0, 260, 130 );
-		speedBar.addChangeListener(this);	
-	
-		// Speed of current (as in electrical current)
-		currentBar = new JSlider( JSlider.HORIZONTAL, 35, 65, 50 );
-		currentBar.addChangeListener(this);
-		
-		// Power brightness setting is disabled by default.  Enabled in Options->Show Power
-		powerLabel = new JLabel("Power Brightness", JLabel.CENTER);
-		powerBar = new JSlider( JSlider.HORIZONTAL, 20, 80, 50 );
-		powerBar.addChangeListener(this);
-		powerBar.setEnabled(false);
-		powerLabel.setEnabled(false);
-	
-		titleLabel = new JLabel("Label", JLabel.RIGHT);
-		titleLabel.setFont(new Font("SansSerif", 0, 10));
-		
-		// Add components to window
-		main.add(stoppedCheck);
-		main.add(resetButton);
-		main.add(new JLabel("Simulation Speed", JLabel.CENTER));
-		main.add(speedBar);
-		main.add(new JLabel("Current Speed", JLabel.CENTER));
-		main.add(currentBar);
-		main.add(powerLabel);
-		main.add(powerBar);
-		main.add(new JLabel("www.falstad.com"));
-		if (useFrame) {
-			main.add(new JLabel("Current Circuit",JLabel.RIGHT));
-		    main.add(titleLabel);
-		}
+		/* **************************************************************/
 	
 		setGrid();
 		elmList = new Vector<CircuitElm>();
@@ -480,28 +265,12 @@ public class CirSim extends JFrame
 		scopeCount = 0;
 		
 		random = new Random();
-		cv.setBackground(Color.black);
-		cv.setForeground(Color.lightGray);
-		
-		elmMenu = new PopupMenu();
-		elmMenu.add(elmEditMenuItem = getMenuItem("Edit"));
-		elmMenu.add(elmScopeMenuItem = getMenuItem("View in Scope"));
-		elmMenu.add(elmCutMenuItem = getMenuItem("Cut"));
-		elmMenu.add(elmCopyMenuItem = getMenuItem("Copy"));
-		elmMenu.add(elmDeleteMenuItem = getMenuItem("Delete"));
-		elmMenu.add(addToScope = getMenuItem("Add to new Scope"));
-		main.add(elmMenu);
-		
-		scopeMenu = buildScopeMenu(false);
-		transScopeMenu = buildScopeMenu(true);
 		
 		scopes = new Vector<Oscilloscope>();
 	    selected_scope = null;
 	
 		lss = new LegacyScopeSupport(this);
 		getSetupList(circuitsMenu, false);
-		if (useFrame)
-		    setMenuBar(mb);
 		if (startCircuitText != null)
 		    readSetup(startCircuitText);
 		else if (stopMessage == null && startCircuit != null)
@@ -537,83 +306,7 @@ public class CirSim extends JFrame
 		shown = true;
     }
     
-    PopupMenu buildScopeMenu(boolean t) {
-		PopupMenu m = new PopupMenu();
-		m.add(getMenuItem("Remove", "remove"));
-		m.add(getMenuItem("Speed 2x", "speed2"));
-		m.add(getMenuItem("Speed 1/2x", "speed1/2"));
-		m.add(getMenuItem("Scale 2x", "scale"));
-		m.add(getMenuItem("Max Scale", "maxscale"));
-		m.add(getMenuItem("Stack", "stack"));
-		m.add(getMenuItem("Unstack", "unstack"));
-		m.add(getMenuItem("Reset", "reset"));
-		if (t) {
-		    m.add(scopeIbMenuItem = getCheckItem("Show Ib"));
-		    m.add(scopeIcMenuItem = getCheckItem("Show Ic"));
-		    m.add(scopeIeMenuItem = getCheckItem("Show Ie"));
-		    m.add(scopeVbeMenuItem = getCheckItem("Show Vbe"));
-		    m.add(scopeVbcMenuItem = getCheckItem("Show Vbc"));
-		    m.add(scopeVceMenuItem = getCheckItem("Show Vce"));
-		    m.add(scopeVceIcMenuItem = getCheckItem("Show Vce vs Ic"));
-		} else {
-		    m.add(scopeVMenuItem = getCheckItem("Show Voltage"));
-		    m.add(scopeIMenuItem = getCheckItem("Show Current"));
-		    m.add(scopePowerMenuItem = getCheckItem("Show Power Consumed"));
-		    m.add(scopeMaxMenuItem = getCheckItem("Show Peak Value"));
-		    m.add(scopeMinMenuItem = getCheckItem("Show Negative Peak Value"));
-		    m.add(scopeFreqMenuItem = getCheckItem("Show Frequency"));
-		    m.add(scopeVIMenuItem = getCheckItem("Show V vs I"));
-		    m.add(scopeXYMenuItem = getCheckItem("Plot X/Y"));
-		    m.add(scopeSelectYMenuItem = getMenuItem("Select Y", "selecty"));
-		    m.add(scopeResistMenuItem = getCheckItem("Show Resistance"));
-		}
-		main.add(m);
-		return m;
-    }
     
-    MenuItem getMenuItem(String s) {
-		MenuItem mi = new MenuItem(s);
-		mi.addActionListener(this);
-		return mi;
-    }
-
-    MenuItem getMenuItem(String s, String ac) {
-		MenuItem mi = new MenuItem(s);
-		mi.setActionCommand(ac);
-		mi.addActionListener(this);
-		return mi;
-    }
-
-    CheckboxMenuItem getCheckItem(String s) {
-		CheckboxMenuItem mi = new CheckboxMenuItem(s);
-		mi.addItemListener(this);
-		mi.setActionCommand("");
-		return mi;
-    }
-
-    CheckboxMenuItem getClassCheckItem(String s, String t) {
-		try {
-		    Class<?> c = Class.forName(t);
-		    CircuitElm elm = constructElement(c, 0, 0);
-		    register(c, elm);
-		    int dt = 0;
-		    if (elm.needsShortcut() && elm.getDumpClass() == c) {
-			dt = elm.getDumpType();
-			s += " (" + (char)dt + ")";
-		    }
-		    elm.delete();
-		} catch (Exception ee) {
-		    ee.printStackTrace();
-		}
-		return getCheckItem(s, t);
-    }
-    
-    CheckboxMenuItem getCheckItem(String s, String t) {
-		CheckboxMenuItem mi = new CheckboxMenuItem(s);
-		mi.addItemListener(this);
-		mi.setActionCommand(t);
-		return mi;
-    }
 
     void register(Class<?> c, CircuitElm elm) {
 		int t = elm.getDumpType();
@@ -3164,6 +2857,327 @@ public class CirSim extends JFrame
 		tot -= a[i][j]*b[j];
 	    b[i] = tot/a[i][i];
 	}
+    }
+    
+    /* *****************************************************************
+     * Setup interface elements
+     * *****************************************************************/
+    void setupMainControls() {
+    	stoppedCheck = new JCheckBox();
+		ImageIcon pauseIcon = new ImageIcon("images/Pause.png");
+		stoppedCheck.setIcon(pauseIcon);
+		ImageIcon playIcon = new ImageIcon("images/Play.png");
+		stoppedCheck.setSelectedIcon(playIcon);
+		stoppedCheck.setToolTipText("Pause Simulation");
+		stoppedCheck.setSize(20,20);
+		stoppedCheck.addItemListener(this);
+		
+		resetButton = new JButton();
+		ImageIcon resetIcon = new ImageIcon("images/Reset.png");
+		resetButton.setIcon(resetIcon);
+		resetButton.setToolTipText("Reset Circuit");
+		resetButton.setFocusPainted(false);
+		resetButton.setBorderPainted(false);
+		resetButton.setContentAreaFilled(false);
+		resetButton.addActionListener(this);
+		
+		dumpMatrixButton = new JButton("Dump Matrix");
+		dumpMatrixButton.addActionListener(this);
+		
+		// The initial value seems to be changed somewhere else, so the 130 is arbitrary
+		speedBar = new JSlider( JSlider.HORIZONTAL, 0, 260, 130 );
+		speedBar.addChangeListener(this);	
+	
+		// Speed of current (as in electrical current)
+		currentBar = new JSlider( JSlider.HORIZONTAL, 35, 65, 50 );
+		currentBar.addChangeListener(this);
+		
+		// Power brightness setting is disabled by default.  Enabled in Options->Show Power
+		powerLabel = new JLabel("Power Brightness", JLabel.CENTER);
+		powerBar = new JSlider( JSlider.HORIZONTAL, 20, 80, 50 );
+		powerBar.addChangeListener(this);
+		powerBar.setEnabled(false);
+		powerLabel.setEnabled(false);
+	
+		titleLabel = new JLabel("Label", JLabel.RIGHT);
+		titleLabel.setFont(new Font("SansSerif", 0, 10));
+		
+		// Add components to window
+		main.add(stoppedCheck);
+		main.add(resetButton);
+		main.add(new JLabel("Simulation Speed", JLabel.CENTER));
+		main.add(speedBar);
+		main.add(new JLabel("Current Speed", JLabel.CENTER));
+		main.add(currentBar);
+		main.add(powerLabel);
+		main.add(powerBar);
+		main.add(new JLabel("www.falstad.com"));
+		main.add(new JLabel("Current Circuit",JLabel.RIGHT));
+		main.add(titleLabel);
+    }
+    
+    MenuBar buildMenuBar() {
+    	MenuBar mb = new MenuBar();
+    	
+    	Menu m = new Menu("File");
+	    mb.add(m);
+		m.add(importItem = getMenuItem("Import"));
+		m.add(exportItem = getMenuItem("Export"));
+		m.add(exportLinkItem = getMenuItem("Export Link"));
+		m.addSeparator();
+		m.add(exitItem   = getMenuItem("Exit"));
+	
+		m = new Menu("Edit");
+		m.add(undoItem = getMenuItem("Undo"));
+		undoItem.setShortcut(new MenuShortcut(KeyEvent.VK_Z));
+		m.add(redoItem = getMenuItem("Redo"));
+		redoItem.setShortcut(new MenuShortcut(KeyEvent.VK_Z, true));
+		m.addSeparator();
+		m.add(cutItem = getMenuItem("Cut"));
+		cutItem.setShortcut(new MenuShortcut(KeyEvent.VK_X));
+		m.add(copyItem = getMenuItem("Copy"));
+		copyItem.setShortcut(new MenuShortcut(KeyEvent.VK_C));
+		m.add(pasteItem = getMenuItem("Paste"));
+		pasteItem.setShortcut(new MenuShortcut(KeyEvent.VK_V));
+		pasteItem.setEnabled(false);
+		m.add(selectAllItem = getMenuItem("Select All"));
+		selectAllItem.setShortcut(new MenuShortcut(KeyEvent.VK_A));
+	    mb.add(m);
+	
+		m = new Menu("Scope");
+	    mb.add(m);
+		m.add(getMenuItem("New Scope", "newScope"));
+		m.add(getMenuItem("Stack All", "stackAll"));
+		m.add(getMenuItem("Unstack All", "unstackAll"));
+	
+		m = new Menu("Options");
+	    mb.add(m);
+		m.add(dotsCheckItem = getCheckItem("Show Current"));
+		dotsCheckItem.setState(true);
+		m.add(voltsCheckItem = getCheckItem("Show Voltage"));
+		voltsCheckItem.setState(true);
+		m.add(powerCheckItem = getCheckItem("Show Power"));
+		m.add(showValuesCheckItem = getCheckItem("Show Values"));
+		showValuesCheckItem.setState(true);
+		//m.add(conductanceCheckItem = getCheckItem("Show Conductance"));
+		m.add(smallGridCheckItem = getCheckItem("Small Grid"));
+		String euroResistor = applet.getParameter("euroResistors");
+		boolean euro = (euroResistor != null && euroResistor.equalsIgnoreCase("true"));
+		m.add(euroResistorCheckItem = getCheckItem("European Resistors"));
+		euroResistorCheckItem.setState(euro);
+		boolean convention = true;
+		String x = applet.getParameter("conventionalCurrent");
+	    if (x != null && x.equalsIgnoreCase("true"))
+	    	convention = false;
+		m.add(conventionCheckItem = getCheckItem("Conventional Current Motion"));
+		conventionCheckItem.setState(convention);
+		m.add(optionsItem = getMenuItem("Other Options..."));
+		
+		circuitsMenu = new Menu("Circuits");
+	    mb.add(circuitsMenu);
+	    
+	    return mb;
+    }
+    
+    PopupMenu buildMainMenu() {
+    	PopupMenu menu = new PopupMenu();
+    	
+    	menu.add(getClassCheckItem("Add Wire", "WireElm"));
+		menu.add(getClassCheckItem("Add Resistor", "ResistorElm"));
+		
+		Menu passMenu = new Menu("Passive Components");
+		menu.add(passMenu);
+		passMenu.add(getClassCheckItem("Add Capacitor", "CapacitorElm"));
+		passMenu.add(getClassCheckItem("Add Inductor", "InductorElm"));
+		passMenu.add(getClassCheckItem("Add Switch", "SwitchElm"));
+		passMenu.add(getClassCheckItem("Add Push Switch", "PushSwitchElm"));
+		passMenu.add(getClassCheckItem("Add SPDT Switch", "Switch2Elm"));
+		passMenu.add(getClassCheckItem("Add Potentiometer", "PotElm"));
+		passMenu.add(getClassCheckItem("Add Transformer", "TransformerElm"));
+		passMenu.add(getClassCheckItem("Add Tapped Transformer", "TappedTransformerElm"));
+		passMenu.add(getClassCheckItem("Add Transmission Line", "TransLineElm"));
+		passMenu.add(getClassCheckItem("Add Relay", "RelayElm"));
+		passMenu.add(getClassCheckItem("Add Memristor", "MemristorElm"));
+		passMenu.add(getClassCheckItem("Add Spark Gap", "SparkGapElm"));
+		
+		Menu inputMenu = new Menu("Inputs/Outputs");
+		menu.add(inputMenu);
+		inputMenu.add(getClassCheckItem("Add Ground", "GroundElm"));
+		inputMenu.add(getClassCheckItem("Add Voltage Source (2-terminal)", "DCVoltageElm"));
+		inputMenu.add(getClassCheckItem("Add A/C Source (2-terminal)", "ACVoltageElm"));
+		inputMenu.add(getClassCheckItem("Add Voltage Source (1-terminal)", "RailElm"));
+		inputMenu.add(getClassCheckItem("Add A/C Source (1-terminal)", "ACRailElm"));
+		inputMenu.add(getClassCheckItem("Add Square Wave (1-terminal)", "SquareRailElm"));
+		inputMenu.add(getClassCheckItem("Add Analog Output", "OutputElm"));
+		inputMenu.add(getClassCheckItem("Add Logic Input", "LogicInputElm"));
+		inputMenu.add(getClassCheckItem("Add Logic Output", "LogicOutputElm"));
+		inputMenu.add(getClassCheckItem("Add Clock", "ClockElm"));
+		inputMenu.add(getClassCheckItem("Add A/C Sweep", "SweepElm"));
+		inputMenu.add(getClassCheckItem("Add Var. Voltage", "VarRailElm"));
+		inputMenu.add(getClassCheckItem("Add Antenna", "AntennaElm"));
+		inputMenu.add(getClassCheckItem("Add Current Source", "CurrentElm"));
+		inputMenu.add(getClassCheckItem("Add LED", "LEDElm"));
+		inputMenu.add(getClassCheckItem("Add Lamp (beta)", "LampElm"));
+		
+		Menu activeMenu = new Menu("Active Components");
+		menu.add(activeMenu);
+		activeMenu.add(getClassCheckItem("Add Diode", "DiodeElm"));
+		activeMenu.add(getClassCheckItem("Add Zener Diode", "ZenerElm"));
+		activeMenu.add(getClassCheckItem("Add Transistor (bipolar, NPN)", "NTransistorElm"));
+		activeMenu.add(getClassCheckItem("Add Transistor (bipolar, PNP)", "PTransistorElm"));
+		activeMenu.add(getClassCheckItem("Add Op Amp (- on top)", "OpAmpElm"));
+		activeMenu.add(getClassCheckItem("Add Op Amp (+ on top)", "OpAmpSwapElm"));
+		activeMenu.add(getClassCheckItem("Add MOSFET (n-channel)", "NMosfetElm"));
+		activeMenu.add(getClassCheckItem("Add MOSFET (p-channel)", "PMosfetElm"));
+		activeMenu.add(getClassCheckItem("Add JFET (n-channel)", "NJfetElm"));
+		activeMenu.add(getClassCheckItem("Add JFET (p-channel)", "PJfetElm"));
+		activeMenu.add(getClassCheckItem("Add Analog Switch (SPST)", "AnalogSwitchElm"));
+		activeMenu.add(getClassCheckItem("Add Analog Switch (SPDT)", "AnalogSwitch2Elm"));
+		activeMenu.add(getClassCheckItem("Add SCR", "SCRElm"));
+		//activeMenu.add(getClassCheckItem("Add Varactor/Varicap", "VaractorElm"));
+		activeMenu.add(getClassCheckItem("Add Tunnel Diode", "TunnelDiodeElm"));
+		activeMenu.add(getClassCheckItem("Add Triode", "TriodeElm"));
+		//activeMenu.add(getClassCheckItem("Add Diac", "DiacElm"));
+		//activeMenu.add(getClassCheckItem("Add Triac", "TriacElm"));
+		//activeMenu.add(getClassCheckItem("Add Photoresistor", "PhotoResistorElm"));
+		//activeMenu.add(getClassCheckItem("Add Thermistor", "ThermistorElm"));
+		activeMenu.add(getClassCheckItem("Add CCII+", "CC2Elm"));
+		activeMenu.add(getClassCheckItem("Add CCII-", "CC2NegElm"));
+	
+		Menu gateMenu = new Menu("Logic Gates");
+		menu.add(gateMenu);
+		gateMenu.add(getClassCheckItem("Add Inverter", "InverterElm"));
+		gateMenu.add(getClassCheckItem("Add NAND Gate", "NandGateElm"));
+		gateMenu.add(getClassCheckItem("Add NOR Gate", "NorGateElm"));
+		gateMenu.add(getClassCheckItem("Add AND Gate", "AndGateElm"));
+		gateMenu.add(getClassCheckItem("Add OR Gate", "OrGateElm"));
+		gateMenu.add(getClassCheckItem("Add XOR Gate", "XorGateElm"));
+	
+		Menu chipMenu = new Menu("Chips");
+		menu.add(chipMenu);
+		chipMenu.add(getClassCheckItem("Add D Flip-Flop", "DFlipFlopElm"));
+		chipMenu.add(getClassCheckItem("Add JK Flip-Flop", "JKFlipFlopElm"));
+		chipMenu.add(getClassCheckItem("Add 7 Segment LED", "SevenSegElm"));
+		chipMenu.add(getClassCheckItem("Add VCO", "VCOElm"));
+		chipMenu.add(getClassCheckItem("Add Phase Comparator", "PhaseCompElm"));
+		chipMenu.add(getClassCheckItem("Add Counter", "CounterElm"));
+		chipMenu.add(getClassCheckItem("Add Decade Counter", "DecadeElm"));
+		chipMenu.add(getClassCheckItem("Add 555 Timer", "TimerElm"));
+		chipMenu.add(getClassCheckItem("Add DAC", "DACElm"));
+		chipMenu.add(getClassCheckItem("Add ADC", "ADCElm"));
+		chipMenu.add(getClassCheckItem("Add Latch", "LatchElm"));
+		
+		Menu otherMenu = new Menu("Other");
+		menu.add(otherMenu);
+		otherMenu.add(getClassCheckItem("Add Text", "TextElm"));
+		otherMenu.add(getClassCheckItem("Add Scope Probe", "ProbeElm"));
+		otherMenu.add(getCheckItem("Drag All (Alt-drag)", "DragAll"));
+		otherMenu.add(getCheckItem(
+				  isMac ? "Drag Row (Alt-S-drag, S-right)" :
+				  "Drag Row (S-right)",
+				  "DragRow"));
+		otherMenu.add(getCheckItem(
+				  isMac ? "Drag Column (Alt-\u2318-drag, \u2318-right)" :
+				  "Drag Column (C-right)",
+				  "DragColumn"));
+		otherMenu.add(getCheckItem("Drag Selected", "DragSelected"));
+		otherMenu.add(getCheckItem("Drag Post (" + ctrlMetaKey + "-drag)",
+					   "DragPost"));
+	
+		menu.add(getCheckItem("Select/Drag Selected (space or Shift-drag)", "Select"));
+
+		return menu;
+    }
+    
+    PopupMenu buildElementMenu() {
+    	PopupMenu m = new PopupMenu();
+    	
+    	m.add(elmEditMenuItem = getMenuItem("Edit"));
+		m.add(elmScopeMenuItem = getMenuItem("View in Scope"));
+		m.add(elmCutMenuItem = getMenuItem("Cut"));
+		m.add(elmCopyMenuItem = getMenuItem("Copy"));
+		m.add(elmDeleteMenuItem = getMenuItem("Delete"));
+		m.add(addToScope = getMenuItem("Add to new Scope"));
+		
+		return m;
+    }
+    
+    PopupMenu buildScopeMenu(boolean t) {
+		PopupMenu m = new PopupMenu();
+		m.add(getMenuItem("Remove", "remove"));
+		m.add(getMenuItem("Speed 2x", "speed2"));
+		m.add(getMenuItem("Speed 1/2x", "speed1/2"));
+		m.add(getMenuItem("Scale 2x", "scale"));
+		m.add(getMenuItem("Max Scale", "maxscale"));
+		m.add(getMenuItem("Stack", "stack"));
+		m.add(getMenuItem("Unstack", "unstack"));
+		m.add(getMenuItem("Reset", "reset"));
+		if (t) {
+		    m.add(scopeIbMenuItem = getCheckItem("Show Ib"));
+		    m.add(scopeIcMenuItem = getCheckItem("Show Ic"));
+		    m.add(scopeIeMenuItem = getCheckItem("Show Ie"));
+		    m.add(scopeVbeMenuItem = getCheckItem("Show Vbe"));
+		    m.add(scopeVbcMenuItem = getCheckItem("Show Vbc"));
+		    m.add(scopeVceMenuItem = getCheckItem("Show Vce"));
+		    m.add(scopeVceIcMenuItem = getCheckItem("Show Vce vs Ic"));
+		} else {
+		    m.add(scopeVMenuItem = getCheckItem("Show Voltage"));
+		    m.add(scopeIMenuItem = getCheckItem("Show Current"));
+		    m.add(scopePowerMenuItem = getCheckItem("Show Power Consumed"));
+		    m.add(scopeMaxMenuItem = getCheckItem("Show Peak Value"));
+		    m.add(scopeMinMenuItem = getCheckItem("Show Negative Peak Value"));
+		    m.add(scopeFreqMenuItem = getCheckItem("Show Frequency"));
+		    m.add(scopeVIMenuItem = getCheckItem("Show V vs I"));
+		    m.add(scopeXYMenuItem = getCheckItem("Plot X/Y"));
+		    m.add(scopeSelectYMenuItem = getMenuItem("Select Y", "selecty"));
+		    m.add(scopeResistMenuItem = getCheckItem("Show Resistance"));
+		}
+		main.add(m);
+		return m;
+    }
+    
+    MenuItem getMenuItem(String s) {
+		MenuItem mi = new MenuItem(s);
+		mi.addActionListener(this);
+		return mi;
+    }
+
+    MenuItem getMenuItem(String s, String ac) {
+		MenuItem mi = new MenuItem(s);
+		mi.setActionCommand(ac);
+		mi.addActionListener(this);
+		return mi;
+    }
+
+    CheckboxMenuItem getCheckItem(String s) {
+		CheckboxMenuItem mi = new CheckboxMenuItem(s);
+		mi.addItemListener(this);
+		mi.setActionCommand("");
+		return mi;
+    }
+
+    CheckboxMenuItem getClassCheckItem(String s, String t) {
+		try {
+		    Class<?> c = Class.forName(t);
+		    CircuitElm elm = constructElement(c, 0, 0);
+		    register(c, elm);
+		    int dt = 0;
+		    if (elm.needsShortcut() && elm.getDumpClass() == c) {
+			dt = elm.getDumpType();
+			s += " (" + (char)dt + ")";
+		    }
+		    elm.delete();
+		} catch (Exception ee) {
+		    ee.printStackTrace();
+		}
+		return getCheckItem(s, t);
+    }
+    
+    CheckboxMenuItem getCheckItem(String s, String t) {
+		CheckboxMenuItem mi = new CheckboxMenuItem(s);
+		mi.addItemListener(this);
+		mi.setActionCommand(t);
+		return mi;
     }
 
 }
