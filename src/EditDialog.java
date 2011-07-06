@@ -2,18 +2,20 @@ import java.awt.*;
 import java.awt.event.*;
 import java.text.NumberFormat;
 import java.text.DecimalFormat;
+import javax.swing.*;
+import javax.swing.event.*;
 
 interface Editable {
     EditInfo getEditInfo(int n);
     void setEditValue(int n, EditInfo ei);
 }
 
-class EditDialog extends Dialog implements AdjustmentListener, ActionListener, ItemListener {
+class EditDialog extends JDialog implements ActionListener, ChangeListener, ItemListener {
 	private static final long serialVersionUID = -5191214945517294319L;
 	
 	Editable elm;
     CirSim cframe;
-    Button applyButton, okButton;
+    JButton applyButton, okButton;
     EditInfo einfos[];
     int einfocount;
     final int barmax = 1000;
@@ -34,7 +36,7 @@ class EditDialog extends Dialog implements AdjustmentListener, ActionListener, I
 		    if (einfos[i] == null)
 		    	break;
 		    EditInfo ei = einfos[i];
-		    add(new Label(ei.name));
+		    add(new JLabel(ei.name));
 		    if (ei.choice != null) {
 		    	add(ei.choice);
 		    	ei.choice.addItemListener(this);
@@ -42,23 +44,24 @@ class EditDialog extends Dialog implements AdjustmentListener, ActionListener, I
 		    	add(ei.checkbox);
 		    	ei.checkbox.addItemListener(this);
 		    } else {
-		    	add(ei.textf = new TextField(unitString(ei), 10));
+		    	add(ei.textf = new JTextField(unitString(ei), 10));
 				if (ei.text != null)
 				    ei.textf.setText(ei.text);
 				ei.textf.addActionListener(this);
 				if (ei.text == null) {
-				    add(ei.bar = new Scrollbar(Scrollbar.HORIZONTAL, 50, 10, 0, barmax+2));
+				    add(ei.bar = new JSlider(JSlider.HORIZONTAL, 0, barmax+2, 50));
 				    setBar(ei);
-				    ei.bar.addAdjustmentListener(this);
+				    ei.bar.addChangeListener(this);
 				}
 		    }
 		}
 		einfocount = i;
-		add(applyButton = new Button("Apply"));
+		add(applyButton = new JButton("Apply"));
 		applyButton.addActionListener(this);
-		add(okButton = new Button("OK"));
+		add(okButton = new JButton("OK"));
 		okButton.addActionListener(this);
-		Point x = cframe.main.getLocationOnScreen();
+		validate();
+		Point x = CirSim.main.getLocationOnScreen();
 		Dimension d = getSize();
 		setLocation(x.x + (cframe.winSize.width-d.width)/2, x.y + (cframe.winSize.height-d.height)/2);
     }
@@ -148,16 +151,16 @@ class EditDialog extends Dialog implements AdjustmentListener, ActionListener, I
 		}
 		if (e.getSource() == okButton) {
 		    apply();
-		    cframe.main.requestFocus();
+		    CirSim.main.requestFocus();
 		    setVisible(false);
-		    cframe.editDialog = null;
+		    CirSim.editDialog = null;
 		}
 		if (e.getSource() == applyButton)
 		    apply();
     }
-	
-    public void adjustmentValueChanged(AdjustmentEvent e) {
-		Object src = e.getSource();
+    
+    public void stateChanged(ChangeEvent e) {
+    	Object src = e.getSource();
 		int i;
 		for (i = 0; i != einfocount; i++) {
 		    EditInfo ei = einfos[i];
@@ -195,16 +198,16 @@ class EditDialog extends Dialog implements AdjustmentListener, ActionListener, I
 		}
 		if (changed) {
 		    setVisible(false);
-		    cframe.editDialog = new EditDialog(elm, cframe);
-		    cframe.editDialog.setVisible(true);
+		    CirSim.editDialog = new EditDialog(elm, cframe);
+		    CirSim.editDialog.setVisible(true);
 		}
     }
 	
     public void processEvent(AWTEvent ev) {
 		if (ev.getID() == Event.WINDOW_DESTROY) {
-		    cframe.main.requestFocus();
+		    CirSim.main.requestFocus();
 		    setVisible(false);
-		    cframe.editDialog = null;
+		    CirSim.editDialog = null;
 		}
 		super.processEvent(ev);
     }

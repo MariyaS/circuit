@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
     class OutputElm extends CircuitElm {
 	final int FLAG_VALUE = 1;
@@ -42,7 +43,7 @@ import java.util.StringTokenizer;
 	public EditInfo getEditInfo(int n) {
 	    if (n == 0) {
 		EditInfo ei = new EditInfo("", 0, -1, -1);
-		ei.checkbox = new Checkbox("Show Voltage",
+		ei.checkbox = new JCheckBox("Show Voltage",
 					   (flags & FLAG_VALUE) != 0);
 		return ei;
 	    }
@@ -50,7 +51,7 @@ import java.util.StringTokenizer;
 	}
 	public void setEditValue(int n, EditInfo ei) {
 	    if (n == 0)
-		flags = (ei.checkbox.getState()) ?
+		flags = (ei.checkbox.isSelected()) ?
 		    (flags | FLAG_VALUE) :
 		    (flags & ~FLAG_VALUE);
 	}

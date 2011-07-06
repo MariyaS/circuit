@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
 class AnalogSwitchElm extends CircuitElm {
     final int FLAG_INVERT = 1;
@@ -108,7 +109,7 @@ class AnalogSwitchElm extends CircuitElm {
     public EditInfo getEditInfo(int n) {
 	if (n == 0) {
 	    EditInfo ei = new EditInfo("", 0, -1, -1);
-	    ei.checkbox = new Checkbox("Normally closed",
+	    ei.checkbox = new JCheckBox("Normally closed",
 				       (flags & FLAG_INVERT) != 0);
 	    return ei;
 	}
@@ -120,7 +121,7 @@ class AnalogSwitchElm extends CircuitElm {
     }
     public void setEditValue(int n, EditInfo ei) {
 	if (n == 0)
-	    flags = (ei.checkbox.getState()) ?
+	    flags = (ei.checkbox.isSelected()) ?
 		(flags | FLAG_INVERT) :
 		(flags & ~FLAG_INVERT);
 	if (n == 1 && ei.value > 0)

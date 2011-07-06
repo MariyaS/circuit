@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.util.StringTokenizer;
 import java.util.Vector;
+import javax.swing.*;
 
 class TextElm extends CircuitElm {
     String text;
@@ -94,13 +95,13 @@ class TextElm extends CircuitElm {
 	if (n == 2) {
 	    EditInfo ei = new EditInfo("", 0, -1, -1);
 	    ei.checkbox =
-		new Checkbox("Center", (flags & FLAG_CENTER) != 0);
+		new JCheckBox("Center", (flags & FLAG_CENTER) != 0);
 	    return ei;
 	}
 	if (n == 3) {
 	    EditInfo ei = new EditInfo("", 0, -1, -1);
 	    ei.checkbox =
-		new Checkbox("Draw Bar On Top", (flags & FLAG_BAR) != 0);
+		new JCheckBox("Draw Bar On Top", (flags & FLAG_BAR) != 0);
 	    return ei;
 	}
 	return null;
@@ -113,13 +114,13 @@ class TextElm extends CircuitElm {
 	if (n == 1)
 	    size = (int) ei.value;
 	if (n == 3) {
-	    if (ei.checkbox.getState())
+	    if (ei.checkbox.isSelected())
 		flags |= FLAG_BAR;
 	    else
 		flags &= ~FLAG_BAR;
 	}
 	if (n == 2) {
-	    if (ei.checkbox.getState())
+	    if (ei.checkbox.isSelected())
 		flags |= FLAG_CENTER;
 	    else
 		flags &= ~FLAG_CENTER;

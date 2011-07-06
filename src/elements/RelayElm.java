@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
 // 0 = switch
 // 1 = switch end 1
@@ -271,7 +272,7 @@ class RelayElm extends CircuitElm {
 	    return new EditInfo("Coil Resistance (ohms)", coilR, 0, 0);
 	if (n == 6) {
 	    EditInfo ei = new EditInfo("", 0, -1, -1);
-	    ei.checkbox = new Checkbox("Swap Coil Direction",
+	    ei.checkbox = new JCheckBox("Swap Coil Direction",
 				       (flags & FLAG_SWAP_COIL) != 0);
 	    return ei;
 	}
@@ -295,7 +296,7 @@ class RelayElm extends CircuitElm {
 	if (n == 5 && ei.value > 0)
 	    coilR = ei.value;
 	if (n == 6) {
-	    if (ei.checkbox.getState())
+	    if (ei.checkbox.isSelected())
 		flags |= FLAG_SWAP_COIL;
 	    else
 		flags &= ~FLAG_SWAP_COIL;

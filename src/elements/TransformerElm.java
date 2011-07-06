@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
     class TransformerElm extends CircuitElm {
 	double inductance, ratio, couplingCoef;
@@ -198,7 +199,7 @@ import java.util.StringTokenizer;
 		    setDimensionless();
 	    if (n == 3) {
 		EditInfo ei = new EditInfo("", 0, -1, -1);
-		ei.checkbox = new Checkbox("Trapezoidal Approximation",
+		ei.checkbox = new JCheckBox("Trapezoidal Approximation",
 					   isTrapezoidal());
 		return ei;
 	    }
@@ -212,7 +213,7 @@ import java.util.StringTokenizer;
 	    if (n == 2 && ei.value > 0 && ei.value < 1)
 		couplingCoef = ei.value;
 	    if (n == 3) {
-		if (ei.checkbox.getState())
+		if (ei.checkbox.isSelected())
 		    flags &= ~Inductor.FLAG_BACK_EULER;
 		else
 		    flags |= Inductor.FLAG_BACK_EULER;

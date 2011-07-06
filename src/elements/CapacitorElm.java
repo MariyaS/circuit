@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
     class CapacitorElm extends CircuitElm {
 	double capacitance;
@@ -118,7 +119,7 @@ import java.util.StringTokenizer;
 		return new EditInfo("Capacitance (F)", capacitance, 0, 0);
 	    if (n == 1) {
 		EditInfo ei = new EditInfo("", 0, -1, -1);
-		ei.checkbox = new Checkbox("Trapezoidal Approximation", isTrapezoidal());
+		ei.checkbox = new JCheckBox("Trapezoidal Approximation", isTrapezoidal());
 		return ei;
 	    }
 	    return null;
@@ -127,7 +128,7 @@ import java.util.StringTokenizer;
 	    if (n == 0 && ei.value > 0)
 		capacitance = ei.value;
 	    if (n == 1) {
-		if (ei.checkbox.getState())
+		if (ei.checkbox.isSelected())
 		    flags &= ~FLAG_BACK_EULER;
 		else
 		    flags |= FLAG_BACK_EULER;

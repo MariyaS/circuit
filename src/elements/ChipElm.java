@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
     abstract class ChipElm extends CircuitElm {
 	int csize, cspc, cspc2;
@@ -213,26 +214,26 @@ import java.util.StringTokenizer;
 	public EditInfo getEditInfo(int n) {
 	    if (n == 0) {
 		EditInfo ei = new EditInfo("", 0, -1, -1);
-		ei.checkbox = new Checkbox("Flip X", (flags & FLAG_FLIP_X) != 0);
+		ei.checkbox = new JCheckBox("Flip X", (flags & FLAG_FLIP_X) != 0);
 		return ei;
 	    }
 	    if (n == 1) {
 		EditInfo ei = new EditInfo("", 0, -1, -1);
-		ei.checkbox = new Checkbox("Flip Y", (flags & FLAG_FLIP_Y) != 0);
+		ei.checkbox = new JCheckBox("Flip Y", (flags & FLAG_FLIP_Y) != 0);
 		return ei;
 	    }
 	    return null;
 	}
 	public void setEditValue(int n, EditInfo ei) {
 	    if (n == 0) {
-		if (ei.checkbox.getState())
+		if (ei.checkbox.isSelected())
 		    flags |= FLAG_FLIP_X;
 		else
 		    flags &= ~FLAG_FLIP_X;
 		setPoints();
 	    }
 	    if (n == 1) {
-		if (ei.checkbox.getState())
+		if (ei.checkbox.isSelected())
 		    flags |= FLAG_FLIP_Y;
 		else
 		    flags &= ~FLAG_FLIP_Y;

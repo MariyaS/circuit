@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
 class SweepElm extends CircuitElm {
     double maxV, maxF, minF, sweepTime, frequency;
@@ -147,14 +148,14 @@ class SweepElm extends CircuitElm {
 	    return new EditInfo("Sweep Time (s)", sweepTime, 0, 0);
 	if (n == 3) {
 	    EditInfo ei = new EditInfo("", 0, -1, -1);
-	    ei.checkbox = new Checkbox("Logarithmic", (flags & FLAG_LOG) != 0);
+	    ei.checkbox = new JCheckBox("Logarithmic", (flags & FLAG_LOG) != 0);
 	    return ei;
 	}
 	if (n == 4)
 	    return new EditInfo("Max Voltage", maxV, 0, 0);
 	if (n == 5) {
 	    EditInfo ei = new EditInfo("", 0, -1, -1);
-	    ei.checkbox = new Checkbox("Bidirectional", (flags & FLAG_BIDIR) != 0);
+	    ei.checkbox = new JCheckBox("Bidirectional", (flags & FLAG_BIDIR) != 0);
 	    return ei;
 	}
 	return null;
@@ -175,14 +176,14 @@ class SweepElm extends CircuitElm {
 	    sweepTime = ei.value;
 	if (n == 3) {
 	    flags &= ~FLAG_LOG;
-	    if (ei.checkbox.getState())
+	    if (ei.checkbox.isSelected())
 		flags |= FLAG_LOG;
 	}
 	if (n == 4)
 	    maxV = ei.value;
 	if (n == 5) {
 	    flags &= ~FLAG_BIDIR;
-	    if (ei.checkbox.getState())
+	    if (ei.checkbox.isSelected())
 		flags |= FLAG_BIDIR;
 	}
 	setParams();

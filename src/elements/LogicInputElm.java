@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
     class LogicInputElm extends SwitchElm {
 	final int FLAG_TERNARY = 1;
@@ -70,7 +71,7 @@ import java.util.StringTokenizer;
 	public EditInfo getEditInfo(int n) {
 	    if (n == 0) {
 		EditInfo ei = new EditInfo("", 0, 0, 0);
-		ei.checkbox = new Checkbox("Momentary Switch", momentary);
+		ei.checkbox = new JCheckBox("Momentary Switch", momentary);
 		return ei;
 	    }
 	    if (n == 1)
@@ -81,7 +82,7 @@ import java.util.StringTokenizer;
 	}
 	public void setEditValue(int n, EditInfo ei) {
 	    if (n == 0)
-		momentary = ei.checkbox.getState();
+		momentary = ei.checkbox.isSelected();
 	    if (n == 1)
 		hiV = ei.value;
 	    if (n == 2)

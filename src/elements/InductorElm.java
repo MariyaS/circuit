@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
     class InductorElm extends CircuitElm {
 	Inductor ind;
@@ -69,7 +70,7 @@ import java.util.StringTokenizer;
 		return new EditInfo("Inductance (H)", inductance, 0, 0);
 	    if (n == 1) {
 		EditInfo ei = new EditInfo("", 0, -1, -1);
-		ei.checkbox = new Checkbox("Trapezoidal Approximation",
+		ei.checkbox = new JCheckBox("Trapezoidal Approximation",
 					   ind.isTrapezoidal());
 		return ei;
 	    }
@@ -79,7 +80,7 @@ import java.util.StringTokenizer;
 	    if (n == 0)
 		inductance = ei.value;
 	    if (n == 1) {
-		if (ei.checkbox.getState())
+		if (ei.checkbox.isSelected())
 		    flags &= ~Inductor.FLAG_BACK_EULER;
 		else
 		    flags |= Inductor.FLAG_BACK_EULER;

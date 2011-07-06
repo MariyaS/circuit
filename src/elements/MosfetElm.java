@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
     class MosfetElm extends CircuitElm {
 	int pnp;
@@ -236,7 +237,7 @@ import java.util.StringTokenizer;
 		return new EditInfo("Threshold Voltage", pnp*vt, .01, 5);
 	    if (n == 1) {
 		EditInfo ei = new EditInfo("", 0, -1, -1);
-		ei.checkbox = new Checkbox("Digital Symbol", drawDigital());
+		ei.checkbox = new JCheckBox("Digital Symbol", drawDigital());
 		return ei;
 	    }
 		
@@ -246,7 +247,7 @@ import java.util.StringTokenizer;
 	    if (n == 0)
 		vt = pnp*ei.value;
 	    if (n == 1) {
-		flags = (ei.checkbox.getState()) ? (flags | FLAG_DIGITAL) :
+		flags = (ei.checkbox.isSelected()) ? (flags | FLAG_DIGITAL) :
 		    (flags & ~FLAG_DIGITAL);
 		setPoints();
 	    }

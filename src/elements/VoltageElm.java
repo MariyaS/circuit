@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
 class VoltageElm extends CircuitElm {
     static final int FLAG_COS = 2;
@@ -228,14 +229,9 @@ class VoltageElm extends CircuitElm {
 				"Max Voltage", maxVoltage, -20, 20);
 	if (n == 1) {
 	    EditInfo ei =  new EditInfo("Waveform", waveform, -1, -1);
-	    ei.choice = new Choice();
-	    ei.choice.add("D/C");
-	    ei.choice.add("A/C");
-	    ei.choice.add("Square Wave");
-	    ei.choice.add("Triangle");
-	    ei.choice.add("Sawtooth");
-	    ei.choice.add("Pulse");
-	    ei.choice.select(waveform);
+	    String[] choices = { "D/C", "A/C", "Square Wave", "Triangle", "Sawtooth", "Pulse" };
+	    ei.choice = new JComboBox(choices);
+	    ei.choice.setSelectedIndex(waveform);
 	    return ei;
 	}
 	if (waveform == WF_DC)

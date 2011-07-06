@@ -1,5 +1,5 @@
-import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
     class DFlipFlopElm extends ChipElm {
 	final int FLAG_RESET = 2;
@@ -45,14 +45,14 @@ import java.util.StringTokenizer;
 	public EditInfo getEditInfo(int n) {
 	    if (n == 2) {
 		EditInfo ei = new EditInfo("", 0, -1, -1);
-		ei.checkbox = new Checkbox("Reset Pin", hasReset());
+		ei.checkbox = new JCheckBox("Reset Pin", hasReset());
 		return ei;
 	    }
 	    return super.getEditInfo(n);
 	}
 	public void setEditValue(int n, EditInfo ei) {
 	    if (n == 2) {
-		if (ei.checkbox.getState())
+		if (ei.checkbox.isSelected())
 		    flags |= FLAG_RESET;
 		else
 		    flags &= ~FLAG_RESET;

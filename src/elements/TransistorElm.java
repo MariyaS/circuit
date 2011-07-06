@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
     class TransistorElm extends CircuitElm {
 	int pnp;
@@ -263,7 +264,7 @@ import java.util.StringTokenizer;
 		    setDimensionless();
 	    if (n == 1) {
 		EditInfo ei = new EditInfo("", 0, -1, -1);
-		ei.checkbox = new Checkbox("Swap E/C", (flags & FLAG_FLIP) != 0);
+		ei.checkbox = new JCheckBox("Swap E/C", (flags & FLAG_FLIP) != 0);
 		return ei;
 	    }
 	    return null;
@@ -274,7 +275,7 @@ import java.util.StringTokenizer;
 		setup();
 	    }
 	    if (n == 1) {
-		if (ei.checkbox.getState())
+		if (ei.checkbox.isSelected())
 		    flags |= FLAG_FLIP;
 		else
 		    flags &= ~FLAG_FLIP;

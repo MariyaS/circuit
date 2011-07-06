@@ -1,4 +1,5 @@
 import java.awt.*;
+import javax.swing.*;
 
 class EditDialogLayout implements LayoutManager {
     public EditDialogLayout() {}
@@ -22,40 +23,39 @@ class EditDialogLayout implements LayoutManager {
 	    Component m = target.getComponent(i);
 	    boolean newline = true;
 	    if (m.isVisible()) {
-		Dimension d = m.getPreferredSize();
-		if (pw < d.width)
-		    pw = d.width;
-		if (m instanceof Scrollbar) {
-		    h += 10;
-		    d.width = targetw-x;
-		}
-		if (m instanceof Choice && d.width > targetw)
-		    d.width = targetw-x;
-		if (m instanceof Label) {
-		    Dimension d2 =
-			target.getComponent(i+1).getPreferredSize();
-		    if (d.height < d2.height)
-			d.height = d2.height;
-		    h += d.height/5;
-		    newline = false;
-		}
-		if (m instanceof Button) {
-		    if (x == 0)
-			h += 20;
-		    if (i != target.getComponentCount()-1)
-			newline = false;
-		}
-		m.setLocation(insets.left+x, h);
-		m.setSize(d.width, d.height);
-		if (newline) {
-		    h += d.height;
-		    x = 0;
-		} else
-		    x += d.width;
+			Dimension d = m.getPreferredSize();
+			if (pw < d.width)
+			    pw = d.width;
+			if (m instanceof JSlider) {
+			    h += 10;
+			    d.width = targetw-x;
+			}
+			if (m instanceof JComboBox && d.width > targetw)
+			    d.width = targetw-x;
+			if (m instanceof JLabel) {
+			    Dimension d2 = target.getComponent(i+1).getPreferredSize();
+			    if (d.height < d2.height)
+			    	d.height = d2.height;
+			    h += d.height/5;
+			    newline = false;
+			}
+			if (m instanceof JButton) {
+			    if (x == 0)
+				h += 20;
+			    if (i != target.getComponentCount()-1)
+			    	newline = false;
+			}
+			m.setLocation(insets.left+x, h);
+			m.setSize(d.width, d.height);
+			if (newline) {
+			    h += d.height;
+			    x = 0;
+			} else
+			    x += d.width;
 	    }
 	}
-	if (target.getSize().height < h)
-	    target.setSize(pw + insets.right, h + insets.bottom);
+	CirSim.editDialog.setSize(pw + insets.right, h + insets.bottom);
+
     }
 };
 

@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
     class Switch2Elm extends SwitchElm {
 	int link;
@@ -105,7 +106,7 @@ import java.util.StringTokenizer;
 	public EditInfo getEditInfo(int n) {
 	    if (n == 1) {
 		EditInfo ei = new EditInfo("", 0, -1, -1);
-		ei.checkbox = new Checkbox("Center Off", hasCenterOff());
+		ei.checkbox = new JCheckBox("Center Off", hasCenterOff());
 		return ei;
 	    }
 	    return super.getEditInfo(n);
@@ -113,7 +114,7 @@ import java.util.StringTokenizer;
 	public void setEditValue(int n, EditInfo ei) {
 	    if (n == 1) {
 		flags &= ~FLAG_CENTER_OFF;
-		if (ei.checkbox.getState())
+		if (ei.checkbox.isSelected())
 		    flags |= FLAG_CENTER_OFF;
 		if (hasCenterOff())
 		    momentary = false;

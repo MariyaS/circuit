@@ -1,4 +1,4 @@
-import java.awt.*;
+import javax.swing.*;
 
 class EditInfo {
     EditInfo(String n, double val, double mn, double mx) {
@@ -20,10 +20,10 @@ class EditInfo {
     EditInfo setDimensionless() { dimensionless = true; return this; }
     String name, text;
     double value, minval, maxval;
-    TextField textf;
-    Scrollbar bar;
-    Choice choice;
-    Checkbox checkbox;
+    JTextField textf;
+    JSlider bar;
+    JComboBox choice;
+    JCheckBox checkbox;
     boolean newDialog;
     boolean forceLargeM;
     boolean dimensionless;

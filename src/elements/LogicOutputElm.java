@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
     class LogicOutputElm extends CircuitElm {
 	final int FLAG_TERNARY = 1;
@@ -71,7 +72,7 @@ import java.util.StringTokenizer;
 		return new EditInfo("Threshold", threshold, 10, -10);
 	    if (n == 1) {
 		EditInfo ei = new EditInfo("", 0, -1, -1);
-		ei.checkbox = new Checkbox("Current Required", needsPullDown());
+		ei.checkbox = new JCheckBox("Current Required", needsPullDown());
 		return ei;
 	    }
 	    return null;
@@ -80,7 +81,7 @@ import java.util.StringTokenizer;
 	    if (n == 0)
 		threshold = ei.value;
 	    if (n == 1) {
-		if (ei.checkbox.getState())
+		if (ei.checkbox.isSelected())
 		    flags = FLAG_PULLDOWN;
 		else
 		    flags &= ~FLAG_PULLDOWN;

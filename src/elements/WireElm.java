@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.util.StringTokenizer;
+import javax.swing.*;
 
     class WireElm extends CircuitElm {
 	public WireElm(int xx, int yy) { super(xx, yy); }
@@ -45,25 +46,25 @@ import java.util.StringTokenizer;
 	public EditInfo getEditInfo(int n) {
 	    if (n == 0) {
 		EditInfo ei = new EditInfo("", 0, -1, -1);
-		ei.checkbox = new Checkbox("Show Current", mustShowCurrent());
+		ei.checkbox = new JCheckBox("Show Current", mustShowCurrent());
 		return ei;
 	    }
 	    if (n == 1) {
 		EditInfo ei = new EditInfo("", 0, -1, -1);
-		ei.checkbox = new Checkbox("Show Voltage", mustShowVoltage());
+		ei.checkbox = new JCheckBox("Show Voltage", mustShowVoltage());
 		return ei;
 	    }
 	    return null;
 	}
 	public void setEditValue(int n, EditInfo ei) {
 	    if (n == 0) {
-		if (ei.checkbox.getState())
+		if (ei.checkbox.isSelected())
 		    flags = FLAG_SHOWCURRENT;
 		else
 		    flags &= ~FLAG_SHOWCURRENT;
 	    }
 	    if (n == 1) {
-		if (ei.checkbox.getState())
+		if (ei.checkbox.isSelected())
 		    flags = FLAG_SHOWVOLTAGE;
 		else
 		    flags &= ~FLAG_SHOWVOLTAGE;
