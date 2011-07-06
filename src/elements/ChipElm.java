@@ -58,8 +58,7 @@ import javax.swing.*;
 		p.curcount = updateDotCount(p.current, p.curcount);
 		drawDots(g, b, a, p.curcount);
 		if (p.bubble) {
-		    g.setColor(sim.printableCheckItem.getState() ?
-			       Color.white : Color.black);
+		    g.setColor(Color.white);
 		    drawThickCircle(g, p.bubbleX, p.bubbleY, 1);
 		    g.setColor(lightGrayColor);
 		    drawThickCircle(g, p.bubbleX, p.bubbleY, 3);

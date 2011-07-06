@@ -50,8 +50,7 @@ public class CirSim extends JFrame
     JLabel powerLabel, titleLabel;
     
     CheckboxMenuItem dotsCheckItem, voltsCheckItem, powerCheckItem, smallGridCheckItem,
-    showValuesCheckItem, conductanceCheckItem, euroResistorCheckItem, printableCheckItem,
-    conventionCheckItem;
+    showValuesCheckItem, conductanceCheckItem, euroResistorCheckItem, conventionCheckItem;
     PopupMenu elmMenu;
     MenuItem elmEditMenuItem, elmCutMenuItem, elmCopyMenuItem, elmDeleteMenuItem, elmScopeMenuItem;
     MenuItem addToScope;
@@ -298,8 +297,6 @@ public class CirSim extends JFrame
 		m.add(smallGridCheckItem = getCheckItem("Small Grid"));
 		m.add(euroResistorCheckItem = getCheckItem("European Resistors"));
 		euroResistorCheckItem.setState(euro);
-		m.add(printableCheckItem = getCheckItem("Show Grid"));
-		printableCheckItem.setState(true);
 		m.add(conventionCheckItem = getCheckItem("Conventional Current Motion"));
 		conventionCheckItem.setState(convention);
 		m.add(optionsItem = getMenuItem("Other Options..."));
@@ -894,7 +891,7 @@ public class CirSim extends JFrame
 
 	realg.drawImage(dbimage, 0, 0, this);
 	if (!stoppedCheck.isSelected() && circuitMatrix != null) {
-	    // Limit to 50 fps (thanks to Jürgen Klötzer for this)
+	    // Limit to 50 fps (thanks to Jï¿½rgen Klï¿½tzer for this)
 	    long delay = 1000/50 - (System.currentTimeMillis() - lastFrameTime);
 	    //realg.drawString("delay: " + delay,  10, 90);
 	    if (delay > 0) {
@@ -2833,9 +2830,6 @@ public class CirSim extends JFrame
     public void itemStateChanged(ItemEvent e) {
 		cv.repaint(pause);
 		Object mi = e.getItemSelectable();
-		if (mi == printableCheckItem) {
-			main.repaint();
-		}
 		if (mi == stoppedCheck) {
 		    if ( stoppedCheck.isSelected() == true ) {
 		    	stoppedCheck.setToolTipText("Resume Simulation");

@@ -43,8 +43,7 @@ import java.util.StringTokenizer;
 	    drawThickLine(g, xl, yl+cspc, xl+cspc, yl+cspc);
 	}
 	void setColor(Graphics g, int p) {
-	    g.setColor(pins[p].value ? Color.red :
-		       sim.printableCheckItem.getState() ? Color.white : darkred);
+	    g.setColor(pins[p].value ? Color.red : Color.white);
 	}
 	int getPostCount() { return 7; }
 	int getVoltageSourceCount() { return 0; }
