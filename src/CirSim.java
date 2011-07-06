@@ -53,10 +53,10 @@ public class CirSim extends JFrame
     CheckboxMenuItem dotsCheckItem, voltsCheckItem, powerCheckItem, smallGridCheckItem,
     showValuesCheckItem, conductanceCheckItem, euroResistorCheckItem, conventionCheckItem;
     
-    PopupMenu mainMenu;
+    JPopupMenu mainMenu;
     
-    PopupMenu elmMenu;
-    MenuItem elmEditMenuItem, elmCutMenuItem, elmCopyMenuItem, elmDeleteMenuItem, elmScopeMenuItem, addToScope;
+    JPopupMenu elmMenu;
+    JMenuItem elmEditMenuItem, elmCutMenuItem, elmCopyMenuItem, elmDeleteMenuItem, elmScopeMenuItem, addToScope;
     
     PopupMenu scopeMenu, transScopeMenu;
     CheckboxMenuItem scopeVMenuItem;
@@ -241,13 +241,13 @@ public class CirSim extends JFrame
 		
 		// Create popup menus
 		mainMenu = buildMainMenu();
-		main.add(mainMenu);
 		
 		elmMenu = buildElementMenu();
-		main.add(elmMenu);
 		
 		scopeMenu = buildScopeMenu(false);
+		main.add(scopeMenu);
 		transScopeMenu = buildScopeMenu(true);
+		main.add(transScopeMenu);
 	
 		// Create main controls
 		setupMainControls();
@@ -2443,20 +2443,27 @@ public class CirSim extends JFrame
 		}
     }
 
-    void doMainMenuChecks(Menu m) {
+    void doMainMenuChecks(JMenu m) {
 		int i;
-		if (m.getLabel().equals("Options"))
+		if (m.getText().equals("Options"))
 		    return;
 		for (i = 0; i != m.getItemCount(); i++) {
-		    MenuItem mc = m.getItem(i);
-		    if (mc instanceof Menu)
-			doMainMenuChecks((Menu) mc);
-		    if (mc instanceof CheckboxMenuItem) {
-			CheckboxMenuItem cmi = (CheckboxMenuItem) mc;
-			cmi.setState(
-			      mouseModeStr.compareTo(cmi.getActionCommand()) == 0);
+		    JMenuItem mc = m.getItem(i);
+		    if (mc instanceof JMenu)
+		    	doMainMenuChecks((JMenu) mc);
+		    if (mc instanceof JCheckBoxMenuItem) {
+		    	JCheckBoxMenuItem cmi = (JCheckBoxMenuItem) mc;
+		    	cmi.setState(mouseModeStr.compareTo(cmi.getActionCommand()) == 0);
 		    }
 		}
+    }
+    
+    void doMainMenuChecks(JPopupMenu m) {
+    	for ( int i = 0; i < m.getComponentCount(); i++ ) {
+    		Component mi = m.getComponent(i);
+    		if ( mi instanceof JMenu )
+    			doMainMenuChecks((JMenu) mi);
+    	}
     }
     
     public void mouseReleased(MouseEvent e) {
@@ -2520,9 +2527,9 @@ public class CirSim extends JFrame
 		    setGrid();
 		if (mi == powerCheckItem) {
 		    if (powerCheckItem.getState())
-			voltsCheckItem.setState(false);
+		    	voltsCheckItem.setState(false);
 		    else
-			voltsCheckItem.setState(true);
+		    	voltsCheckItem.setState(true);
 		}
 		if (mi == voltsCheckItem && voltsCheckItem.getState())
 		    powerCheckItem.setState(false);
@@ -2531,8 +2538,35 @@ public class CirSim extends JFrame
 		    Scope sc = original_scopes[menuScope];
 		    sc.handleMenu(e, mi);
 		}
-		if (mi instanceof CheckboxMenuItem) {
+		if (mi instanceof CheckboxMenuItem ) {
 		    MenuItem mmi = (MenuItem) mi;
+		    mouseMode = MODE_ADD_ELM;
+		    String s = mmi.getActionCommand();
+		    if (s.length() > 0)
+		    	mouseModeStr = s;
+		    if (s.compareTo("DragAll") == 0)
+		    	mouseMode = MODE_DRAG_ALL;
+		    else if (s.compareTo("DragRow") == 0)
+		    	mouseMode = MODE_DRAG_ROW;
+		    else if (s.compareTo("DragColumn") == 0)
+		    	mouseMode = MODE_DRAG_COLUMN;
+		    else if (s.compareTo("DragSelected") == 0)
+		    	mouseMode = MODE_DRAG_SELECTED;
+		    else if (s.compareTo("DragPost") == 0)
+		    	mouseMode = MODE_DRAG_POST;
+		    else if (s.compareTo("Select") == 0)
+		    	mouseMode = MODE_SELECT;
+		    else if (s.length() > 0) {
+				try {
+				    addingClass = Class.forName(s);
+				} catch (Exception ee) {
+				    ee.printStackTrace();
+				}
+		    }
+		    tempMouseMode = mouseMode;
+		}
+		if (mi instanceof JCheckBoxMenuItem ) {
+		    JMenuItem mmi = (JMenuItem) mi;
 		    mouseMode = MODE_ADD_ELM;
 		    String s = mmi.getActionCommand();
 		    if (s.length() > 0)
@@ -2979,13 +3013,13 @@ public class CirSim extends JFrame
 	    return mb;
     }
     
-    PopupMenu buildMainMenu() {
-    	PopupMenu menu = new PopupMenu();
+    JPopupMenu buildMainMenu() {
+    	JPopupMenu menu = new JPopupMenu();
     	
     	menu.add(getClassCheckItem("Add Wire", "WireElm"));
 		menu.add(getClassCheckItem("Add Resistor", "ResistorElm"));
 		
-		Menu passMenu = new Menu("Passive Components");
+		JMenu passMenu = new JMenu("Passive Components");
 		menu.add(passMenu);
 		passMenu.add(getClassCheckItem("Add Capacitor", "CapacitorElm"));
 		passMenu.add(getClassCheckItem("Add Inductor", "InductorElm"));
@@ -3000,7 +3034,7 @@ public class CirSim extends JFrame
 		passMenu.add(getClassCheckItem("Add Memristor", "MemristorElm"));
 		passMenu.add(getClassCheckItem("Add Spark Gap", "SparkGapElm"));
 		
-		Menu inputMenu = new Menu("Inputs/Outputs");
+		JMenu inputMenu = new JMenu("Inputs/Outputs");
 		menu.add(inputMenu);
 		inputMenu.add(getClassCheckItem("Add Ground", "GroundElm"));
 		inputMenu.add(getClassCheckItem("Add Voltage Source (2-terminal)", "DCVoltageElm"));
@@ -3019,7 +3053,7 @@ public class CirSim extends JFrame
 		inputMenu.add(getClassCheckItem("Add LED", "LEDElm"));
 		inputMenu.add(getClassCheckItem("Add Lamp (beta)", "LampElm"));
 		
-		Menu activeMenu = new Menu("Active Components");
+		JMenu activeMenu = new JMenu("Active Components");
 		menu.add(activeMenu);
 		activeMenu.add(getClassCheckItem("Add Diode", "DiodeElm"));
 		activeMenu.add(getClassCheckItem("Add Zener Diode", "ZenerElm"));
@@ -3044,7 +3078,7 @@ public class CirSim extends JFrame
 		activeMenu.add(getClassCheckItem("Add CCII+", "CC2Elm"));
 		activeMenu.add(getClassCheckItem("Add CCII-", "CC2NegElm"));
 	
-		Menu gateMenu = new Menu("Logic Gates");
+		JMenu gateMenu = new JMenu("Logic Gates");
 		menu.add(gateMenu);
 		gateMenu.add(getClassCheckItem("Add Inverter", "InverterElm"));
 		gateMenu.add(getClassCheckItem("Add NAND Gate", "NandGateElm"));
@@ -3053,7 +3087,7 @@ public class CirSim extends JFrame
 		gateMenu.add(getClassCheckItem("Add OR Gate", "OrGateElm"));
 		gateMenu.add(getClassCheckItem("Add XOR Gate", "XorGateElm"));
 	
-		Menu chipMenu = new Menu("Chips");
+		JMenu chipMenu = new JMenu("Chips");
 		menu.add(chipMenu);
 		chipMenu.add(getClassCheckItem("Add D Flip-Flop", "DFlipFlopElm"));
 		chipMenu.add(getClassCheckItem("Add JK Flip-Flop", "JKFlipFlopElm"));
@@ -3067,37 +3101,32 @@ public class CirSim extends JFrame
 		chipMenu.add(getClassCheckItem("Add ADC", "ADCElm"));
 		chipMenu.add(getClassCheckItem("Add Latch", "LatchElm"));
 		
-		Menu otherMenu = new Menu("Other");
+		JMenu otherMenu = new JMenu("Other");
 		menu.add(otherMenu);
 		otherMenu.add(getClassCheckItem("Add Text", "TextElm"));
 		otherMenu.add(getClassCheckItem("Add Scope Probe", "ProbeElm"));
-		otherMenu.add(getCheckItem("Drag All (Alt-drag)", "DragAll"));
-		otherMenu.add(getCheckItem(
-				  isMac ? "Drag Row (Alt-S-drag, S-right)" :
-				  "Drag Row (S-right)",
-				  "DragRow"));
-		otherMenu.add(getCheckItem(
-				  isMac ? "Drag Column (Alt-\u2318-drag, \u2318-right)" :
-				  "Drag Column (C-right)",
-				  "DragColumn"));
-		otherMenu.add(getCheckItem("Drag Selected", "DragSelected"));
-		otherMenu.add(getCheckItem("Drag Post (" + ctrlMetaKey + "-drag)",
-					   "DragPost"));
-	
-		menu.add(getCheckItem("Select/Drag Selected (space or Shift-drag)", "Select"));
+		otherMenu.add(getJCheckItem("Drag All (Alt-drag)", "DragAll"));
+		otherMenu.add(getJCheckItem(isMac ? "Drag Row (Alt-S-drag, S-right)" : "Drag Row (S-right)", "DragRow"));
+		otherMenu.add(getJCheckItem(isMac ? "Drag Column (Alt-\u2318-drag, \u2318-right)" : "Drag Column (C-right)", "DragColumn"));
+		otherMenu.add(getJCheckItem("Drag Selected", "DragSelected"));
+		otherMenu.add(getJCheckItem("Drag Post (" + ctrlMetaKey + "-drag)", "DragPost"));
+		
+		menu.add(getJCheckItem("Select/Drag Selected (space or Shift-drag)", "Select"));
 
 		return menu;
     }
     
-    PopupMenu buildElementMenu() {
-    	PopupMenu m = new PopupMenu();
+    JPopupMenu buildElementMenu() {
+    	JPopupMenu m = new JPopupMenu();
     	
-    	m.add(elmEditMenuItem = getMenuItem("Edit"));
-		m.add(elmScopeMenuItem = getMenuItem("View in Scope"));
-		m.add(elmCutMenuItem = getMenuItem("Cut"));
-		m.add(elmCopyMenuItem = getMenuItem("Copy"));
-		m.add(elmDeleteMenuItem = getMenuItem("Delete"));
-		m.add(addToScope = getMenuItem("Add to new Scope"));
+    	m.add(elmEditMenuItem = new JMenuItem("Edit"));
+		m.add(elmScopeMenuItem = new JMenuItem("View in Scope"));
+		m.add(elmCutMenuItem = new JMenuItem("Cut"));
+		m.add(elmCopyMenuItem = new JMenuItem("Copy"));
+		m.add(elmDeleteMenuItem = new JMenuItem("Delete"));
+		m.add(addToScope = new JMenuItem("Add to new Scope"));
+		for ( int i = 0; i < m.getComponentCount(); i++ )
+			((JMenuItem) m.getComponent(i)).addActionListener(this);
 		
 		return m;
     }
@@ -3132,7 +3161,6 @@ public class CirSim extends JFrame
 		    m.add(scopeSelectYMenuItem = getMenuItem("Select Y", "selecty"));
 		    m.add(scopeResistMenuItem = getCheckItem("Show Resistance"));
 		}
-		main.add(m);
 		return m;
     }
     
@@ -3156,7 +3184,7 @@ public class CirSim extends JFrame
 		return mi;
     }
 
-    CheckboxMenuItem getClassCheckItem(String s, String t) {
+    JCheckBoxMenuItem getClassCheckItem(String s, String t) {
 		try {
 		    Class<?> c = Class.forName(t);
 		    CircuitElm elm = constructElement(c, 0, 0);
@@ -3170,7 +3198,10 @@ public class CirSim extends JFrame
 		} catch (Exception ee) {
 		    ee.printStackTrace();
 		}
-		return getCheckItem(s, t);
+		JCheckBoxMenuItem mi = new JCheckBoxMenuItem(s);
+		mi.addItemListener(this);
+		mi.setActionCommand(t);
+		return mi;
     }
     
     CheckboxMenuItem getCheckItem(String s, String t) {
@@ -3178,6 +3209,13 @@ public class CirSim extends JFrame
 		mi.addItemListener(this);
 		mi.setActionCommand(t);
 		return mi;
+    }
+    
+    JCheckBoxMenuItem getJCheckItem(String s, String t) {
+    	JCheckBoxMenuItem mi = new JCheckBoxMenuItem(s);
+    	mi.addItemListener(this);
+    	mi.setActionCommand(t);
+    	return mi;
     }
 
 }
