@@ -1760,6 +1760,10 @@ public class CirSim extends JFrame
 			String d = scopes.get(i).dump();
 			dump += d + "\n";
 		}
+		for (i = 0; i < scopes.size(); i++) {
+			String d = scopes.get(i).legacyDump();
+			dump += d + "\n";
+		}
 		for (i = 0; i != scopeCount; i++) {
 		    String d = original_scopes[i].dump();
 		    if (d != null)

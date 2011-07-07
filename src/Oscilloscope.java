@@ -925,6 +925,41 @@ class Oscilloscope extends JFrame implements
 		return dump;
 	}
 	
+	String legacyDump() {
+		String dump = "";
+		
+		for ( int i = 0; i < waveforms.size(); i++ ) {
+			OscilloscopeWaveform wf = waveforms.get(i);
+			String wf_dump = "o ";
+			
+			wf_dump += sim.locateElm(wf.elm) + " ";
+			
+			wf_dump += getTimeScale() + " ";
+			wf_dump += "0 "; // value
+			int flags = 0;
+			flags |= (wf.isShowing(Value.CURRENT) ? 1 : 0);
+			flags |= (wf.isShowing(Value.VOLTAGE) ? 2 : 0);
+			flags |= (show_peak.getState() ? 0 : 4);
+		    flags |= (show_freq.getState() ? 8 : 0);
+		    //flags |= (lockScale ? 16 : 0);
+		    flags |= 32;
+		    flags |= ((scope_type == ScopeType.I_VS_V) ? 64 : 0);
+		    flags |= ((scope_type == ScopeType.X_VS_Y) ? 128 : 0);
+		    flags |= (show_n_peak.getState() ? 256 : 0);
+		    wf_dump += flags + " ";
+		    wf_dump += getRange(Value.VOLTAGE)/2 + " ";
+		    wf_dump += getRange(Value.CURRENT)/2 + " ";
+		    
+		    if ( stack_scopes.getState() )
+		    	wf_dump += sim.scopes.indexOf(this) + " ";
+		    
+		    dump += wf_dump + "\n";
+		
+		}
+		
+		return dump;
+	}
+	
 	public void undump(StringTokenizer st) {
 		
 		// Window location and size
