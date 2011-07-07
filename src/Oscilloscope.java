@@ -906,7 +906,8 @@ class Oscilloscope extends JFrame implements
 			// Which values are showing
 			int elm_flags = wf.isShowing() ? 1 : 0;
 			if ( wf.elm instanceof TransistorElm ) {
-				// flags for transistor values
+				for ( TransistorValue v : TransistorValue.values() )
+					elm_flags |= (wf.isShowing(v) ? (1 << (v.ordinal()+1)) : 0);
 			} else {
 				for ( Value v : Value.values() )
 					elm_flags |= (wf.isShowing(v) ? (1 << (v.ordinal()+1)) : 0);
@@ -915,7 +916,8 @@ class Oscilloscope extends JFrame implements
 			
 			// Colors of each value
 			if ( wf.elm instanceof TransistorElm ) {
-				// loop over transistor values
+				for ( TransistorValue v : TransistorValue.values() )
+					wf_dump += wf.getColor(v).getRGB() + " ";
 			} else {
 				for ( Value v : Value.values() )
 					wf_dump += wf.getColor(v).getRGB() + " ";
@@ -1005,12 +1007,22 @@ class Oscilloscope extends JFrame implements
 				
 				int elm_flags = new Integer(st.nextToken()).intValue();
 				wf.show((elm_flags & 1) != 0);
-				for ( Value v : Value.values() ) {
-					wf.show(v, (elm_flags & (1 << (v.ordinal()+1))) != 0 );
-				}
-				for ( Value v : Value.values() ) {
-					int color = new Integer(st.nextToken()).intValue();
-					wf.setColor(v, new Color(color));
+				if ( sim.getElm(element_num) instanceof TransistorElm ) {
+					for ( TransistorValue v : TransistorValue.values() ) {
+						wf.show(v, (elm_flags & (1 << (v.ordinal()+1))) != 0 );
+					}
+					for ( TransistorValue v : TransistorValue.values() ) {
+						int color = new Integer(st.nextToken()).intValue();
+						wf.setColor(v, new Color(color));
+					}
+				} else {
+					for ( Value v : Value.values() ) {
+						wf.show(v, (elm_flags & (1 << (v.ordinal()+1))) != 0 );
+					}
+					for ( Value v : Value.values() ) {
+						int color = new Integer(st.nextToken()).intValue();
+						wf.setColor(v, new Color(color));
+					}
 				}
 				wf.setColor(new Color(new Integer(st.nextToken()).intValue()));
 			}

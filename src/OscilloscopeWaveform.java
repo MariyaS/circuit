@@ -439,8 +439,13 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	 * ******************************************************************************************/
 	public void setShow(int flags) {
 		show_p.setState((flags & 4) != 0);
-		show_v.setState((flags & 2) != 0);
-		show_i.setState((flags & 1) != 0);
+		if ( elm instanceof TransistorElm ) {
+			show_vce.setState((flags & 2) != 0);
+			show_ib.setState((flags & 1) != 0);
+		} else {
+			show_v.setState((flags & 2) != 0);
+			show_i.setState((flags & 1) != 0);
+		}
 	}
 	
 	public boolean isShowing() {
@@ -481,10 +486,18 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	}
 	
 	public void show(Oscilloscope.Value value, boolean show) {
-		switch(value) {
-			case VOLTAGE:	show_v.setState(show);
-			case CURRENT:	show_i.setState(show);
-			case POWER:		show_p.setState(show);
+		if ( elm instanceof TransistorElm ) {
+			switch(value) {
+				case VOLTAGE:	show_vce.setState(show);
+				case CURRENT:	show_ib.setState(show);
+				case POWER:		show_p.setState(show);
+			}
+		} else {
+			switch(value) {
+				case VOLTAGE:	show_v.setState(show);
+				case CURRENT:	show_i.setState(show);
+				case POWER:		show_p.setState(show);
+			}
 		}
 	}
 	public void show(Oscilloscope.TransistorValue value, boolean show) {

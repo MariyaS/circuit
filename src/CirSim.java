@@ -1762,7 +1762,7 @@ public class CirSim extends JFrame
 		}
 		for (i = 0; i < scopes.size(); i++) {
 			String d = scopes.get(i).legacyDump();
-			dump += d + "\n";
+			dump += d; // legacyDump outputs several lines, so \n is already there
 		}
 		for (i = 0; i != scopeCount; i++) {
 		    String d = original_scopes[i].dump();

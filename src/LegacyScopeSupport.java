@@ -116,6 +116,7 @@ class LegacyScopeSupport {
 		// Place all plot X/Y scopes on a separate Oscilloscope
 		for ( int i = 0; i < unplaced_scopes.size(); i++ ) {
 			if ( unplaced_scopes.get(i).plot_xy == true ) {
+				unplaced_scopes.get(i).scope_id = num_scopes++;
 				placed_scopes.add(unplaced_scopes.remove(i));
 				i--; // since elements shift left when one is removed
 			}
@@ -170,10 +171,10 @@ class LegacyScopeSupport {
 				o.setTimeScale(lsi.time_scale);
 				o.setRange(Oscilloscope.Value.VOLTAGE, lsi.voltage_range);
 				o.setRange(Oscilloscope.Value.CURRENT, lsi.current_range);
-				if ( lsi.plot_2d ) {
-					o.setType(Oscilloscope.ScopeType.I_VS_V);
-				} else if ( lsi.plot_xy ) {
+				if ( lsi.plot_xy ) {
 					o.setType(Oscilloscope.ScopeType.X_VS_Y);
+				} else if ( lsi.plot_2d ) {
+					o.setType(Oscilloscope.ScopeType.I_VS_V);
 				} else {
 					o.setType(Oscilloscope.ScopeType.VIP_VS_T);
 					o.setStack(lsi.stacked);
