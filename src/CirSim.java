@@ -44,7 +44,7 @@ public class CirSim extends JFrame
     JMenu circuitsMenu;
     
     JCheckBox stoppedCheck;
-    JButton resetButton, dumpMatrixButton;
+    JButton resetButton, newScopeButton, dumpMatrixButton;
     JSlider speedBar, currentBar, powerBar;
     JLabel powerLabel, titleLabel;
     
@@ -1590,6 +1590,8 @@ public class CirSim extends JFrame
 		    stoppedCheck.setSelected(false);
 		    cv.repaint();
 		}
+		if (e.getSource() == newScopeButton)
+			scopes.add(new Oscilloscope(this));
 		if (e.getSource() == dumpMatrixButton)
 		    dumpMatrix = true;
 		if (e.getSource() == exportItem)
@@ -1622,7 +1624,7 @@ public class CirSim extends JFrame
 		    destroyFrame();
 		    return;
 		}
-		if (ac.equals("newScope"))
+		if (ac.equals("NEW_SCOPE"))
 			scopes.add(new Oscilloscope(this));
 		if (ac.compareTo("stackAll") == 0)
 		    stackAll();
@@ -2904,6 +2906,15 @@ public class CirSim extends JFrame
 		resetButton.setContentAreaFilled(false);
 		resetButton.addActionListener(this);
 		
+		newScopeButton = new JButton();
+		ImageIcon newScopeIcon = new ImageIcon("images/Scope.png");
+		newScopeButton.setIcon(newScopeIcon);
+		newScopeButton.setToolTipText("New Scope");
+		newScopeButton.setFocusPainted(false);
+		newScopeButton.setBorderPainted(false);
+		newScopeButton.setContentAreaFilled(false);
+		newScopeButton.addActionListener(this);
+		
 		dumpMatrixButton = new JButton("Dump Matrix");
 		dumpMatrixButton.addActionListener(this);
 		
@@ -2928,6 +2939,7 @@ public class CirSim extends JFrame
 		// Add components to window
 		main.add(stoppedCheck);
 		main.add(resetButton);
+		main.add(newScopeButton);
 		main.add(new JLabel("Simulation Speed", JLabel.CENTER));
 		main.add(speedBar);
 		main.add(new JLabel("Current Speed", JLabel.CENTER));
@@ -2969,7 +2981,7 @@ public class CirSim extends JFrame
 	
 		m = new JMenu("Scope");
 	    mb.add(m);
-		m.add(getMenuItem("New Scope", "newScope"));
+		m.add(getMenuItem("New Scope", "NEW_SCOPE"));
 		m.add(getMenuItem("Stack All", "stackAll"));
 		m.add(getMenuItem("Unstack All", "unstackAll"));
 	

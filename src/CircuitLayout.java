@@ -43,19 +43,20 @@ class CircuitLayout implements LayoutManager {
 		// 8	power brightness scrollbar
 		// 9	www.falstad.com label
 		// 10	current circuit label
-		Point[] componentLocations = new Point[12];
+		Point[] componentLocations = new Point[13];
 		componentLocations[0] = new Point(0,0); // circuit canvas
-		componentLocations[1] = new Point(topleft); // stopped checkbox
-		componentLocations[2] = new Point(topleft.x+40,topleft.y); // reset button
-		componentLocations[3] = new Point(topleft.x+targetw/4,topleft.y); // simulation speed label
-		componentLocations[4] = new Point(topleft.x+targetw/4,topleft.y+20); // simulation speed scrollbar
-		componentLocations[5] = new Point(topleft.x+targetw/4+sbarwidth,topleft.y); // current speed label
-		componentLocations[6] = new Point(topleft.x+targetw/4+sbarwidth,topleft.y+20); // current speed scrollbar
-		componentLocations[7] = new Point(topleft.x+targetw/4+2*sbarwidth,topleft.y); // power brightness label
-		componentLocations[8] = new Point(topleft.x+targetw/4+2*sbarwidth,topleft.y+20); // power brightness scrollbar
-		componentLocations[9] = new Point(topleft.x+targetw,topleft.y+targeth); // www.falstad.com label
-		componentLocations[10] = new Point(topleft.x+targetw-(sbarwidth+5),topleft.y); // "Current Circuit" label
-		componentLocations[11] = new Point(topleft.x+targetw-(sbarwidth+5),topleft.y+15); // circuit title label
+		componentLocations[1] = new Point(topleft.x+3, topleft.y+3); // stopped checkbox
+		componentLocations[2] = new Point(topleft.x+43,topleft.y+3); // reset button
+		componentLocations[3] = new Point(topleft.x+83,topleft.y+3); // new scope button
+		componentLocations[4] = new Point(topleft.x+targetw/4,topleft.y); // simulation speed label
+		componentLocations[5] = new Point(topleft.x+targetw/4,topleft.y+20); // simulation speed scrollbar
+		componentLocations[6] = new Point(topleft.x+targetw/4+sbarwidth,topleft.y); // current speed label
+		componentLocations[7] = new Point(topleft.x+targetw/4+sbarwidth,topleft.y+20); // current speed scrollbar
+		componentLocations[8] = new Point(topleft.x+targetw/4+2*sbarwidth,topleft.y); // power brightness label
+		componentLocations[9] = new Point(topleft.x+targetw/4+2*sbarwidth,topleft.y+20); // power brightness scrollbar
+		componentLocations[10] = new Point(topleft.x+targetw,topleft.y+targeth); // www.falstad.com label
+		componentLocations[11] = new Point(topleft.x+targetw-(sbarwidth+5),topleft.y); // "Current Circuit" label
+		componentLocations[12] = new Point(topleft.x+targetw-(sbarwidth+5),topleft.y+15); // circuit title label
 		
 		// Set positions and sizes of all GUI elements belonging to the container
 		System.out.println(target.getComponentCount());
@@ -63,20 +64,16 @@ class CircuitLayout implements LayoutManager {
 		for (int i = 1; i < target.getComponentCount(); i++) {
 		    Component m = target.getComponent(i);
 		    if (m.isVisible()) {
-				Dimension d = m.getPreferredSize();
+		    	Dimension d = m.getPreferredSize();
+		    	if (m instanceof JButton || m instanceof JCheckBox)
+		    		d = new Dimension(30,30);
 				if (m instanceof JSlider)
 				    d.width = sbarwidth;
-				if (m instanceof Choice && d.width > sbarwidth)
-				    d.width = sbarwidth;
-				if (m instanceof Label || m instanceof JLabel) {
+				if (m instanceof JLabel) {
 					d.width = sbarwidth;
 				}
 				
-				if ( m instanceof Scrollbar ) {
-					d.width = sbarwidth;
-				}
-				
-				if ( i < 12 ) {
+				if ( i < 13 ) {
 					m.setLocation(componentLocations[i]);
 					m.setSize(d);
 				} else {
