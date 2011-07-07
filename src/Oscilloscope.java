@@ -4,6 +4,7 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.*;
 import java.text.*;
 import java.util.Iterator;
+import java.util.StringTokenizer;
 import java.util.Vector;
 import javax.swing.*;
 
@@ -11,7 +12,7 @@ class Oscilloscope extends JFrame implements
   ActionListener, ComponentListener, WindowListener {
 	private static final long serialVersionUID = 4788980391955265718L;
 	
-	private CirSim sim;
+	CirSim sim;
 	
 	private static final int MAX_ELEMENTS = 10;
 	
@@ -325,12 +326,12 @@ class Oscilloscope extends JFrame implements
 		}
 		
 		// +/- peak values, frequency
-		if ( selected_wf.showingValue(Value.VOLTAGE) || selected_wf.showingValue(Value.CURRENT) || selected_wf.showingValue(Value.POWER) ) {
+		if ( selected_wf.isShowing(Value.VOLTAGE) || selected_wf.isShowing(Value.CURRENT) || selected_wf.isShowing(Value.POWER) ) {
 			String peak_str = "";
 			if ( show_peak.getState() ) {
 				peak_str += "Peak: ";
 				for ( Value v : Value.values() ) {
-					if ( selected_wf.showingValue(v) )
+					if ( selected_wf.isShowing(v) )
 						peak_str += getUnitText(selected_wf.getPeakValue(v), value_units[v.ordinal()]) + " | ";
 				}
 				peak_str = peak_str.substring(0, peak_str.length()-3);
@@ -340,7 +341,7 @@ class Oscilloscope extends JFrame implements
 			if ( show_n_peak.getState() ) {
 				npeak_str += "Neg Peak: ";
 				for ( Value v : Value.values() ) {
-					if ( selected_wf.showingValue(v) )
+					if ( selected_wf.isShowing(v) )
 						npeak_str += getUnitText(selected_wf.getNegativePeakValue(v), value_units[v.ordinal()]) + " | ";
 				}
 				npeak_str = npeak_str.substring(0, npeak_str.length()-3);
@@ -350,7 +351,7 @@ class Oscilloscope extends JFrame implements
 			if ( show_freq.getState() ) {
 				freq_str += "Freq: ";
 				for ( Value v : Value.values() ) {
-					if ( selected_wf.showingValue(v) ) {
+					if ( selected_wf.isShowing(v) ) {
 						double f = selected_wf.getFrequency(v);
 						if ( f != 0 )
 							freq_str += getUnitText(selected_wf.getFrequency(v), "Hz") + " | ";
@@ -471,23 +472,27 @@ class Oscilloscope extends JFrame implements
 	 * Prevents duplicate elements from being added.
 	 * @param elm The element to be added
 	 */
-	public void addElement(CircuitElm elm) {
+	public boolean addElement(CircuitElm elm) {
 		// This was to keep labels from overflowing onto the canvas when the scope window is small.
 		if ( waveforms.size() >= MAX_ELEMENTS ) {
 			System.out.println("Scope accepts maximum of " + MAX_ELEMENTS + " elements");
-			return;
+			return false;
 		}
 		
 		// Do not allow duplicate elements
-		for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); ) {
-			if ( wfi.next().elm == elm )
-				return;
+		for ( int i = 0; i < waveforms.size(); i++ ) {
+			if ( waveforms.get(i).elm_no == sim.locateElm(elm) ) {
+				waveforms.get(i).elm = elm;
+				return false;
+			}
 		}
 		
 		waveforms.add(new OscilloscopeWaveform(elm, this));
 		
 		if ( stack_scopes.getState() )
 			resetGraph();
+		
+		return true;
 	}
 	
 	/**
@@ -515,6 +520,14 @@ class Oscilloscope extends JFrame implements
 		
 		if ( stack_scopes.getState() )
 			resetGraph();
+	}
+	
+	public void removeElement(CircuitElm e) {
+		for ( int i = 0; i < waveforms.size(); i++ ) {
+			OscilloscopeWaveform wf = waveforms.get(i);
+			if ( wf.elm == e )
+				removeElement(wf);
+		}
 	}
 	
 	/**
@@ -576,7 +589,7 @@ class Oscilloscope extends JFrame implements
 			double max_abs_value = Double.MIN_VALUE;
 			for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); ) {
 				OscilloscopeWaveform wf = wfi.next();
-				if ( wf.showingValue(v) )
+				if ( wf.isShowing(v) )
 					max_abs_value = Math.max(max_abs_value, Math.max(Math.abs(wf.getPeakValue(v)), Math.abs(wf.getNegativePeakValue(v))));
 			}
 			double r = default_range[v.ordinal()];
@@ -667,7 +680,7 @@ class Oscilloscope extends JFrame implements
 	 */
 	public boolean showingValue(Value value) {
 		for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); ) {
-			if ( wfi.next().showingValue(value) )
+			if ( wfi.next().isShowing(value) )
 				return true;
 		}
 		return false;
@@ -854,5 +867,124 @@ class Oscilloscope extends JFrame implements
 		stack_scopes.addActionListener(this);
 		
 		return mb;
+	}
+	
+	String dump() {
+		
+		String dump = "o2 ";
+		
+		// Window location and size
+		Point p = this.getLocation();
+		Dimension d = this.getSize();
+		dump += p.x + " " + p.y + " " + d.width + " " + d.height + " ";
+		
+		// Ranges
+		dump += getTimeScale() + " ";
+		for ( Value v : Value.values() )
+			dump += getRange(v) + " ";
+		
+		int flags = 0;
+		flags |= (show_peak.getState() ? 8 : 0);
+		flags |= (show_n_peak.getState() ? 4 : 0);
+		flags |= (show_freq.getState() ? 2 : 0);
+		flags |= (stack_scopes.getState() ? 1 : 0);
+		dump += flags + " ";
+		
+		// Scope type
+		dump += scope_type.name() + " ";
+		
+		for ( int i = 0; i < waveforms.size(); i++ ) {
+			OscilloscopeWaveform wf = waveforms.get(i);
+			
+			// Element number
+			String wf_dump = sim.locateElm(wf.elm) + " ";
+			
+			// Which values are showing
+			int elm_flags = wf.isShowing() ? 1 : 0;
+			if ( wf.elm instanceof TransistorElm ) {
+				// flags for transistor values
+			} else {
+				for ( Value v : Value.values() )
+					elm_flags |= (wf.isShowing(v) ? (1 << (v.ordinal()+1)) : 0);
+			}
+			wf_dump += elm_flags + " ";
+			
+			// Colors of each value
+			if ( wf.elm instanceof TransistorElm ) {
+				// loop over transistor values
+			} else {
+				for ( Value v : Value.values() )
+					wf_dump += wf.getColor(v).getRGB() + " ";
+			}
+			wf_dump += wf.getColor().getRGB() + " ";
+			
+			dump += wf_dump + " ";
+			
+		}
+		
+		return dump;
+	}
+	
+	public void undump(StringTokenizer st) {
+		
+		// Window location and size
+		Point p = new Point(new Integer(st.nextToken()).intValue(), new Integer(st.nextToken()).intValue() );
+		Dimension d = new Dimension(new Integer(st.nextToken()).intValue(), new Integer(st.nextToken()).intValue() );
+		this.setLocation(p);
+		this.setSize(d);
+		
+		// Ranges
+		int new_time_scale = new Integer(st.nextToken()).intValue();
+		if ( new_time_scale != getTimeScale() )
+			setTimeScale(new_time_scale);
+		for ( Value v : Value.values() ) {
+			double new_range = new Double(st.nextToken()).doubleValue();
+			if ( new_range != getRange(v) )
+				setRange(v, new_range);
+		}
+		
+		int flags = new Integer(st.nextToken()).intValue();
+		show_peak.setState( (flags & 8) != 0 );
+		show_n_peak.setState( (flags & 4) != 0 );
+		show_freq.setState( (flags & 2) != 0 );
+		boolean stack = ((flags & 1) != 0);
+		if ( stack != stack_scopes.getState() )
+			stack_scopes.setState(stack);
+		
+		// Scope type
+		String new_type = st.nextToken();
+		if ( scope_type != ScopeType.valueOf(new_type) )
+			setType(ScopeType.valueOf(new_type));
+		
+		int pos = 0;
+		while (st.hasMoreTokens()) {
+			int element_num = new Integer(st.nextToken()).intValue();
+			boolean added = addElement(sim.getElm(element_num));
+			
+			if ( added ) {
+				OscilloscopeWaveform wf = waveforms.lastElement();
+				
+				int elm_flags = new Integer(st.nextToken()).intValue();
+				wf.show((elm_flags & 1) != 0);
+				for ( Value v : Value.values() ) {
+					wf.show(v, (elm_flags & (1 << (v.ordinal()+1))) != 0 );
+				}
+				for ( Value v : Value.values() ) {
+					int color = new Integer(st.nextToken()).intValue();
+					wf.setColor(v, new Color(color));
+				}
+				wf.setColor(new Color(new Integer(st.nextToken()).intValue()));
+			}
+			
+			else {
+				st.nextToken(); // flags
+				for ( int i = 0; i < Value.values().length; i++ )
+					st.nextToken(); // colors
+				st.nextToken(); // color
+			}
+			
+			pos++;
+		}
+		
 	}
 }

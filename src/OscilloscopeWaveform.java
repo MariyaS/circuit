@@ -8,6 +8,7 @@ import javax.swing.*;
 class OscilloscopeWaveform implements MouseListener, ActionListener {
 	
 	CircuitElm elm;
+	int elm_no;
 	private Oscilloscope scope;
 	
 	Image wf_img;
@@ -37,6 +38,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	OscilloscopeWaveform( CircuitElm e, Oscilloscope o ) {
 		elm = e;
 		scope = o;
+		elm_no = o.sim.locateElm(elm);
 		last_draw_point = new Point(-1, -1);
 		reset(scope.canvas_size);
 		
@@ -236,7 +238,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			int max_y, min_y;
 			for ( int col = size.width-1; col > (size.width - columns_visible); col-- ) {
 				for ( Oscilloscope.Value value : Oscilloscope.Value.values() ) {
-					if ( showingValue(value) ) {
+					if ( isShowing(value) ) {
 						max_y = Math.min((int) Math.round(size.height/2 - (min_values[value.ordinal()][mod(last_column+1+col, size.width)] / scope.getRange(value) * size.height)), size.height-1);
 						min_y = Math.max((int) Math.round(size.height/2 - (max_values[value.ordinal()][mod(last_column+1+col, size.width)] / scope.getRange(value) * size.height)), 0);
 						for ( int row = min_y; row <= max_y; row++ )
@@ -376,7 +378,11 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		return show.getState();
 	}
 	
-	public boolean showingValue(Oscilloscope.Value value) {
+	public void show(boolean show) {
+		this.show.setState(show);
+	}
+	
+	public boolean isShowing(Oscilloscope.Value value) {
 		switch(value) {
 			case VOLTAGE:	return show_v.getState();
 			case CURRENT:	return show_i.getState();
@@ -385,10 +391,28 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		return false;
 	}
 	
+	public void show(Oscilloscope.Value value, boolean show) {
+		switch(value) {
+			case VOLTAGE:	show_v.setState(show);
+			case CURRENT:	show_i.setState(show);
+			case POWER:		show_p.setState(show);
+		}
+	}
+	
 	public Color getColor() { return elm_color; }
 	
-	private Color getColor(Oscilloscope.Value value) {
+	public void setColor(Color color) {
+		elm_color = color;
+		setLabel();
+	}
+	
+	public Color getColor(Oscilloscope.Value value) {
 		return wave_color[value.ordinal()];
+	}
+	
+	public void setColor(Oscilloscope.Value value, Color color) {
+		wave_color[value.ordinal()] = color;
+		setLabel();
 	}
 	
 	/* ********************************************************* */

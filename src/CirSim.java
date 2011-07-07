@@ -1756,6 +1756,10 @@ public class CirSim extends JFrame
 		    powerBar.getValue() + "\n";
 		for (i = 0; i != elmList.size(); i++)
 		    dump += getElm(i).dump() + "\n";
+		for (i = 0; i < scopes.size(); i++) {
+			String d = scopes.get(i).dump();
+			dump += d + "\n";
+		}
 		for (i = 0; i != scopeCount; i++) {
 		    String d = original_scopes[i].dump();
 		    if (d != null)
@@ -1896,6 +1900,7 @@ public class CirSim extends JFrame
 		    powerBar.setValue(50);
 		    CircuitElm.voltageRange = 5;
 		    scopeCount = 0;
+		    
 		    for ( int j = 0; j < scopes.size(); j++ ) {
 		    	scopes.get(j).dispose();
 		    }
@@ -1903,6 +1908,7 @@ public class CirSim extends JFrame
 		    selected_scope = null;
 		}
 		cv.repaint();
+		boolean using_new_scopes = false;
 		int p;
 		for (p = 0; p < len; ) {
 		    int l;
@@ -1920,14 +1926,22 @@ public class CirSim extends JFrame
 				String type = st.nextToken();
 				int tint = type.charAt(0);
 				try {
+					if (type.equals("o2")) {
+						using_new_scopes = true;
+						scopes.add(new Oscilloscope(this));
+						scopes.lastElement().undump(st);
+						break;
+					}
 				    if (tint == 'o') {
-				    	StringTokenizer st2 = new StringTokenizer(line);
-				    	st2.nextToken();
-				    	lss.undumpLegacyScope(st2);
-						Scope sc = new Scope(this);
-						sc.position = scopeCount;
-						sc.undump(st);
-						original_scopes[scopeCount++] = sc;
+				    	if ( using_new_scopes == false ) {
+					    	StringTokenizer st2 = new StringTokenizer(line);
+					    	st2.nextToken();
+					    	lss.undumpLegacyScope(st2);
+							Scope sc = new Scope(this);
+							sc.position = scopeCount;
+							sc.undump(st);
+							original_scopes[scopeCount++] = sc;
+				    	}
 						break;
 				    }
 				    if (tint == 'h') {
@@ -2606,6 +2620,7 @@ public class CirSim extends JFrame
 		redoStack.add(dumpCircuit());
 		String s = (String) (undoStack.remove(undoStack.size()-1));
 		readSetup(s);
+		System.out.print(s);
 		enableUndoRedo();
     }
 
@@ -2658,9 +2673,13 @@ public class CirSim extends JFrame
 	    if (ce.isSelected()) {
 		ce.delete();
 		elmList.removeElementAt(i);
+		for ( i = 0; i < scopes.size(); i++ ) {
+			scopes.get(i).removeElement(ce);
+		}
 	    }
 	}
 	needAnalyze();
+	
     }
 
     void doCopy() {
