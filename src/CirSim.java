@@ -1624,12 +1624,6 @@ public class CirSim extends JFrame
 		    destroyFrame();
 		    return;
 		}
-		if (ac.equals("NEW_SCOPE"))
-			scopes.add(new Oscilloscope(this));
-		if (ac.compareTo("stackAll") == 0)
-		    stackAll();
-		if (ac.compareTo("unstackAll") == 0)
-		    unstackAll();
 		if (e.getSource() == elmEditMenuItem)
 		    doEdit(menuElm);
 		if (ac.compareTo("Delete") == 0) {
@@ -2978,12 +2972,6 @@ public class CirSim extends JFrame
 		m.add(selectAllItem = getMenuItem("Select All"));
 		selectAllItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_A, KeyEvent.CTRL_MASK));
 	    mb.add(m);
-	
-		m = new JMenu("Scope");
-	    mb.add(m);
-		m.add(getMenuItem("New Scope", "NEW_SCOPE"));
-		m.add(getMenuItem("Stack All", "stackAll"));
-		m.add(getMenuItem("Unstack All", "unstackAll"));
 	
 		m = new JMenu("Options");
 	    mb.add(m);
