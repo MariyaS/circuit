@@ -2985,12 +2985,19 @@ public class CirSim extends JFrame
 		m.add(showValuesCheckItem = getCheckItem("Show Values", true));
 		//m.add(conductanceCheckItem = getCheckItem("Show Conductance"));
 		m.add(smallGridCheckItem = getCheckItem("Small Grid"));
-		String euroResistor = applet.getParameter("euroResistors");
+		String euroResistor = null;
+		try {
+			euroResistor = applet.getParameter("euroResistors");
+		} catch (Exception e) {}
 		boolean euro = (euroResistor != null && euroResistor.equalsIgnoreCase("true"));
+		
 		m.add(euroResistorCheckItem = getCheckItem("European Resistors", euro));
 		boolean convention = true;
-		String x = applet.getParameter("conventionalCurrent");
-	    if (x != null && x.equalsIgnoreCase("true"))
+		String conventionalString = null;
+		try {
+			conventionalString = applet.getParameter("conventionalCurrent");
+		} catch (Exception e) {}
+	    if (conventionalString != null && conventionalString.equalsIgnoreCase("true"))
 	    	convention = false;
 		m.add(conventionCheckItem = getCheckItem("Conventional Current Motion", convention));
 		m.add(optionsItem = getMenuItem("Other Options..."));
