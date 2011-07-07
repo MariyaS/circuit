@@ -251,12 +251,27 @@ import javax.swing.*;
 	    }
 	    return 0;
 	}
+	double getScopeValue(Oscilloscope.TransistorValue v) {
+		switch (v) {
+		case V_BE:	return volts[0] - volts[2];
+		case V_BC:	return volts[0] - volts[1];
+		case V_CE:	return volts[1] - volts[2];
+		case I_B:	return ib;
+		case I_C:	return ic;
+		case I_E:	return ie;
+		case POWER:	return getPower();
+		}
+		return 0;
+	}
 	String getScopeUnits(int x) {
 	    switch (x) {
 	    case Scope.VAL_IB: case Scope.VAL_IC:
 	    case Scope.VAL_IE: return "A";
 	    default: return "V";
 	    }
+	}
+	String getScopeUnits(Oscilloscope.TransistorValue v) {
+		return Oscilloscope.transistor_value_units[v.ordinal()];
 	}
 	public EditInfo getEditInfo(int n) {
 	    if (n == 0)

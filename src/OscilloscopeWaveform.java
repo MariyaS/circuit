@@ -30,6 +30,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	private JPopupMenu[] type_menus;
 	private JCheckBoxMenuItem show;
 	private JCheckBoxMenuItem show_v, show_i, show_p;
+	private JCheckBoxMenuItem show_vbe, show_vbc, show_vce, show_ic, show_ib, show_ie;
 	private Color elm_color;
 	
 	private Dimension size;
@@ -43,12 +44,22 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		reset(scope.canvas_size);
 		
 		// Allocate memory for storing current values
-		value = new double[Oscilloscope.Value.values().length];
+		if ( elm instanceof TransistorElm )
+			value = new double[Oscilloscope.TransistorValue.values().length];
+		else
+			value = new double[Oscilloscope.Value.values().length];
 		
 		// Randomize wave colors
-		wave_color = new Color[Oscilloscope.Value.values().length];
-		for ( Oscilloscope.Value v : Oscilloscope.Value.values() )
-			wave_color[v.ordinal()] = randomColor();
+		if ( elm instanceof TransistorElm ) {
+			wave_color = new Color[Oscilloscope.TransistorValue.values().length];
+			for ( Oscilloscope.TransistorValue v : Oscilloscope.TransistorValue.values() )
+				wave_color[v.ordinal()] = randomColor();
+		} else {
+			wave_color = new Color[Oscilloscope.Value.values().length];
+			for ( Oscilloscope.Value v : Oscilloscope.Value.values() )
+				wave_color[v.ordinal()] = randomColor();
+		}
+		
 		
 		type_menus = new JPopupMenu[Oscilloscope.ScopeType.values().length];
 		elm_color = randomColor();
@@ -62,7 +73,6 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		
 		// Element popup menu
 		label.addMouseListener(this);
-		label.setPreferredSize(new Dimension(110, 30));
 		
 		// Add label to window
 		scope.add(label);
@@ -76,13 +86,27 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		
 		switch (type) {
 		case VIP_VS_T:
-			label.setText("<html>" +  
-					info[0].substring(0, 1).toUpperCase().concat(info[0].substring(1)) +  // capitalize type of element
-					"<br>" +
-					"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.VOLTAGE.ordinal()]) + ">\u25FC V</font>\t" +
-					"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.CURRENT.ordinal()]) + ">\u25FC I</font>\t" +
-					"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.POWER.ordinal()]) + ">\u25FC P</font>"
-				);
+			if (elm instanceof TransistorElm) {
+				label.setText("<html>" +  
+						info[0].substring(0, 1).toUpperCase().concat(info[0].substring(1)) +  // capitalize type of element
+						"<br>" +
+						"<font color=#" + colorToHex(wave_color[Oscilloscope.TransistorValue.V_BE.ordinal()]) + ">\u25FC V<sub>BE</sub></font>\t" +
+						"<font color=#" + colorToHex(wave_color[Oscilloscope.TransistorValue.V_BC.ordinal()]) + ">\u25FC V<sub>BC</sub></font>\t" +
+						"<font color=#" + colorToHex(wave_color[Oscilloscope.TransistorValue.V_CE.ordinal()]) + ">\u25FC V<sub>CE</sub></font>\t" +
+						"<font color=#" + colorToHex(wave_color[Oscilloscope.TransistorValue.I_B.ordinal()]) + ">\u25FC I<sub>B</sub></font>\t" +
+						"<font color=#" + colorToHex(wave_color[Oscilloscope.TransistorValue.I_C.ordinal()]) + ">\u25FC I<sub>C</sub></font>\t" +
+						"<font color=#" + colorToHex(wave_color[Oscilloscope.TransistorValue.I_E.ordinal()]) + ">\u25FC I<sub>E</sub></font>\t" +
+						"<font color=#" + colorToHex(wave_color[Oscilloscope.TransistorValue.POWER.ordinal()]) + ">\u25FC P</font>"
+					);
+			} else {
+				label.setText("<html>" +  
+						info[0].substring(0, 1).toUpperCase().concat(info[0].substring(1)) +  // capitalize type of element
+						"<br>" +
+						"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.VOLTAGE.ordinal()]) + ">\u25FC V</font>\t" +
+						"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.CURRENT.ordinal()]) + ">\u25FC I</font>\t" +
+						"<font color=#" + colorToHex(wave_color[Oscilloscope.Value.POWER.ordinal()]) + ">\u25FC P</font>"
+					);
+			}
 			break;
 		case I_VS_V:
 			label.setText("<html><font color=#" + colorToHex(elm_color) + ">" +
@@ -115,12 +139,17 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	 * *                                                                                        *
 	 * ******************************************************************************************/
 	private void setLastColumn() {
-		min_values[Oscilloscope.Value.VOLTAGE.ordinal()][last_column] = elm.getVoltageDiff();
-		max_values[Oscilloscope.Value.VOLTAGE.ordinal()][last_column] = elm.getVoltageDiff();
-		min_values[Oscilloscope.Value.CURRENT.ordinal()][last_column] = elm.getCurrent();
-		max_values[Oscilloscope.Value.CURRENT.ordinal()][last_column] = elm.getCurrent();
-		min_values[Oscilloscope.Value.POWER.ordinal()][last_column] = elm.getPower();
-		max_values[Oscilloscope.Value.POWER.ordinal()][last_column] = elm.getPower();
+		if ( elm instanceof TransistorElm ) {
+			for ( Oscilloscope.TransistorValue v : Oscilloscope.TransistorValue.values() )
+				min_values[v.ordinal()][last_column] = max_values[v.ordinal()][last_column] = ((TransistorElm) elm).getScopeValue(v);
+		} else {
+			min_values[Oscilloscope.Value.VOLTAGE.ordinal()][last_column] = elm.getVoltageDiff();
+			max_values[Oscilloscope.Value.VOLTAGE.ordinal()][last_column] = elm.getVoltageDiff();
+			min_values[Oscilloscope.Value.CURRENT.ordinal()][last_column] = elm.getCurrent();
+			max_values[Oscilloscope.Value.CURRENT.ordinal()][last_column] = elm.getCurrent();
+			min_values[Oscilloscope.Value.POWER.ordinal()][last_column] = elm.getPower();
+			max_values[Oscilloscope.Value.POWER.ordinal()][last_column] = elm.getPower();
+		}
 	}
 	
 	public void reset(Dimension new_size) {
@@ -136,8 +165,13 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			wf_img = scope.createImage(img_src);
 			
 			// Allocate arrays for scope values
-			min_values = new double[Oscilloscope.Value.values().length][size.width];
-			max_values = new double[Oscilloscope.Value.values().length][size.width];
+			if ( elm instanceof TransistorElm ) {
+				min_values = new double[Oscilloscope.TransistorValue.values().length][size.width];
+				max_values = new double[Oscilloscope.TransistorValue.values().length][size.width];
+			} else {
+				min_values = new double[Oscilloscope.Value.values().length][size.width];
+				max_values = new double[Oscilloscope.Value.values().length][size.width];
+			}
 		}
 		
 		// Clear image
@@ -166,17 +200,27 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		counter++;
 		
 		// Update min/max voltage, current, power
-		value[Oscilloscope.Value.VOLTAGE.ordinal()] = elm.getVoltageDiff();
-		value[Oscilloscope.Value.CURRENT.ordinal()] = elm.getCurrent();
-		value[Oscilloscope.Value.POWER.ordinal()] = elm.getPower();
-		for ( Oscilloscope.Value v : Oscilloscope.Value.values() ) {
-			int n = v.ordinal();
-			if ( value[n] > max_values[n][last_column] )
-				max_values[n][last_column] = value[n];
-			if ( value[n] < min_values[n][last_column] )
-				min_values[n][last_column] = value[n];
+		if ( elm instanceof TransistorElm ) {
+			for ( Oscilloscope.TransistorValue v : Oscilloscope.TransistorValue.values() ) {
+				int n = v.ordinal();
+				value[n] = ((TransistorElm) elm).getScopeValue(v);
+				if ( value[n] > max_values[n][last_column] )
+					max_values[n][last_column] = value[n];
+				if ( value[n] < min_values[n][last_column] )
+					min_values[n][last_column] = value[n];
+			}
+		} else {
+			value[Oscilloscope.Value.VOLTAGE.ordinal()] = elm.getVoltageDiff();
+			value[Oscilloscope.Value.CURRENT.ordinal()] = elm.getCurrent();
+			value[Oscilloscope.Value.POWER.ordinal()] = elm.getPower();
+			for ( Oscilloscope.Value v : Oscilloscope.Value.values() ) {
+				int n = v.ordinal();
+				if ( value[n] > max_values[n][last_column] )
+					max_values[n][last_column] = value[n];
+				if ( value[n] < min_values[n][last_column] )
+					min_values[n][last_column] = value[n];
+			}
 		}
-		
 		
 
 		if ( counter == scope.getTimeScale() ) {
@@ -187,10 +231,21 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			redraw_needed = true;
 			
 			if ( scope.getType() == Oscilloscope.ScopeType.I_VS_V ) {
-				double avg_i = (max_values[Oscilloscope.Value.CURRENT.ordinal()][mod(last_column-1,size.width)] + min_values[Oscilloscope.Value.CURRENT.ordinal()][mod(last_column,size.width)]) / 2;
-				int current_y = (int) Math.round(size.height/2 - avg_i / scope.getRange(Oscilloscope.Value.CURRENT) * size.height);
-				double avg_v = (max_values[Oscilloscope.Value.VOLTAGE.ordinal()][mod(last_column-1,size.width)] + min_values[Oscilloscope.Value.VOLTAGE.ordinal()][mod(last_column,size.width)]) / 2;
+				
+				double avg_v, avg_i;
+				
+				if ( elm instanceof TransistorElm ) {
+					avg_v = (max_values[Oscilloscope.TransistorValue.V_CE.ordinal()][mod(last_column-1,size.width)] + min_values[Oscilloscope.TransistorValue.V_CE.ordinal()][mod(last_column,size.width)]) / 2;
+					avg_i = (max_values[Oscilloscope.TransistorValue.I_C.ordinal()][mod(last_column-1,size.width)] + min_values[Oscilloscope.TransistorValue.I_C.ordinal()][mod(last_column,size.width)]) / 2;
+				} else {
+					avg_v = (max_values[Oscilloscope.Value.VOLTAGE.ordinal()][mod(last_column-1,size.width)] + min_values[Oscilloscope.Value.VOLTAGE.ordinal()][mod(last_column,size.width)]) / 2;
+					avg_i = (max_values[Oscilloscope.Value.CURRENT.ordinal()][mod(last_column-1,size.width)] + min_values[Oscilloscope.Value.CURRENT.ordinal()][mod(last_column,size.width)]) / 2;
+				}
+				
+				
+				
 				int current_x = (int) Math.round(size.width/2 + avg_v / scope.getRange(Oscilloscope.Value.VOLTAGE) * size.width);
+				int current_y = (int) Math.round(size.height/2 - avg_i / scope.getRange(Oscilloscope.Value.CURRENT) * size.height);
 				
 				if ( last_draw_point.x != -1 && last_draw_point.y != -1 ) {
 					if (last_draw_point.x == current_x && last_draw_point.y == current_y) {
@@ -236,15 +291,29 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			Arrays.fill(pixels, 0);
 			
 			int max_y, min_y;
-			for ( int col = size.width-1; col > (size.width - columns_visible); col-- ) {
-				for ( Oscilloscope.Value value : Oscilloscope.Value.values() ) {
-					if ( isShowing(value) ) {
-						max_y = Math.min((int) Math.round(size.height/2 - (min_values[value.ordinal()][mod(last_column+1+col, size.width)] / scope.getRange(value) * size.height)), size.height-1);
-						min_y = Math.max((int) Math.round(size.height/2 - (max_values[value.ordinal()][mod(last_column+1+col, size.width)] / scope.getRange(value) * size.height)), 0);
-						for ( int row = min_y; row <= max_y; row++ )
-							pixels[row * size.width + col] = getColor(value).getRGB();
-					}
-				}			
+			
+			if ( elm instanceof TransistorElm ) {
+				for ( int col = size.width-1; col > (size.width - columns_visible); col-- ) {
+					for ( Oscilloscope.TransistorValue value : Oscilloscope.TransistorValue.values() ) {
+						if ( isShowing(value) ) {
+							max_y = Math.min((int) Math.round(size.height/2 - (min_values[value.ordinal()][mod(last_column+1+col, size.width)] / scope.getRange(value) * size.height)), size.height-1);
+							min_y = Math.max((int) Math.round(size.height/2 - (max_values[value.ordinal()][mod(last_column+1+col, size.width)] / scope.getRange(value) * size.height)), 0);
+							for ( int row = min_y; row <= max_y; row++ )
+								pixels[row * size.width + col] = getColor(value).getRGB();
+						}
+					}			
+				}
+			} else {
+				for ( int col = size.width-1; col > (size.width - columns_visible); col-- ) {
+					for ( Oscilloscope.Value value : Oscilloscope.Value.values() ) {
+						if ( isShowing(value) ) {
+							max_y = Math.min((int) Math.round(size.height/2 - (min_values[value.ordinal()][mod(last_column+1+col, size.width)] / scope.getRange(value) * size.height)), size.height-1);
+							min_y = Math.max((int) Math.round(size.height/2 - (max_values[value.ordinal()][mod(last_column+1+col, size.width)] / scope.getRange(value) * size.height)), 0);
+							for ( int row = min_y; row <= max_y; row++ )
+								pixels[row * size.width + col] = getColor(value).getRGB();
+						}
+					}			
+				}
 			}
 			
 			img_src.newPixels();
@@ -383,10 +452,30 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	}
 	
 	public boolean isShowing(Oscilloscope.Value value) {
-		switch(value) {
-			case VOLTAGE:	return show_v.getState();
-			case CURRENT:	return show_i.getState();
+		if ( elm instanceof TransistorElm ) {
+			switch(value) {
+			case VOLTAGE:	return (show_vbe.getState() || show_vbc.getState() || show_vce.getState());
+			case CURRENT:	return (show_ib.getState() || show_ic.getState() || show_ie.getState());
 			case POWER:		return show_p.getState();
+		}
+		} else {
+			switch(value) {
+				case VOLTAGE:	return show_v.getState();
+				case CURRENT:	return show_i.getState();
+				case POWER:		return show_p.getState();
+			}
+		}
+		return false;
+	}
+	public boolean isShowing(Oscilloscope.TransistorValue value) {
+		switch(value) {
+			case V_BE:	return show_vbe.getState();
+			case V_BC:	return show_vbc.getState();
+			case V_CE:	return show_vce.getState();
+			case I_B:	return show_ib.getState();
+			case I_C:	return show_ic.getState();
+			case I_E:	return show_ie.getState();
+			case POWER:	return show_p.getState();
 		}
 		return false;
 	}
@@ -396,6 +485,17 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			case VOLTAGE:	show_v.setState(show);
 			case CURRENT:	show_i.setState(show);
 			case POWER:		show_p.setState(show);
+		}
+	}
+	public void show(Oscilloscope.TransistorValue value, boolean show) {
+		switch(value) {
+			case V_BE:	show_vbe.setState(show);
+			case V_BC:	show_vbc.setState(show);
+			case V_CE:	show_vce.setState(show);
+			case I_B:	show_ib.setState(show);
+			case I_C:	show_ic.setState(show);
+			case I_E:	show_ie.setState(show);
+			case POWER:	show_p.setState(show);
 		}
 	}
 	
@@ -410,7 +510,15 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		return wave_color[value.ordinal()];
 	}
 	
+	public Color getColor(Oscilloscope.TransistorValue value) {
+		return wave_color[value.ordinal()];
+	}
+	
 	public void setColor(Oscilloscope.Value value, Color color) {
+		wave_color[value.ordinal()] = color;
+		setLabel();
+	}
+	public void setColor(Oscilloscope.TransistorValue value, Color color) {
 		wave_color[value.ordinal()] = color;
 		setLabel();
 	}
@@ -422,20 +530,41 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		JPopupMenu menu = new JPopupMenu();
 		
 		// Checkboxes to tell which values to show
-		menu.add(show_v = new JCheckBoxMenuItem("Show Voltage"));
-		menu.add(show_i = new JCheckBoxMenuItem("Show Current"));
-		menu.add(show_p = new JCheckBoxMenuItem("Show Power"));
-		show_v.setState(true); // Show voltage by default
-		menu.addSeparator();
-		
-		JMenu color_menu = new JMenu("Change Colors");
-		for ( Oscilloscope.Value v : Oscilloscope.Value.values() ) {
-			JMenuItem mi = new JMenuItem(v.name().substring(0,1) + v.name().substring(1).toLowerCase() + " Color");
-			mi.setActionCommand("SET_COLOR_" + v.name());
-			mi.addActionListener(this);
-			color_menu.add(mi);
+		if ( elm instanceof TransistorElm ) {
+			menu.add(show_vbe = new JCheckBoxMenuItem("Show Vbe"));
+			menu.add(show_vbc = new JCheckBoxMenuItem("Show Vbc"));
+			menu.add(show_vce = new JCheckBoxMenuItem("Show Vce"));
+			menu.add(show_ib = new JCheckBoxMenuItem("Show Ib"));
+			menu.add(show_ic = new JCheckBoxMenuItem("Show Ic"));
+			menu.add(show_ie = new JCheckBoxMenuItem("Show Ie"));
+			menu.add(show_p = new JCheckBoxMenuItem("Show Power"));
+			show_vce.setState(true); // show v_ce by default
+			menu.addSeparator();
+			
+			JMenu color_menu = new JMenu("Change Colors");
+			for ( Oscilloscope.TransistorValue v : Oscilloscope.TransistorValue.values() ) {
+				JMenuItem mi = new JMenuItem(v.name().substring(0,1) + v.name().substring(1).toLowerCase() + " Color");
+				mi.setActionCommand("SET_COLOR_" + v.name());
+				mi.addActionListener(this);
+				color_menu.add(mi);
+			}
+			menu.add(color_menu);
+		} else {
+			menu.add(show_v = new JCheckBoxMenuItem("Show Voltage"));
+			menu.add(show_i = new JCheckBoxMenuItem("Show Current"));
+			menu.add(show_p = new JCheckBoxMenuItem("Show Power"));
+			show_v.setState(true); // Show voltage by default
+			menu.addSeparator();
+			
+			JMenu color_menu = new JMenu("Change Colors");
+			for ( Oscilloscope.Value v : Oscilloscope.Value.values() ) {
+				JMenuItem mi = new JMenuItem(v.name().substring(0,1) + v.name().substring(1).toLowerCase() + " Color");
+				mi.setActionCommand("SET_COLOR_" + v.name());
+				mi.addActionListener(this);
+				color_menu.add(mi);
+			}
+			menu.add(color_menu);
 		}
-		menu.add(color_menu);
 		menu.addSeparator();
 		
 		// Remove element from scope

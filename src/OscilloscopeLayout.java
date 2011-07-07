@@ -25,15 +25,14 @@ class OscilloscopeLayout implements LayoutManager {
 		canvas.setSize(window_width, window_height-(LABEL_AREA_HEIGHT+INFO_AREA_HEIGHT));
 		
 		// Layout component labels
-		int nLabels = 0;
+		int x = insets.left + 5;
 		for ( int i = 1; i < window.getComponentCount(); i++ ) {
 			Component c = window.getComponent(i);
 			if ( c instanceof JLabel ) {
-				int x = insets.left+5 + nLabels * c.getPreferredSize().width;
 				int y = insets.top;
 				c.setLocation(x, y);
+				x += c.getPreferredSize().width + 20;
 				c.setSize(c.getPreferredSize());
-				nLabels++;
 			}
 		}
 	}

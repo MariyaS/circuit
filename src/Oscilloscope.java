@@ -55,8 +55,11 @@ class Oscilloscope extends JFrame implements
 	
 	private static final int DEFAULT_TIME_SCALE = 64;
 	static enum Value { VOLTAGE, CURRENT, POWER }
-	private static final double[] default_range = { 5, 0.1, 0.5 };
 	static final String[] value_units = { "V", "A", "W" };
+	static enum TransistorValue { V_BE, V_BC, V_CE, I_B, I_C, I_E, POWER };
+	static final String[] transistor_value_units = { "V", "V", "V", "A", "A", "A", "W" };
+	private static final double[] default_range = { 5, 0.1, 0.5 };
+	
 	
 	private JMenuItem reset;
 	private JMenuItem t_scale_up, t_scale_down;
@@ -319,14 +322,14 @@ class Oscilloscope extends JFrame implements
 		int x = 3;
 		for ( int i = 0; i < 10 && info[i] != null; i++ ) {
 			gfx.drawString(info[i], x, font_height*(1+(int)(i/5)));
-			if ( i == 5 )
+			if ( i == 4 )
 				x = 3;
 			else
 				x += Math.round(fm.getStringBounds(info[i], gfx).getWidth()) + 10;
 		}
 		
 		// +/- peak values, frequency
-		if ( selected_wf.isShowing(Value.VOLTAGE) || selected_wf.isShowing(Value.CURRENT) || selected_wf.isShowing(Value.POWER) ) {
+		if ( (selected_wf.isShowing(Value.VOLTAGE) || selected_wf.isShowing(Value.CURRENT) || selected_wf.isShowing(Value.POWER)) && ! (selected_wf.elm instanceof TransistorElm) ) {
 			String peak_str = "";
 			if ( show_peak.getState() ) {
 				peak_str += "Peak: ";
@@ -659,6 +662,7 @@ class Oscilloscope extends JFrame implements
 	 * @return Range for the specified value.
 	 */
 	public double getRange(Value value) { return range[value.ordinal()]; }
+	public double getRange(TransistorValue value) { return range[value.ordinal()/3]; }
 	
 	/**
 	 * Returns current time of scope.
