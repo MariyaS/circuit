@@ -2516,6 +2516,12 @@ public class CirSim extends JFrame
 		    }
 			return;
 		}
+		
+		if (mi == voltsCheckItem && voltsCheckItem.getState() == true)
+			powerCheckItem.setState(false);
+		if (mi == powerCheckItem && powerCheckItem.getState() == true)
+			voltsCheckItem.setState(false);
+		
 		if (mi == smallGridCheckItem)
 		    setGrid();
 		enableItems();
@@ -2979,9 +2985,6 @@ public class CirSim extends JFrame
 		
 		m.add(voltsCheckItem = getCheckItem("Show Voltage", true));
 		m.add(powerCheckItem = getCheckItem("Show Power"));
-		ButtonGroup show_options = new ButtonGroup();
-		show_options.add(voltsCheckItem);
-		show_options.add(powerCheckItem);
 		m.add(showValuesCheckItem = getCheckItem("Show Values", true));
 		//m.add(conductanceCheckItem = getCheckItem("Show Conductance"));
 		m.add(smallGridCheckItem = getCheckItem("Small Grid"));
