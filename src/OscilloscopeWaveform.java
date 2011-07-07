@@ -370,8 +370,31 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		}
 		*/
 		double peak = Double.MIN_VALUE;
-		for ( int i = 0; i < columns_visible; i++ )
-			peak = Math.max(peak, max_values[value.ordinal()][mod(last_column-i, size.width)]);
+		if ( elm instanceof TransistorElm ) {
+			switch (value) {
+			case VOLTAGE:
+				for ( int i = 0; i < columns_visible; i++ ) {
+					peak = Math.max(peak, max_values[Oscilloscope.TransistorValue.V_BE.ordinal()][mod(last_column-i, size.width)]);
+					peak = Math.max(peak, max_values[Oscilloscope.TransistorValue.V_BC.ordinal()][mod(last_column-i, size.width)]);
+					peak = Math.max(peak, max_values[Oscilloscope.TransistorValue.V_CE.ordinal()][mod(last_column-i, size.width)]);
+				}
+				break;
+			case CURRENT:
+				for ( int i = 0; i < columns_visible; i++ ) {
+					peak = Math.max(peak, max_values[Oscilloscope.TransistorValue.I_B.ordinal()][mod(last_column-i, size.width)]);
+					peak = Math.max(peak, max_values[Oscilloscope.TransistorValue.I_C.ordinal()][mod(last_column-i, size.width)]);
+					peak = Math.max(peak, max_values[Oscilloscope.TransistorValue.I_E.ordinal()][mod(last_column-i, size.width)]);
+				}
+				break;
+			case POWER:
+				for ( int i = 0; i < columns_visible; i++ )
+					peak = Math.max(peak, max_values[Oscilloscope.TransistorValue.POWER.ordinal()][mod(last_column-i, size.width)]);
+				break;
+			}
+		} else {
+			for ( int i = 0; i < columns_visible; i++ )
+				peak = Math.max(peak, max_values[value.ordinal()][mod(last_column-i, size.width)]);
+		}
 		return peak;
 	}
 	
