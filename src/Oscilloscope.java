@@ -3,6 +3,7 @@ import java.awt.event.*;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.*;
 import java.text.*;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.StringTokenizer;
 import java.util.Vector;
@@ -21,6 +22,10 @@ class Oscilloscope extends JFrame implements
 	 */
 	private Vector<OscilloscopeWaveform> waveforms;
 	private OscilloscopeWaveform selected_wf;
+	private int x_elm_no, y_elm_no;
+	private Value x_value, y_value;
+	private TransistorValue x_tvalue, y_tvalue;
+	private double x_range, y_range;
 	
 	private static final Color bg_color = Color.WHITE;
 	private static final Color grid_color = new Color(0x80,0x80,0x80);
@@ -37,6 +42,12 @@ class Oscilloscope extends JFrame implements
 	
 	private BufferedImage main_img;
 	private Graphics2D main_img_gfx;
+	
+	private Image xy_img;
+	private int[] xy_pixels;
+	private MemoryImageSource xy_img_src;
+	private Point xy_last_pt;
+	private int counter;
 	
 	private BufferedImage info_img;
 	private Graphics2D info_img_gfx;
@@ -81,6 +92,10 @@ class Oscilloscope extends JFrame implements
 		waveforms = new Vector<OscilloscopeWaveform>();
 		selected_wf = null;
 		
+		x_elm_no = y_elm_no = -1;
+		x_value = y_value = null;
+		x_tvalue = y_tvalue = null;
+		
 		// Setup window
 		setTitle("Oscilloscope");
 		setJMenuBar(buildMenu());
@@ -120,6 +135,9 @@ class Oscilloscope extends JFrame implements
 			for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); )
 				wfi.next().reset(canvas_size);
 		}
+		Arrays.fill(xy_pixels, 0);
+		xy_last_pt = new Point(-1,-1);
+		
 		main_img_gfx.clearRect(0, 0, canvas_size.width, canvas_size.height);
 	}
 	
@@ -146,6 +164,7 @@ class Oscilloscope extends JFrame implements
 			}
 			break;
 		case I_VS_V:
+		case X_VS_Y:
 			gfx.drawRect(0, canvas_size.height/2, canvas_size.width, 1);
 			gfx.drawRect(canvas_size.width/2, 0, 1, canvas_size.height);
 			break;
@@ -208,6 +227,7 @@ class Oscilloscope extends JFrame implements
 			}
 			break;
 		case I_VS_V:
+		case X_VS_Y:
 			for ( int i = 1; i <= 7; i++ ) {
 				gfx.drawLine(0, i * canvas_size.height/8, canvas_size.width, i * canvas_size.height/8);
 				gfx.drawLine(i * canvas_size.width/8, 0, i * canvas_size.width/8, canvas_size.height);
@@ -224,6 +244,7 @@ class Oscilloscope extends JFrame implements
 	 * @param gfx The graphics object to draw on
 	 */
 	private void drawGridLabels(Graphics gfx) {
+		gfx.setColor(grid_color);
 		switch (scope_type) {
 		case VIP_VS_T:
 			if ( stack_scopes.getState() == false ) {
@@ -301,7 +322,43 @@ class Oscilloscope extends JFrame implements
 			r = gfx.getFontMetrics().getStringBounds(str, gfx);
 			gfx.clearRect(canvas_size.width/2+3, canvas_size.height-fm.getAscent()-fm.getDescent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
 			gfx.drawString(str, canvas_size.width/2 + 3, canvas_size.height-fm.getDescent());
+			
 			break;
+		case X_VS_Y:
+			if ( x_elm_no != -1 && y_elm_no != -1 ) {
+				fm = gfx.getFontMetrics();
+				
+				String x_unit, y_unit;
+				if ( sim.getElm(x_elm_no) instanceof TransistorElm )
+					x_unit = transistor_value_units[x_tvalue.ordinal()];
+				else
+					x_unit = value_units[x_value.ordinal()];
+				if ( sim.getElm(y_elm_no) instanceof TransistorElm )
+					y_unit = transistor_value_units[y_tvalue.ordinal()];
+				else
+					y_unit = value_units[y_value.ordinal()];
+				
+				str = getUnitText(-x_range/2, x_unit);
+				r = gfx.getFontMetrics().getStringBounds(str, gfx);
+				gfx.clearRect(3, canvas_size.height/2-fm.getDescent()-fm.getAscent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
+				gfx.drawString(str,3, canvas_size.height/2-fm.getDescent());
+				
+				
+				str = getUnitText(x_range/2, x_unit);
+				r = gfx.getFontMetrics().getStringBounds(str, gfx);
+				gfx.clearRect(canvas_size.width-3-(int) Math.ceil(r.getWidth()), canvas_size.height/2-fm.getDescent()-fm.getAscent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
+				gfx.drawString(str,canvas_size.width-3-(int) Math.ceil(r.getWidth()), canvas_size.height/2-fm.getDescent());
+				
+				str = getUnitText(-y_range/2, y_unit);
+				r = gfx.getFontMetrics().getStringBounds(str, gfx);
+				gfx.clearRect(canvas_size.width/2+3, -fm.getDescent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
+				gfx.drawString(str, canvas_size.width/2 + 3, fm.getAscent());
+				
+				str = getUnitText(y_range/2, y_unit);
+				r = gfx.getFontMetrics().getStringBounds(str, gfx);
+				gfx.clearRect(canvas_size.width/2+3, canvas_size.height-fm.getAscent()-fm.getDescent(), (int) Math.ceil(r.getWidth())+2, (int) Math.ceil(r.getHeight()));
+				gfx.drawString(str, canvas_size.width/2 + 3, canvas_size.height-fm.getDescent());
+			}
 		}
 	}
 	
@@ -394,12 +451,78 @@ class Oscilloscope extends JFrame implements
 		gfx.drawString(time, canvas_size.width-(int)fm.getStringBounds(time, gfx).getWidth()-3, fm.getHeight());
 	}
 	
+	private double getElementValue(CircuitElm elm, Value value) {
+		switch (value) {
+		case VOLTAGE:	return elm.getVoltageDiff();
+		case CURRENT:	return elm.getCurrent();
+		case POWER:		return elm.getPower();
+		}
+		return 0;
+	}
+	
+	private double getElementValue(CircuitElm elm, TransistorValue value) {
+		return ((TransistorElm) elm).getScopeValue(value);
+	}
+	
 	/**
 	 * Update min/max values for the rightmost pixel of each waveform in the scope.
 	 */
 	public void timeStep() {
+		counter++;
+		
 		for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); )
 			wfi.next().timeStep();
+		
+		if ( counter == getTimeScale() ) {
+			counter = 0;
+			
+			if( scope_type == ScopeType.X_VS_Y && x_elm_no != -1 && y_elm_no != -1 ) {
+				int current_x, current_y;
+				
+				if ( sim.getElm(x_elm_no) instanceof TransistorElm )
+					current_x = (int) Math.round(canvas_size.width/2 + getElementValue(sim.getElm(x_elm_no),x_tvalue) / x_range * canvas_size.width);
+				else
+					current_x = (int) Math.round(canvas_size.width/2 + getElementValue(sim.getElm(x_elm_no),x_value) / x_range * canvas_size.width);
+				
+				if ( sim.getElm(y_elm_no) instanceof TransistorElm )
+					current_y = (int) Math.round(canvas_size.height/2 - getElementValue(sim.getElm(y_elm_no),y_tvalue) / y_range * canvas_size.height);
+				else
+					current_y = (int) Math.round(canvas_size.height/2 - getElementValue(sim.getElm(y_elm_no),y_value) / y_range * canvas_size.height);
+				
+				if ( xy_last_pt.x != -1 && xy_last_pt.y != -1 ) {
+					if (xy_last_pt.x == current_x && xy_last_pt.y == current_y) {
+					    int index = current_x + canvas_size.width * current_y;
+					    if ( index >= 0 && index < xy_pixels.length && current_x >= 0 && current_x < canvas_size.width && current_y >= 0 && current_y < canvas_size.height )
+				    		xy_pixels[index] = 0xFF00FF00;
+					} else if (Math.abs(current_y-xy_last_pt.y) > Math.abs(current_x-xy_last_pt.x)) {
+					    // y difference is greater, so we step along y's
+					    // from min to max y and calculate x for each step
+					    double sgn = Math.signum(current_y-xy_last_pt.y);
+					    int x, y;
+					    for (y = xy_last_pt.y; y != current_y+sgn; y += sgn) {
+					    	x = xy_last_pt.x+(current_x-xy_last_pt.x)*(y-xy_last_pt.y)/(current_y-xy_last_pt.y);
+					    	int index = x + canvas_size.width * y;
+					    	if ( index >= 0 && index < xy_pixels.length && x >= 0 && x < canvas_size.width && y >= 0 && y < canvas_size.height )
+					    		xy_pixels[index] = 0xFF00FF00;
+					    }
+					} else {
+					    // x difference is greater, so we step along x's
+					    // from min to max x and calculate y for each step
+					    double sgn = Math.signum(current_x-xy_last_pt.x);
+					    int x, y;
+					    for (x = xy_last_pt.x; x != current_x+sgn; x += sgn) {
+					    	y = xy_last_pt.y+(current_y-xy_last_pt.y)*(x-xy_last_pt.x)/(current_x-xy_last_pt.x);
+					    	int index = x + canvas_size.width * y;
+					    	if ( index >= 0 && index < xy_pixels.length && x >= 0 && x < canvas_size.width && y >= 0 && y < canvas_size.height )
+					    		xy_pixels[index] = 0xFF00FF00;
+					    }
+					}
+				}
+				xy_last_pt.x = current_x;
+				xy_last_pt.y = current_y;
+			}
+			
+		}
 	}
 	
 	/**
@@ -450,6 +573,13 @@ class Oscilloscope extends JFrame implements
 					g.fillOval(p.x-3, p.y-3, 7, 7);
 				}
 			}
+			break;
+		case X_VS_Y:
+			xy_img_src.newPixels();
+			main_img_gfx.drawImage(xy_img, 0, 0, null);
+			main_img_gfx.setColor(Color.GREEN);
+			main_img_gfx.fillOval(xy_last_pt.x-3, xy_last_pt.y-3, 7, 7);
+			break;
 		}
 		
 		if ( show_labels.getState() )
@@ -516,6 +646,10 @@ class Oscilloscope extends JFrame implements
 	public void removeElement(OscilloscopeWaveform wf) {
 		if ( selected_wf == wf )
 			selected_wf = null;
+		if ( x_elm_no == wf.elm_no )
+			x_elm_no = -1;
+		if ( y_elm_no == wf.elm_no )
+			y_elm_no = -1;
 		remove(wf.label);
 		waveforms.remove(wf);
 		validate();
@@ -573,6 +707,14 @@ class Oscilloscope extends JFrame implements
 		main_img_gfx.setBackground(bg_color);
 		main_img_gfx.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, 1.0f));
 		
+		xy_pixels = new int[canvas_size.width * canvas_size.height];
+		xy_img_src = new MemoryImageSource(canvas_size.width, canvas_size.height, xy_pixels, 0, canvas_size.width);
+		xy_img_src.setAnimated(true);
+		xy_img_src.setFullBufferUpdates(true);
+		xy_img = createImage(xy_img_src);
+		xy_last_pt = new Point(-1,-1);
+		counter = 0;
+		
 		info_img = new BufferedImage(canvas_size.width, OscilloscopeLayout.INFO_AREA_HEIGHT, BufferedImage.TYPE_INT_ARGB);
 		info_img_gfx = (Graphics2D) info_img.getGraphics();
 		info_img_gfx.setColor(Color.BLACK);
@@ -588,23 +730,94 @@ class Oscilloscope extends JFrame implements
 	 */
 	public void fitRanges() {
 		
-		for ( Value v : Value.values() ) {
-			double max_abs_value = Double.MIN_VALUE;
-			for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); ) {
-				OscilloscopeWaveform wf = wfi.next();
-				if ( wf.isShowing(v) )
-					max_abs_value = Math.max(max_abs_value, Math.max(Math.abs(wf.getPeakValue(v)), Math.abs(wf.getNegativePeakValue(v))));
-			}
-			double r = default_range[v.ordinal()];
-			if ( r < max_abs_value && max_abs_value != Double.MIN_VALUE ) {
-				while ( r < max_abs_value )
+		switch(scope_type) {
+		case VIP_VS_T:
+			for ( Value v : Value.values() ) {
+				double max_abs_value = Double.MIN_VALUE;
+				for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); ) {
+					OscilloscopeWaveform wf = wfi.next();
+					if ( wf.isShowing(v) )
+						max_abs_value = Math.max(max_abs_value, Math.max(Math.abs(wf.getPeakValue(v)), Math.abs(wf.getNegativePeakValue(v))));
+				}
+				double r = default_range[v.ordinal()];
+				if ( r < max_abs_value && max_abs_value != Double.MIN_VALUE ) {
+					while ( r < max_abs_value )
+						r *= 2;
+				} else {
+					while ( r >= max_abs_value && max_abs_value != Double.MIN_VALUE )
+						r /= 2;
 					r *= 2;
-			} else {
-				while ( r >= max_abs_value && max_abs_value != Double.MIN_VALUE )
-					r /= 2;
-				r *= 2;
+				}
+				range[v.ordinal()] = r * 2;
 			}
-			range[v.ordinal()] = r * 2;
+			break;
+		case I_VS_V:
+			Value[] values = { Value.VOLTAGE, Value.CURRENT };
+			for ( Value v : values ) {
+				double max_abs_value = Double.MIN_VALUE;
+				for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); ) {
+					OscilloscopeWaveform wf = wfi.next();
+					max_abs_value = Math.max(max_abs_value, Math.max(Math.abs(wf.getPeakValue(v)), Math.abs(wf.getNegativePeakValue(v))));
+				}
+				double r = default_range[v.ordinal()];
+				if ( r < max_abs_value && max_abs_value != Double.MIN_VALUE ) {
+					while ( r < max_abs_value )
+						r *= 2;
+				} else {
+					while ( r >= max_abs_value && max_abs_value != Double.MIN_VALUE )
+						r /= 2;
+					r *= 2;
+				}
+				range[v.ordinal()] = r * 2;
+			}
+			break;
+		case X_VS_Y:
+			if ( x_elm_no != -1 && y_elm_no != -1 ) {
+				double x_max = 0, y_max = 0;
+				for ( int i = 0; i < waveforms.size(); i++ ) {
+					if ( waveforms.get(i).elm_no == x_elm_no ) {
+						if ( sim.getElm(x_elm_no) instanceof TransistorElm )
+							x_max = waveforms.get(i).getPeakValue(x_tvalue);
+						else
+							x_max = waveforms.get(i).getPeakValue(x_value);
+					}
+					if ( waveforms.get(i).elm_no == y_elm_no ) {
+						if ( sim.getElm(y_elm_no) instanceof TransistorElm )
+							y_max = waveforms.get(i).getPeakValue(y_tvalue);
+						else
+							y_max = waveforms.get(i).getPeakValue(y_value);
+					}
+				}
+				
+				if ( sim.getElm(x_elm_no) instanceof TransistorElm )
+					x_range = default_range[x_tvalue.ordinal()/3];
+				else
+					x_range = default_range[x_value.ordinal()];
+				if ( x_range < x_max && x_max != Double.MIN_VALUE ) {
+					while ( x_range < x_max )
+						x_range *= 2;
+				} else {
+					while ( x_range >= x_max && x_max != Double.MIN_VALUE )
+						x_range /= 2;
+					x_range *= 2;
+				}
+				
+				if ( sim.getElm(y_elm_no) instanceof TransistorElm )
+					y_range = default_range[y_tvalue.ordinal()/3];
+				else
+					y_range = default_range[y_value.ordinal()];
+				if ( y_range < y_max && y_max != Double.MIN_VALUE ) {
+					while ( y_range < y_max )
+						y_range *= 2;
+				} else {
+					while ( y_range >= y_max && y_max != Double.MIN_VALUE )
+						y_range /= 2;
+					y_range *= 2;
+				}
+				x_range *= 2;
+				y_range *= 2;
+			}
+			break;
 		}
 		resetGraph();
 	}
@@ -768,6 +981,27 @@ class Oscilloscope extends JFrame implements
 		// Stack scopes
 		else if ( e.getSource() == stack_scopes && scope_type == ScopeType.VIP_VS_T )
 			resetGraph();
+		
+		else if ( e.getActionCommand().substring(0, 5).equals("SETXY") ) {
+			String[] str = e.getActionCommand().split(":");
+			
+			if ( str[1].equals("X") ) {
+				x_elm_no = new Integer(str[2]).intValue();
+				if ( sim.getElm(x_elm_no) instanceof TransistorElm )
+					x_tvalue = TransistorValue.valueOf(str[3]);
+				else
+					x_value = Value.valueOf(str[3]);
+			} else {
+				y_elm_no = new Integer(str[2]).intValue();
+				if ( sim.getElm(y_elm_no) instanceof TransistorElm )
+					y_tvalue = TransistorValue.valueOf(str[3]);
+				else
+					y_value = Value.valueOf(str[3]);
+			}
+			fitRanges();
+			
+			Arrays.fill(xy_pixels, 0);
+		}
 	}
 	
 	/* ********************************************************* */

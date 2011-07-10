@@ -66,6 +66,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		
 		type_menus[Oscilloscope.ScopeType.VIP_VS_T.ordinal()] = buildMenu_VIP_VS_T();
 		type_menus[Oscilloscope.ScopeType.I_VS_V.ordinal()] = buildMenu_V_VS_I();
+		type_menus[Oscilloscope.ScopeType.X_VS_Y.ordinal()] = buildMenu_X_VS_Y();
 		
 		// Setup label
 		label = new JLabel();
@@ -398,10 +399,47 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		return peak;
 	}
 	
+	public double getPeakValue(Oscilloscope.TransistorValue value) {
+		double peak = Double.MIN_VALUE;
+		for ( int i = 0; i < columns_visible; i++ )
+			peak = Math.max(peak, max_values[value.ordinal()][mod(last_column-i, size.width)]);
+		return peak;
+	}
+	
 	public double getNegativePeakValue(Oscilloscope.Value value) {
 		double npeak = Double.MAX_VALUE;
+		if ( elm instanceof TransistorElm ) {
+			switch (value) {
+			case VOLTAGE:
+				for ( int i = 0; i < columns_visible; i++ ) {
+					npeak = Math.min(npeak, min_values[Oscilloscope.TransistorValue.V_BE.ordinal()][mod(last_column-i, size.width)]);
+					npeak = Math.min(npeak, min_values[Oscilloscope.TransistorValue.V_BC.ordinal()][mod(last_column-i, size.width)]);
+					npeak = Math.min(npeak, min_values[Oscilloscope.TransistorValue.V_CE.ordinal()][mod(last_column-i, size.width)]);
+				}
+				break;
+			case CURRENT:
+				for ( int i = 0; i < columns_visible; i++ ) {
+					npeak = Math.min(npeak, min_values[Oscilloscope.TransistorValue.I_B.ordinal()][mod(last_column-i, size.width)]);
+					npeak = Math.min(npeak, min_values[Oscilloscope.TransistorValue.I_C.ordinal()][mod(last_column-i, size.width)]);
+					npeak = Math.min(npeak, min_values[Oscilloscope.TransistorValue.I_E.ordinal()][mod(last_column-i, size.width)]);
+				}
+				break;
+			case POWER:
+				for ( int i = 0; i < columns_visible; i++ )
+					npeak = Math.min(npeak, min_values[Oscilloscope.TransistorValue.POWER.ordinal()][mod(last_column-i, size.width)]);
+				break;
+			}
+		} else {
+			for ( int i = 0; i < columns_visible; i++ )
+				npeak = Math.min(npeak, min_values[value.ordinal()][mod(last_column-i, size.width)]);
+		}
+		return npeak;
+	}
+	
+	public double getNegativePeakValue(Oscilloscope.TransistorValue value) {
+		double npeak = Double.MAX_VALUE;
 		for ( int i = 0; i < columns_visible; i++ )
-			npeak = Math.min(npeak, max_values[value.ordinal()][mod(last_column-i, size.width)]);
+			npeak = Math.min(npeak, min_values[value.ordinal()][mod(last_column-i, size.width)]);
 		return npeak;
 	}
 	
@@ -626,6 +664,58 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 		menu.addSeparator();
 		
 		// Remove element from scope
+		JMenuItem removeItem = new JMenuItem("Remove from Scope");
+		removeItem.addActionListener(this);
+		removeItem.setActionCommand("REMOVE");
+		menu.add(removeItem);
+		
+		return menu;
+	}
+	
+	private JPopupMenu buildMenu_X_VS_Y() {
+		JPopupMenu menu = new JPopupMenu();
+		
+		JMenu select_x_menu = new JMenu("Select X");
+		menu.add(select_x_menu);
+		JMenu select_y_menu = new JMenu("Select Y");
+		menu.add(select_y_menu);
+		menu.addSeparator();
+		
+		if ( elm instanceof TransistorElm ) {
+			for ( Oscilloscope.TransistorValue v : Oscilloscope.TransistorValue.values() ) {
+				String[] str = v.name().split("_"); 
+				
+				JMenuItem mi;
+				if ( str.length > 1 )
+					mi = new JMenuItem("<html>" + str[0] + "<sub>" + str[1] + "</sub>");
+				else
+					mi = new JMenuItem(v.name().substring(0,1) + v.name().substring(1).toLowerCase());
+				mi.addActionListener(scope);
+				mi.setActionCommand("SETXY:X:" + elm_no + ":" + v.name());
+				select_x_menu.add(mi);
+				
+				if ( str.length > 1 )
+					mi = new JMenuItem("<html>" + str[0] + "<sub>" + str[1] + "</sub>");
+				else
+					mi = new JMenuItem(v.name().substring(0,1) + v.name().substring(1).toLowerCase());
+				mi.addActionListener(scope);
+				mi.setActionCommand("SETXY:Y:" + elm_no + ":" + v.name());
+				select_y_menu.add(mi);
+			}
+		} else {
+			for ( Oscilloscope.Value v : Oscilloscope.Value.values() ) {
+				JMenuItem mi = new JMenuItem(v.name().substring(0,1) + v.name().substring(1).toLowerCase());
+				mi.addActionListener(scope);
+				mi.setActionCommand("SETXY:X:" + elm_no + ":" + v.name());
+				select_x_menu.add(mi);
+				
+				mi = new JMenuItem(v.name().substring(0,1) + v.name().substring(1).toLowerCase());
+				mi.addActionListener(scope);
+				mi.setActionCommand("SETXY:Y:" + elm_no + ":" + v.name());
+				select_y_menu.add(mi);
+			}
+		}
+		
 		JMenuItem removeItem = new JMenuItem("Remove from Scope");
 		removeItem.addActionListener(this);
 		removeItem.setActionCommand("REMOVE");
