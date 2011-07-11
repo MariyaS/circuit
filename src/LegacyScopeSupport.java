@@ -159,7 +159,7 @@ class LegacyScopeSupport {
 			}
 			placed_scopes.add(unplaced_scopes.remove(0));
 		}*/
-		debugPrint();
+		//debugPrint();
 		// Setup scopes
 		boolean[] scope_setup = new boolean[num_scopes];
 		Arrays.fill(scope_setup, false);
