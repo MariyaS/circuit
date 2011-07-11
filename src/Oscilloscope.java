@@ -76,6 +76,8 @@ class Oscilloscope extends JFrame implements
 	private JMenuItem v_range_up, v_range_down;
 	private JMenuItem i_range_up, i_range_down;
 	private JMenuItem p_range_up, p_range_down;
+	private JMenuItem x_range_up, x_range_down;
+	private JMenuItem y_range_up, y_range_down;
 	private JMenuItem all_ranges_up, all_ranges_down;
 	private JMenuItem fit_ranges;
 	private ButtonGroup show_options;
@@ -973,6 +975,14 @@ class Oscilloscope extends JFrame implements
 			setRange(Value.POWER, getRange(Value.POWER) * 2);
 		else if ( e.getSource() == p_range_down )
 			setRange(Value.POWER, getRange(Value.POWER) / 2);
+		else if ( e.getSource() == x_range_up )
+			setRange("x", x_range * 2);
+		else if ( e.getSource() == x_range_down )
+			setRange("x", x_range / 2);
+		else if ( e.getSource() == y_range_up )
+			setRange("y", y_range * 2);
+		else if ( e.getSource() == y_range_down )
+			setRange("y", y_range / 2);
 		else if ( e.getSource() == all_ranges_up ) {
 			setRange(Value.VOLTAGE, getRange(Value.VOLTAGE) * 2);
 			setRange(Value.CURRENT, getRange(Value.CURRENT) * 2);
@@ -1078,6 +1088,12 @@ class Oscilloscope extends JFrame implements
 		m.addSeparator();
 		m.add(p_range_up = new JMenuItem("Power Range 2x"));
 		m.add(p_range_down = new JMenuItem("Power Range 1/2x"));
+		m.addSeparator();
+		m.add(x_range_up = new JMenuItem("X Range 2x"));
+		m.add(x_range_down = new JMenuItem("X Range 1/2x"));
+		m.addSeparator();
+		m.add(y_range_up = new JMenuItem("Y Range 2x"));
+		m.add(y_range_down = new JMenuItem("Y Range 1/2x"));
 		m.addSeparator();
 		m.add(all_ranges_up = new JMenuItem("All Ranges 2x"));
 		m.add(all_ranges_down = new JMenuItem("All Ranges 1/2x"));
