@@ -47,7 +47,6 @@ class Oscilloscope extends JFrame implements
 	private int[] xy_pixels;
 	private MemoryImageSource xy_img_src;
 	private Point xy_last_pt;
-	private int counter;
 	
 	private BufferedImage info_img;
 	private Graphics2D info_img_gfx;
@@ -468,62 +467,55 @@ class Oscilloscope extends JFrame implements
 	 * Update min/max values for the rightmost pixel of each waveform in the scope.
 	 */
 	public void timeStep() {
-		counter++;
-		
 		for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); )
 			wfi.next().timeStep();
-		
-		if ( counter == getTimeScale() ) {
-			counter = 0;
+					
+		if( scope_type == ScopeType.X_VS_Y && x_elm_no != -1 && y_elm_no != -1 ) {
+			int current_x, current_y;
 			
-			if( scope_type == ScopeType.X_VS_Y && x_elm_no != -1 && y_elm_no != -1 ) {
-				int current_x, current_y;
-				
-				if ( sim.getElm(x_elm_no) instanceof TransistorElm )
-					current_x = (int) Math.round(canvas_size.width/2 + getElementValue(sim.getElm(x_elm_no),x_tvalue) / x_range * canvas_size.width);
-				else
-					current_x = (int) Math.round(canvas_size.width/2 + getElementValue(sim.getElm(x_elm_no),x_value) / x_range * canvas_size.width);
-				
-				if ( sim.getElm(y_elm_no) instanceof TransistorElm )
-					current_y = (int) Math.round(canvas_size.height/2 - getElementValue(sim.getElm(y_elm_no),y_tvalue) / y_range * canvas_size.height);
-				else
-					current_y = (int) Math.round(canvas_size.height/2 - getElementValue(sim.getElm(y_elm_no),y_value) / y_range * canvas_size.height);
-				
-				Rectangle r = new Rectangle(0, 0, canvas_size.width, canvas_size.height);
-				
-				if ( xy_last_pt.x != -1 && xy_last_pt.y != -1 && (r.contains(xy_last_pt) || r.contains(current_x, current_y)) ) {
-					if (xy_last_pt.x == current_x && xy_last_pt.y == current_y) {
-					    int index = current_x + canvas_size.width * current_y;
-					    if ( index >= 0 && index < xy_pixels.length && current_x >= 0 && current_x < canvas_size.width && current_y >= 0 && current_y < canvas_size.height )
+			if ( sim.getElm(x_elm_no) instanceof TransistorElm )
+				current_x = (int) Math.round(canvas_size.width/2 + getElementValue(sim.getElm(x_elm_no),x_tvalue) / x_range * canvas_size.width);
+			else
+				current_x = (int) Math.round(canvas_size.width/2 + getElementValue(sim.getElm(x_elm_no),x_value) / x_range * canvas_size.width);
+			
+			if ( sim.getElm(y_elm_no) instanceof TransistorElm )
+				current_y = (int) Math.round(canvas_size.height/2 - getElementValue(sim.getElm(y_elm_no),y_tvalue) / y_range * canvas_size.height);
+			else
+				current_y = (int) Math.round(canvas_size.height/2 - getElementValue(sim.getElm(y_elm_no),y_value) / y_range * canvas_size.height);
+			
+			Rectangle r = new Rectangle(0, 0, canvas_size.width, canvas_size.height);
+			
+			if ( xy_last_pt.x != -1 && xy_last_pt.y != -1 && (r.contains(xy_last_pt) || r.contains(current_x, current_y)) ) {
+				if (xy_last_pt.x == current_x && xy_last_pt.y == current_y) {
+				    int index = current_x + canvas_size.width * current_y;
+				    if ( index >= 0 && index < xy_pixels.length && current_x >= 0 && current_x < canvas_size.width && current_y >= 0 && current_y < canvas_size.height )
+			    		xy_pixels[index] = 0xFF00FF00;
+				} else if (Math.abs(current_y-xy_last_pt.y) > Math.abs(current_x-xy_last_pt.x)) {
+				    // y difference is greater, so we step along y's
+				    // from min to max y and calculate x for each step
+				    double sgn = Math.signum(current_y-xy_last_pt.y);
+				    int x, y;
+				    for (y = xy_last_pt.y; y != current_y+sgn; y += sgn) {
+				    	x = xy_last_pt.x+(current_x-xy_last_pt.x)*(y-xy_last_pt.y)/(current_y-xy_last_pt.y);
+				    	int index = x + canvas_size.width * y;
+				    	if ( index >= 0 && index < xy_pixels.length && x >= 0 && x < canvas_size.width && y >= 0 && y < canvas_size.height )
 				    		xy_pixels[index] = 0xFF00FF00;
-					} else if (Math.abs(current_y-xy_last_pt.y) > Math.abs(current_x-xy_last_pt.x)) {
-					    // y difference is greater, so we step along y's
-					    // from min to max y and calculate x for each step
-					    double sgn = Math.signum(current_y-xy_last_pt.y);
-					    int x, y;
-					    for (y = xy_last_pt.y; y != current_y+sgn; y += sgn) {
-					    	x = xy_last_pt.x+(current_x-xy_last_pt.x)*(y-xy_last_pt.y)/(current_y-xy_last_pt.y);
-					    	int index = x + canvas_size.width * y;
-					    	if ( index >= 0 && index < xy_pixels.length && x >= 0 && x < canvas_size.width && y >= 0 && y < canvas_size.height )
-					    		xy_pixels[index] = 0xFF00FF00;
-					    }
-					} else {
-					    // x difference is greater, so we step along x's
-					    // from min to max x and calculate y for each step
-					    double sgn = Math.signum(current_x-xy_last_pt.x);
-					    int x, y;
-					    for (x = xy_last_pt.x; x != current_x+sgn; x += sgn) {
-					    	y = xy_last_pt.y+(current_y-xy_last_pt.y)*(x-xy_last_pt.x)/(current_x-xy_last_pt.x);
-					    	int index = x + canvas_size.width * y;
-					    	if ( index >= 0 && index < xy_pixels.length && x >= 0 && x < canvas_size.width && y >= 0 && y < canvas_size.height )
-					    		xy_pixels[index] = 0xFF00FF00;
-					    }
-					}
+				    }
+				} else {
+				    // x difference is greater, so we step along x's
+				    // from min to max x and calculate y for each step
+				    double sgn = Math.signum(current_x-xy_last_pt.x);
+				    int x, y;
+				    for (x = xy_last_pt.x; x != current_x+sgn; x += sgn) {
+				    	y = xy_last_pt.y+(current_y-xy_last_pt.y)*(x-xy_last_pt.x)/(current_x-xy_last_pt.x);
+				    	int index = x + canvas_size.width * y;
+				    	if ( index >= 0 && index < xy_pixels.length && x >= 0 && x < canvas_size.width && y >= 0 && y < canvas_size.height )
+				    		xy_pixels[index] = 0xFF00FF00;
+				    }
 				}
-				xy_last_pt.x = current_x;
-				xy_last_pt.y = current_y;
 			}
-			
+			xy_last_pt.x = current_x;
+			xy_last_pt.y = current_y;
 		}
 	}
 	
@@ -721,7 +713,6 @@ class Oscilloscope extends JFrame implements
 		xy_img_src.setFullBufferUpdates(true);
 		xy_img = createImage(xy_img_src);
 		xy_last_pt = new Point(-1,-1);
-		counter = 0;
 		
 		info_img = new BufferedImage(canvas_size.width, OscilloscopeLayout.INFO_AREA_HEIGHT, BufferedImage.TYPE_INT_ARGB);
 		info_img_gfx = (Graphics2D) info_img.getGraphics();

@@ -224,6 +224,52 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			}
 		}
 		
+		if ( scope.getType() == Oscilloscope.ScopeType.I_VS_V ) {
+			
+			int current_x, current_y;
+			if ( elm instanceof TransistorElm ) {
+				current_x = (int) Math.round(size.width/2 + value[Oscilloscope.TransistorValue.V_CE.ordinal()] / scope.getRange(Oscilloscope.Value.VOLTAGE) * size.width);
+				current_y = (int) Math.round(size.height/2 - value[Oscilloscope.TransistorValue.I_C.ordinal()] / scope.getRange(Oscilloscope.Value.CURRENT) * size.height);
+			} else {
+				current_x = (int) Math.round(size.width/2 + value[Oscilloscope.Value.VOLTAGE.ordinal()] / scope.getRange(Oscilloscope.Value.VOLTAGE) * size.width);
+				current_y = (int) Math.round(size.height/2 - value[Oscilloscope.Value.CURRENT.ordinal()] / scope.getRange(Oscilloscope.Value.CURRENT) * size.height);
+			}
+			
+			if ( last_draw_point.x != -1 && last_draw_point.y != -1 ) {
+				if (last_draw_point.x == current_x && last_draw_point.y == current_y) {
+				    int index = current_x + size.width * current_y;
+				    if ( index >= 0 && index < pixels.length && current_x >= 0 && current_x < size.width && current_y >= 0 && current_y < size.height )
+			    		pixels[index] = elm_color.getRGB();
+				} else if (Math.abs(current_y-last_draw_point.y) > Math.abs(current_x-last_draw_point.x)) {
+				    // y difference is greater, so we step along y's
+				    // from min to max y and calculate x for each step
+				    double sgn = Math.signum(current_y-last_draw_point.y);
+				    int x, y;
+				    for (y = last_draw_point.y; y != current_y+sgn; y += sgn) {
+				    	x = last_draw_point.x+(current_x-last_draw_point.x)*(y-last_draw_point.y)/(current_y-last_draw_point.y);
+				    	int index = x + size.width * y;
+				    	if ( index >= 0 && index < pixels.length && x >= 0 && x < size.width && y >= 0 && y < size.height )
+				    		pixels[index] = elm_color.getRGB();
+				    }
+				} else {
+				    // x difference is greater, so we step along x's
+				    // from min to max x and calculate y for each step
+				    double sgn = Math.signum(current_x-last_draw_point.x);
+				    int x, y;
+				    for (x = last_draw_point.x; x != current_x+sgn; x += sgn) {
+				    	y = last_draw_point.y+(current_y-last_draw_point.y)*(x-last_draw_point.x)/(current_x-last_draw_point.x);
+				    	int index = x + size.width * y;
+				    	if ( index >= 0 && index < pixels.length && x >= 0 && x < size.width && y >= 0 && y < size.height )
+				    		pixels[index] = elm_color.getRGB();
+				    }
+				}	
+			}
+			last_draw_point.x = current_x;
+			last_draw_point.y = current_y;
+			
+			redraw_needed = true;
+		}
+		
 
 		if ( counter == scope.getTimeScale() ) {
 			last_column = mod(last_column + 1, size.width);
@@ -232,55 +278,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			counter = 0;
 			redraw_needed = true;
 			
-			if ( scope.getType() == Oscilloscope.ScopeType.I_VS_V ) {
-				
-				double avg_v, avg_i;
-				
-				if ( elm instanceof TransistorElm ) {
-					avg_v = (max_values[Oscilloscope.TransistorValue.V_CE.ordinal()][mod(last_column-1,size.width)] + min_values[Oscilloscope.TransistorValue.V_CE.ordinal()][mod(last_column,size.width)]) / 2;
-					avg_i = (max_values[Oscilloscope.TransistorValue.I_C.ordinal()][mod(last_column-1,size.width)] + min_values[Oscilloscope.TransistorValue.I_C.ordinal()][mod(last_column,size.width)]) / 2;
-				} else {
-					avg_v = (max_values[Oscilloscope.Value.VOLTAGE.ordinal()][mod(last_column-1,size.width)] + min_values[Oscilloscope.Value.VOLTAGE.ordinal()][mod(last_column,size.width)]) / 2;
-					avg_i = (max_values[Oscilloscope.Value.CURRENT.ordinal()][mod(last_column-1,size.width)] + min_values[Oscilloscope.Value.CURRENT.ordinal()][mod(last_column,size.width)]) / 2;
-				}
-				
-				
-				
-				int current_x = (int) Math.round(size.width/2 + avg_v / scope.getRange(Oscilloscope.Value.VOLTAGE) * size.width);
-				int current_y = (int) Math.round(size.height/2 - avg_i / scope.getRange(Oscilloscope.Value.CURRENT) * size.height);
-				
-				if ( last_draw_point.x != -1 && last_draw_point.y != -1 ) {
-					if (last_draw_point.x == current_x && last_draw_point.y == current_y) {
-					    int index = current_x + size.width * current_y;
-					    if ( index >= 0 && index < pixels.length && current_x >= 0 && current_x < size.width && current_y >= 0 && current_y < size.height )
-				    		pixels[index] = elm_color.getRGB();
-					} else if (Math.abs(current_y-last_draw_point.y) > Math.abs(current_x-last_draw_point.x)) {
-					    // y difference is greater, so we step along y's
-					    // from min to max y and calculate x for each step
-					    double sgn = Math.signum(current_y-last_draw_point.y);
-					    int x, y;
-					    for (y = last_draw_point.y; y != current_y+sgn; y += sgn) {
-					    	x = last_draw_point.x+(current_x-last_draw_point.x)*(y-last_draw_point.y)/(current_y-last_draw_point.y);
-					    	int index = x + size.width * y;
-					    	if ( index >= 0 && index < pixels.length && x >= 0 && x < size.width && y >= 0 && y < size.height )
-					    		pixels[index] = elm_color.getRGB();
-					    }
-					} else {
-					    // x difference is greater, so we step along x's
-					    // from min to max x and calculate y for each step
-					    double sgn = Math.signum(current_x-last_draw_point.x);
-					    int x, y;
-					    for (x = last_draw_point.x; x != current_x+sgn; x += sgn) {
-					    	y = last_draw_point.y+(current_y-last_draw_point.y)*(x-last_draw_point.x)/(current_x-last_draw_point.x);
-					    	int index = x + size.width * y;
-					    	if ( index >= 0 && index < pixels.length && x >= 0 && x < size.width && y >= 0 && y < size.height )
-					    		pixels[index] = elm_color.getRGB();
-					    }
-					}	
-				}
-				last_draw_point.x = current_x;
-				last_draw_point.y = current_y;
-			}
+			
 		}
 	}
 	
