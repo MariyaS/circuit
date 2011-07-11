@@ -159,7 +159,7 @@ class LegacyScopeSupport {
 			}
 			placed_scopes.add(unplaced_scopes.remove(0));
 		}*/
-		
+		debugPrint();
 		// Setup scopes
 		boolean[] scope_setup = new boolean[num_scopes];
 		Arrays.fill(scope_setup, false);
@@ -189,6 +189,22 @@ class LegacyScopeSupport {
 			}
 			int show_flags = (lsi.show_v ? 2 : 0) | (lsi.show_i ? 1 : 0);
 			o.addElement(sim.getElm(lsi.elm_no), show_flags);
+			if ( o.getType() == Oscilloscope.ScopeType.X_VS_Y ) {
+				o.addElement(sim.getElm(lsi.y_elm_no));
+				o.setXElm(lsi.elm_no);
+				o.setYElm(lsi.y_elm_no);
+				o.setRange("x", lsi.voltage_range);
+				o.setRange("y", lsi.voltage_range);
+				if ( sim.getElm(lsi.elm_no) instanceof TransistorElm )
+					o.setXValue(Oscilloscope.TransistorValue.V_CE);
+				else
+					o.setXValue(Oscilloscope.Value.VOLTAGE);
+				if ( sim.getElm(lsi.y_elm_no) instanceof TransistorElm )
+					o.setYValue(Oscilloscope.TransistorValue.V_CE);
+				else
+					o.setYValue(Oscilloscope.Value.VOLTAGE);
+				
+			}
 		}
 		
 		placed_scopes.clear();
@@ -199,10 +215,10 @@ class LegacyScopeSupport {
 		System.out.println("SCOPES--------------------");
 		for ( int i = 0; i < placed_scopes.size(); i++ ) {
 			LegacyScopeInfo lsi = placed_scopes.get(i);
-			if ( lsi.plot_2d )
-				System.out.println("2D (" + lsi.elm_no + ")");
-			else if ( lsi.plot_xy )
+			if ( lsi.plot_xy )
 				System.out.println("X/Y (" + lsi.elm_no + "/" + lsi.y_elm_no + ")");
+			else if ( lsi.plot_2d )
+				System.out.println("2D (" + lsi.elm_no + ")");
 			else
 				System.out.println("Normal (" + lsi.elm_no + ")");
 			

@@ -489,7 +489,9 @@ class Oscilloscope extends JFrame implements
 				else
 					current_y = (int) Math.round(canvas_size.height/2 - getElementValue(sim.getElm(y_elm_no),y_value) / y_range * canvas_size.height);
 				
-				if ( xy_last_pt.x != -1 && xy_last_pt.y != -1 ) {
+				Rectangle r = new Rectangle(0, 0, canvas_size.width, canvas_size.height);
+				
+				if ( xy_last_pt.x != -1 && xy_last_pt.y != -1 && (r.contains(xy_last_pt) || r.contains(current_x, current_y)) ) {
 					if (xy_last_pt.x == current_x && xy_last_pt.y == current_y) {
 					    int index = current_x + canvas_size.width * current_y;
 					    if ( index >= 0 && index < xy_pixels.length && current_x >= 0 && current_x < canvas_size.width && current_y >= 0 && current_y < canvas_size.height )
@@ -646,10 +648,16 @@ class Oscilloscope extends JFrame implements
 	public void removeElement(OscilloscopeWaveform wf) {
 		if ( selected_wf == wf )
 			selected_wf = null;
-		if ( x_elm_no == wf.elm_no )
+		if ( x_elm_no == wf.elm_no ) {
 			x_elm_no = -1;
-		if ( y_elm_no == wf.elm_no )
+			x_value = null;
+			x_tvalue = null;
+		}
+		if ( y_elm_no == wf.elm_no ) {
 			y_elm_no = -1;
+			y_value = null;
+			y_tvalue = null;
+		}
 		remove(wf.label);
 		waveforms.remove(wf);
 		validate();
@@ -793,8 +801,8 @@ class Oscilloscope extends JFrame implements
 					x_range = default_range[x_tvalue.ordinal()/3];
 				else
 					x_range = default_range[x_value.ordinal()];
-				if ( x_range < x_max && x_max != Double.MIN_VALUE ) {
-					while ( x_range < x_max )
+				if ( x_range <= x_max && x_max != Double.MIN_VALUE ) {
+					while ( x_range <= x_max )
 						x_range *= 2;
 				} else {
 					while ( x_range >= x_max && x_max != Double.MIN_VALUE )
@@ -869,6 +877,12 @@ class Oscilloscope extends JFrame implements
 		resetGraph();
 	}
 	
+	public void setRange(String xy, double new_range) {
+		if ( xy.equalsIgnoreCase("x") ) { x_range = new_range; }
+		else if ( xy.equalsIgnoreCase("y") ) { y_range = new_range; }
+		resetGraph();
+	}
+	
 	/**
 	 * Returns the Y axis range for the specified value.
 	 * @param value Value to get range for
@@ -876,6 +890,15 @@ class Oscilloscope extends JFrame implements
 	 */
 	public double getRange(Value value) { return range[value.ordinal()]; }
 	public double getRange(TransistorValue value) { return range[value.ordinal()/3]; }
+	
+	public void setXElm(int elm_no) { x_elm_no = elm_no; }
+	public void setYElm(int elm_no) { y_elm_no = elm_no; }
+	
+	public void setXValue(Value value) { x_value = value; }
+	public void setXValue(TransistorValue value) { x_tvalue = value; }
+	
+	public void setYValue(Value value) { y_value = value; }
+	public void setYValue(TransistorValue value) { y_tvalue = value; }
 	
 	/**
 	 * Returns current time of scope.
@@ -1128,6 +1151,10 @@ class Oscilloscope extends JFrame implements
 		flags |= (stack_scopes.getState() ? 1 : 0);
 		dump += flags + " ";
 		
+		dump += x_elm_no + " " + ((x_value != null) ? x_value.ordinal() : -1) + " " + ((x_tvalue != null) ? x_tvalue.ordinal() : -1) + " ";
+		dump += y_elm_no + " " + ((y_value != null) ? y_value.ordinal() : -1) + " " + ((y_tvalue != null) ? y_tvalue.ordinal() : -1) + " ";
+		dump += x_range + " " + y_range + " ";
+		
 		// Scope type
 		dump += scope_type.name() + " ";
 		
@@ -1168,33 +1195,55 @@ class Oscilloscope extends JFrame implements
 	String legacyDump() {
 		String dump = "";
 		
-		for ( int i = 0; i < waveforms.size(); i++ ) {
-			OscilloscopeWaveform wf = waveforms.get(i);
-			String wf_dump = "o ";
+		if ( getType() == ScopeType.X_VS_Y ) {
 			
-			wf_dump += sim.locateElm(wf.elm) + " ";
-			
-			wf_dump += getTimeScale() + " ";
-			wf_dump += "0 "; // value
+			dump += "o " + x_elm_no + " ";
+			dump += time_scale + " 0 ";
 			int flags = 0;
-			flags |= (wf.isShowing(Value.CURRENT) ? 1 : 0);
-			flags |= (wf.isShowing(Value.VOLTAGE) ? 2 : 0);
+			flags |= 1; // show current
+			flags |= 2; // show voltage
 			flags |= (show_peak.getState() ? 0 : 4);
 		    flags |= (show_freq.getState() ? 8 : 0);
-		    //flags |= (lockScale ? 16 : 0);
 		    flags |= 32;
-		    flags |= ((scope_type == ScopeType.I_VS_V) ? 64 : 0);
-		    flags |= ((scope_type == ScopeType.X_VS_Y) ? 128 : 0);
+		    flags |= 64; // plot2d
+		    flags |= 128; // plotxy
 		    flags |= (show_n_peak.getState() ? 256 : 0);
-		    wf_dump += flags + " ";
-		    wf_dump += getRange(Value.VOLTAGE)/2 + " ";
-		    wf_dump += getRange(Value.CURRENT)/2 + " ";
-		    
-		    if ( stack_scopes.getState() )
-		    	wf_dump += sim.scopes.indexOf(this) + " ";
-		    
-		    dump += wf_dump + "\n";
+		    dump += flags + " ";
+		    dump += Math.max(x_range, y_range)/2 + " 0 ";
+		    dump += " -1 ";
+		    dump += y_elm_no;
+		    dump += "\n";
+			
+		} else {
 		
+			for ( int i = 0; i < waveforms.size(); i++ ) {
+				OscilloscopeWaveform wf = waveforms.get(i);
+				String wf_dump = "o ";
+				
+				wf_dump += sim.locateElm(wf.elm) + " ";
+				
+				wf_dump += getTimeScale() + " ";
+				wf_dump += "0 "; // value
+				int flags = 0;
+				flags |= (wf.isShowing(Value.CURRENT) ? 1 : 0);
+				flags |= (wf.isShowing(Value.VOLTAGE) ? 2 : 0);
+				flags |= (show_peak.getState() ? 0 : 4);
+			    flags |= (show_freq.getState() ? 8 : 0);
+			    //flags |= (lockScale ? 16 : 0);
+			    flags |= 32;
+			    flags |= ((scope_type == ScopeType.I_VS_V) ? 64 : 0);
+			    flags |= ((scope_type == ScopeType.X_VS_Y) ? 128 : 0);
+			    flags |= (show_n_peak.getState() ? 256 : 0);
+			    wf_dump += flags + " ";
+			    wf_dump += getRange(Value.VOLTAGE)/2 + " ";
+			    wf_dump += getRange(Value.CURRENT)/2 + " ";
+			    
+			    if ( stack_scopes.getState() )
+			    	wf_dump += sim.scopes.indexOf(this) + " ";
+			    
+			    dump += wf_dump + "\n";
+			
+			}
 		}
 		
 		return dump;
@@ -1225,6 +1274,21 @@ class Oscilloscope extends JFrame implements
 		boolean stack = ((flags & 1) != 0);
 		if ( stack != stack_scopes.getState() )
 			stack_scopes.setState(stack);
+		
+		x_elm_no = new Integer(st.nextToken()).intValue();
+		int x_val = new Integer(st.nextToken()).intValue();
+		x_value = (x_val != -1) ? Value.values()[x_val] : null;
+		int x_tval = new Integer(st.nextToken()).intValue();
+		x_tvalue = (x_tval != -1) ? TransistorValue.values()[x_tval] : null;
+		
+		y_elm_no = new Integer(st.nextToken()).intValue();
+		int y_val = new Integer(st.nextToken()).intValue();
+		y_value = (y_val != -1) ? Value.values()[y_val] : null;
+		int y_tval = new Integer(st.nextToken()).intValue();
+		y_tvalue = (y_tval != -1) ? TransistorValue.values()[y_tval] : null;
+		
+		x_range = new Double(st.nextToken()).doubleValue();
+		y_range = new Double(st.nextToken()).doubleValue();
 		
 		// Scope type
 		String new_type = st.nextToken();

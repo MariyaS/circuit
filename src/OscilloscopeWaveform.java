@@ -116,6 +116,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 				);
 			break;
 		case X_VS_Y:
+			label.setText(info[0].substring(0, 1).toUpperCase().concat(info[0].substring(1)));
 			break;
 		}
 		
