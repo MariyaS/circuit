@@ -15,13 +15,16 @@ import javax.swing.*;
 	    drawThickLine(g, point1, point2);
 	    doDots(g);
 	    setBbox(point1, point2, 3);
+	    String s = "";
+	    if (mustShowVoltage())
+	        s += getShortUnitText(volts[0], "V");
 	    if (mustShowCurrent()) {
-	        String s = getShortUnitText(Math.abs(getCurrent()), "A");
-	        drawValues(g, s, 4);
-	    } else if (mustShowVoltage()) {
-	        String s = getShortUnitText(volts[0], "V");
-	        drawValues(g, s, 4);
+	    	if ( !s.isEmpty() )
+	    		s += " | ";
+	        s += getShortUnitText(Math.abs(getCurrent()), "A");
 	    }
+	    if ( !s.isEmpty() )
+	    	drawValues(g, s, 4);
 	    drawPosts(g);
 	}
 	void stamp() {
@@ -58,16 +61,16 @@ import javax.swing.*;
 	}
 	public void setEditValue(int n, EditInfo ei) {
 	    if (n == 0) {
-		if (ei.checkbox.isSelected())
-		    flags = FLAG_SHOWCURRENT;
-		else
-		    flags &= ~FLAG_SHOWCURRENT;
+			if (ei.checkbox.isSelected())
+			    flags |= FLAG_SHOWCURRENT;
+			else
+			    flags &= ~FLAG_SHOWCURRENT;
 	    }
 	    if (n == 1) {
-		if (ei.checkbox.isSelected())
-		    flags = FLAG_SHOWVOLTAGE;
-		else
-		    flags &= ~FLAG_SHOWVOLTAGE;
+			if (ei.checkbox.isSelected())
+			    flags |= FLAG_SHOWVOLTAGE;
+			else
+			    flags &= ~FLAG_SHOWVOLTAGE;
 	    }
 	}
 	boolean needsShortcut() { return true; }
