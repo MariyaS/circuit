@@ -97,6 +97,8 @@ class Oscilloscope extends JFrame implements
 		x_value = y_value = null;
 		x_tvalue = y_tvalue = null;
 		
+		scope_type = ScopeType.VIP_VS_T;
+		
 		// Setup window
 		setTitle("Oscilloscope");
 		setJMenuBar(buildMenu());
@@ -115,9 +117,7 @@ class Oscilloscope extends JFrame implements
 		range = new double[Value.values().length];
 		for ( Value v : Value.values() )
 			range[v.ordinal()] = default_range[v.ordinal()];
-		
-		scope_type = ScopeType.VIP_VS_T;
-		
+				
 		// Show window
 		setVisible(true);
 		handleResize(); // Necessary to allocate main_img and info_img before drawScope is called
@@ -574,7 +574,8 @@ class Oscilloscope extends JFrame implements
 			xy_img_src.newPixels();
 			main_img_gfx.drawImage(xy_img, 0, 0, null);
 			main_img_gfx.setColor(Color.GREEN);
-			main_img_gfx.fillOval(xy_last_pt.x-3, xy_last_pt.y-3, 7, 7);
+			if ( xy_last_pt.x != -1 && xy_last_pt.y != -1 )
+				main_img_gfx.fillOval(xy_last_pt.x-3, xy_last_pt.y-3, 7, 7);
 			break;
 		}
 		
@@ -827,13 +828,14 @@ class Oscilloscope extends JFrame implements
 	 * Set type of scope
 	 * @param new_type VIP_VS_T (voltage/current/power vs time), V_VS_I (voltage vs current), or X_VS_Y (arbitrary vs arbitrary)
 	 */
-	public void setType(ScopeType new_type) {;
+	public void setType(ScopeType new_type) {
+		scope_type = new_type;	
+		setJMenuBar(buildMenu());
 		switch (new_type) {
 			case VIP_VS_T:	show_vip_vs_t.setSelected(true);	break;
 			case I_VS_V:	show_v_vs_i.setSelected(true);		break;
 			case X_VS_Y:	show_x_vs_y.setSelected(true);		break;
 		}
-		scope_type = new_type;
 		for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); )
 			wfi.next().setType(new_type);
 		resetGraph();
@@ -984,13 +986,27 @@ class Oscilloscope extends JFrame implements
 		else if ( e.getSource() == y_range_down )
 			setRange("y", y_range / 2);
 		else if ( e.getSource() == all_ranges_up ) {
-			setRange(Value.VOLTAGE, getRange(Value.VOLTAGE) * 2);
-			setRange(Value.CURRENT, getRange(Value.CURRENT) * 2);
-			setRange(Value.POWER, getRange(Value.POWER) * 2);
+			if ( scope_type == ScopeType.VIP_VS_T || scope_type == ScopeType.I_VS_V ) {
+				setRange(Value.VOLTAGE, getRange(Value.VOLTAGE) * 2);
+				setRange(Value.CURRENT, getRange(Value.CURRENT) * 2);
+			}
+			if ( scope_type == ScopeType.VIP_VS_T )
+				setRange(Value.POWER, getRange(Value.POWER) * 2);
+			if ( scope_type == ScopeType.X_VS_Y ) {
+				setRange("x", x_range * 2);
+				setRange("y", y_range * 2);
+			}
 		} else if ( e.getSource() == all_ranges_down ) {
-			setRange(Value.VOLTAGE, getRange(Value.VOLTAGE) / 2);
-			setRange(Value.CURRENT, getRange(Value.CURRENT) / 2);
-			setRange(Value.POWER, getRange(Value.POWER) / 2);
+			if ( scope_type == ScopeType.VIP_VS_T || scope_type == ScopeType.I_VS_V ) {
+				setRange(Value.VOLTAGE, getRange(Value.VOLTAGE) / 2);
+				setRange(Value.CURRENT, getRange(Value.CURRENT) / 2);
+			}
+			if ( scope_type == ScopeType.VIP_VS_T )
+				setRange(Value.POWER, getRange(Value.POWER) / 2);
+			if ( scope_type == ScopeType.X_VS_Y ) {
+				setRange("x", x_range * 2);
+				setRange("y", y_range * 2);
+			}
 		} else if ( e.getSource() == fit_ranges )
 			fitRanges();
 		
@@ -1064,6 +1080,15 @@ class Oscilloscope extends JFrame implements
 	 */
 	private JMenuBar buildMenu() {
 		
+		// Set default values for check items on the first run
+		// Otherwise, use their previous value when rebuilding the menu
+		boolean peak = (show_peak != null) ? show_peak.getState() : true;
+		boolean npeak = (show_n_peak != null) ? show_n_peak.getState() : false;
+		boolean freq = (show_freq != null) ? show_freq.getState() : false;
+		boolean grid = (show_grid != null) ? show_grid.getState() : true;
+		boolean labels = (show_labels != null) ? show_labels.getState() : true;
+		boolean stack = (stack_scopes != null) ? stack_scopes.getState() : false;
+		
 		JMenuBar mb = new JMenuBar();
 		
 		JMenu m = new JMenu("Reset");
@@ -1072,29 +1097,43 @@ class Oscilloscope extends JFrame implements
 		reset.addActionListener(this);
 		
 		m = new JMenu("Time Scale");
-		mb.add(m);
+		if ( scope_type == ScopeType.VIP_VS_T )
+			mb.add(m);
 		m.add(t_scale_up = new JMenuItem("Time Scale 2x"));
 		m.add(t_scale_down = new JMenuItem("Time Scale 1/2x"));
 		for ( int i = 0; i < m.getItemCount(); i++ )
 			((JMenuItem) m.getMenuComponent(i)).addActionListener(this);
 		
-		m = new JMenu("Amplitude Range");
+		switch (scope_type) {
+		case VIP_VS_T:
+			m = new JMenu("Amplitude Ranges");	break;
+		case I_VS_V:
+			m = new JMenu("I/V Ranges");		break;
+		case X_VS_Y:
+			m = new JMenu("X/Y Ranges");		break;
+		}
 		mb.add(m);
-		m.add(v_range_up = new JMenuItem("Voltage Range 2x"));
-		m.add(v_range_down = new JMenuItem("Voltage Range 1/2x"));
-		m.addSeparator();
-		m.add(i_range_up = new JMenuItem("Current Range 2x"));
-		m.add(i_range_down = new JMenuItem("Current Range 1/2x"));
-		m.addSeparator();
-		m.add(p_range_up = new JMenuItem("Power Range 2x"));
-		m.add(p_range_down = new JMenuItem("Power Range 1/2x"));
-		m.addSeparator();
-		m.add(x_range_up = new JMenuItem("X Range 2x"));
-		m.add(x_range_down = new JMenuItem("X Range 1/2x"));
-		m.addSeparator();
-		m.add(y_range_up = new JMenuItem("Y Range 2x"));
-		m.add(y_range_down = new JMenuItem("Y Range 1/2x"));
-		m.addSeparator();
+		if ( scope_type == ScopeType.VIP_VS_T || scope_type == ScopeType.I_VS_V ) {
+			m.add(v_range_up = new JMenuItem("Voltage Range 2x"));
+			m.add(v_range_down = new JMenuItem("Voltage Range 1/2x"));
+			m.addSeparator();
+			m.add(i_range_up = new JMenuItem("Current Range 2x"));
+			m.add(i_range_down = new JMenuItem("Current Range 1/2x"));
+			m.addSeparator();
+		}
+		if ( scope_type == ScopeType.VIP_VS_T ) {
+			m.add(p_range_up = new JMenuItem("Power Range 2x"));
+			m.add(p_range_down = new JMenuItem("Power Range 1/2x"));
+			m.addSeparator();
+		}
+		if ( scope_type == ScopeType.X_VS_Y ) {
+			m.add(x_range_up = new JMenuItem("X Range 2x"));
+			m.add(x_range_down = new JMenuItem("X Range 1/2x"));
+			m.addSeparator();
+			m.add(y_range_up = new JMenuItem("Y Range 2x"));
+			m.add(y_range_down = new JMenuItem("Y Range 1/2x"));
+			m.addSeparator();
+		}
 		m.add(all_ranges_up = new JMenuItem("All Ranges 2x"));
 		m.add(all_ranges_down = new JMenuItem("All Ranges 1/2x"));
 		m.addSeparator();
@@ -1120,18 +1159,28 @@ class Oscilloscope extends JFrame implements
 		for ( int i = 0; i < 3; i++ )
 			((JRadioButtonMenuItem) m.getMenuComponent(i)).addActionListener(this);
 		m.addSeparator();
-		m.add(show_peak = new JCheckBoxMenuItem("Peak Value"));
-		m.add(show_n_peak = new JCheckBoxMenuItem("Negative Peak Value"));
-		m.add(show_freq = new JCheckBoxMenuItem("Frequency"));
-		m.addSeparator();
+		show_peak = new JCheckBoxMenuItem("Peak Value");
+		show_peak.setState(peak);
+		show_n_peak = new JCheckBoxMenuItem("Negative Peak Value");
+		show_n_peak.setState(npeak);
+		show_freq = new JCheckBoxMenuItem("Frequency");
+		show_freq.setState(freq);
+		if ( scope_type == ScopeType.VIP_VS_T || scope_type == ScopeType.I_VS_V ) {
+			m.add(show_peak);
+			m.add(show_n_peak);
+			m.add(show_freq);
+			m.addSeparator();
+		}
 		m.add(show_grid = new JCheckBoxMenuItem("Gridlines"));
-		show_grid.setState(true);
+		show_grid.setState(grid);
 		m.add(show_labels = new JCheckBoxMenuItem("Grid Labels"));
-		show_labels.setState(true);
+		show_labels.setState(labels);
 		
 		m = new JMenu("Stack");
-		mb.add(m);
+		if ( scope_type == ScopeType.VIP_VS_T )
+			mb.add(m);
 		m.add(stack_scopes = new JCheckBoxMenuItem("Stack All"));
+		stack_scopes.setState(stack);
 		stack_scopes.addActionListener(this);
 		
 		return mb;
