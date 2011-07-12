@@ -369,76 +369,128 @@ class Oscilloscope extends JFrame implements
 	 * @param gfx The graphics object to draw on.
 	 */
 	private void drawElementInfo(Graphics gfx) {
-		String info[] = new String[10];
-		selected_wf.elm.getInfo(info);
-		
-		FontMetrics fm = gfx.getFontMetrics();
-		int font_height = fm.getHeight();
-		
-		// Draw all strings in info
-		// Put 10px spacing between strings, wrap to next line after 5 strings
-		int x = 3;
-		for ( int i = 0; i < 10 && info[i] != null; i++ ) {
-			gfx.drawString(info[i], x, font_height*(1+(int)(i/5)));
-			if ( i == 4 )
-				x = 3;
-			else
-				x += Math.round(fm.getStringBounds(info[i], gfx).getWidth()) + 10;
-		}
-		
-		// +/- peak values, frequency
-		if ( (selected_wf.isShowing(Value.VOLTAGE) || selected_wf.isShowing(Value.CURRENT) || selected_wf.isShowing(Value.POWER)) && ! (selected_wf.elm instanceof TransistorElm) ) {
-			String peak_str = "";
-			if ( show_peak.getState() ) {
-				peak_str += "Peak: ";
-				for ( Value v : Value.values() ) {
-					if ( selected_wf.isShowing(v) )
-						peak_str += getUnitText(selected_wf.getPeakValue(v), value_units[v.ordinal()]) + " | ";
-				}
-				peak_str = peak_str.substring(0, peak_str.length()-3);
+		if ( scope_type == ScopeType.VIP_VS_T || scope_type == ScopeType.I_VS_V ) {
+			String info[] = new String[10];
+			selected_wf.elm.getInfo(info);
+			if ( info[0] != null )
+				info[0] = info[0].substring(0,1).toUpperCase() + info[0].substring(1);
+			
+			FontMetrics fm = gfx.getFontMetrics();
+			int font_height = fm.getHeight();
+			
+			// Draw all strings in info
+			// Put 10px spacing between strings, wrap to next line after 5 strings
+			int x = 3;
+			for ( int i = 0; i < 10 && info[i] != null; i++ ) {
+				gfx.drawString(info[i], x, font_height*(1+(int)(i/5)));
+				if ( i == 4 )
+					x = 3;
+				else
+					x += Math.round(fm.getStringBounds(info[i], gfx).getWidth()) + 10;
 			}
 			
-			String npeak_str = "";
-			if ( show_n_peak.getState() ) {
-				npeak_str += "Neg Peak: ";
-				for ( Value v : Value.values() ) {
-					if ( selected_wf.isShowing(v) )
-						npeak_str += getUnitText(selected_wf.getNegativePeakValue(v), value_units[v.ordinal()]) + " | ";
-				}
-				npeak_str = npeak_str.substring(0, npeak_str.length()-3);
-			}
-			
-			String freq_str = "";
-			if ( show_freq.getState() ) {
-				freq_str += "Freq: ";
-				for ( Value v : Value.values() ) {
-					if ( selected_wf.isShowing(v) ) {
-						double f = selected_wf.getFrequency(v);
-						if ( f != 0 )
-							freq_str += getUnitText(selected_wf.getFrequency(v), "Hz") + " | ";
-						else
-							freq_str += "? | ";
+			// +/- peak values, frequency
+			if ( (selected_wf.isShowing(Value.VOLTAGE) || selected_wf.isShowing(Value.CURRENT) || selected_wf.isShowing(Value.POWER)) && ! (selected_wf.elm instanceof TransistorElm) ) {
+				String peak_str = "";
+				if ( show_peak.getState() ) {
+					peak_str += "Peak: ";
+					for ( Value v : Value.values() ) {
+						if ( selected_wf.isShowing(v) )
+							peak_str += getUnitText(selected_wf.getPeakValue(v), value_units[v.ordinal()]) + " | ";
 					}
-						
+					peak_str = peak_str.substring(0, peak_str.length()-3);
 				}
-				freq_str = freq_str.substring(0, freq_str.length()-3);
-			}
-			
-			x = 3;
-			if ( !peak_str.isEmpty() ) {
-				gfx.drawString(peak_str, x, font_height*3);
-				x += Math.round(fm.getStringBounds(peak_str, gfx).getWidth()) + 15;
-			}
-			if ( !npeak_str.isEmpty() ) {
-				gfx.drawString(npeak_str, x, font_height*3);
-				x += Math.round(fm.getStringBounds(npeak_str, gfx).getWidth()) + 15;
-			}
-			if ( !freq_str.isEmpty() ) {
-				gfx.drawString(freq_str, x, font_height*3);
-				x += Math.round(fm.getStringBounds(freq_str, gfx).getWidth()) + 15;
+				
+				String npeak_str = "";
+				if ( show_n_peak.getState() ) {
+					npeak_str += "Neg Peak: ";
+					for ( Value v : Value.values() ) {
+						if ( selected_wf.isShowing(v) )
+							npeak_str += getUnitText(selected_wf.getNegativePeakValue(v), value_units[v.ordinal()]) + " | ";
+					}
+					npeak_str = npeak_str.substring(0, npeak_str.length()-3);
+				}
+				
+				String freq_str = "";
+				if ( show_freq.getState() ) {
+					freq_str += "Freq: ";
+					for ( Value v : Value.values() ) {
+						if ( selected_wf.isShowing(v) ) {
+							double f = selected_wf.getFrequency(v);
+							if ( f != 0 )
+								freq_str += getUnitText(selected_wf.getFrequency(v), "Hz") + " | ";
+							else
+								freq_str += "? | ";
+						}
+							
+					}
+					freq_str = freq_str.substring(0, freq_str.length()-3);
+				}
+				
+				x = 3;
+				if ( !peak_str.isEmpty() ) {
+					gfx.drawString(peak_str, x, font_height*3);
+					x += Math.round(fm.getStringBounds(peak_str, gfx).getWidth()) + 15;
+				}
+				if ( !npeak_str.isEmpty() ) {
+					gfx.drawString(npeak_str, x, font_height*3);
+					x += Math.round(fm.getStringBounds(npeak_str, gfx).getWidth()) + 15;
+				}
+				if ( !freq_str.isEmpty() ) {
+					gfx.drawString(freq_str, x, font_height*3);
+					x += Math.round(fm.getStringBounds(freq_str, gfx).getWidth()) + 15;
+				}
 			}
 		}
-		
+		else { // type == X_VS_Y
+			String plot_elements = "";
+			String plot_values = "";
+			if ( x_elm_no != -1 ) {
+				CircuitElm elm = sim.getElm(x_elm_no);
+				String info[] = new String[10];
+				elm.getInfo(info);
+				if ( info[0] != null )
+					info[0] = info[0].substring(0,1).toUpperCase() + info[0].substring(1);
+				plot_elements += "X: " + info[0] + " ";
+				String value;
+				if ( elm instanceof TransistorElm ) {
+					value = x_tvalue.name();
+					value = value.substring(0,1) + value.substring(2).toLowerCase();
+					plot_values += getUnitText( getElementValue(elm,x_tvalue), transistor_value_units[x_tvalue.ordinal()] );
+				} else {
+					value = x_value.name();
+					value = value.substring(0,1) + value.substring(1).toLowerCase();
+					plot_values += getUnitText( getElementValue(elm,x_value), value_units[x_value.ordinal()] );
+				}
+				plot_elements += "(" + value + ")";
+				
+				if ( y_elm_no != -1 ) {
+					plot_elements += "  |  ";
+					plot_values += "  |  ";
+				}
+			}
+			if ( y_elm_no != -1 ) {
+				CircuitElm elm = sim.getElm(y_elm_no);
+				String info[] = new String[10];
+				elm.getInfo(info);
+				if ( info[0] != null )
+					info[0] = info[0].substring(0,1).toUpperCase() + info[0].substring(1);
+				plot_elements += "Y: " + info[0] + " ";
+				String value;
+				if ( elm instanceof TransistorElm ) {
+					value = y_tvalue.name();
+					value = value.substring(0,1) + value.substring(2).toLowerCase();
+					plot_values += getUnitText( getElementValue(elm,y_tvalue), transistor_value_units[y_tvalue.ordinal()] );
+				} else {
+					value = y_value.name();
+					value = value.substring(0,1) + value.substring(1).toLowerCase();
+					plot_values += getUnitText( getElementValue(elm,y_value), value_units[y_value.ordinal()] );
+				}
+				plot_elements += "(" + value + ")";
+			}
+			gfx.drawString(plot_elements, 3, gfx.getFontMetrics().getHeight());
+			gfx.drawString(plot_values, 3, 2*gfx.getFontMetrics().getHeight());
+		}
 		
 	}
 	
@@ -586,7 +638,7 @@ class Oscilloscope extends JFrame implements
 		info_img_gfx.clearRect(0, 0, info_img.getWidth(), info_img.getHeight());
 		
 		// Draw element info and current time
-		if ( selected_wf != null )
+		if ( selected_wf != null || scope_type == ScopeType.X_VS_Y )
 			drawElementInfo(info_img_gfx);
 		drawCurrentTime(info_img_gfx);
 		

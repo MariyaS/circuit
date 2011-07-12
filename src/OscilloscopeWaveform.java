@@ -120,7 +120,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			break;
 		}
 		
-		if ( this == scope.getSelectedWaveform() )
+		if ( this == scope.getSelectedWaveform() && scope.getType() != Oscilloscope.ScopeType.X_VS_Y )
 			label.setFont(Oscilloscope.selected_label_font);
 		else
 			label.setFont(Oscilloscope.label_font);
@@ -736,7 +736,7 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 			menu.show(e.getComponent(), e.getX(), e.getY());
 		
 		// Left clicking displays instantaneous info about this element
-		else if ( e.getButton() == MouseEvent.BUTTON1 )
+		else if ( e.getButton() == MouseEvent.BUTTON1 && scope.getType() != Oscilloscope.ScopeType.X_VS_Y )
 			scope.setSelectedWaveform(this);
 	}
 	@Override public void mouseReleased(MouseEvent e) {}
