@@ -49,9 +49,9 @@ class EditDialog extends JDialog implements ActionListener, ChangeListener, Item
 				    ei.textf.setText(ei.text);
 				ei.textf.addActionListener(this);
 				if (ei.text == null) {
-				    add(ei.bar = new JSlider(JSlider.HORIZONTAL, 0, barmax+2, 50));
-				    setBar(ei);
-				    ei.bar.addChangeListener(this);
+				    //add(ei.bar = new JSlider(JSlider.HORIZONTAL, 0, barmax+2, 50));
+				    //setBar(ei);
+				    //ei.bar.addChangeListener(this);
 				}
 		    }
 		}
@@ -144,8 +144,8 @@ class EditDialog extends JDialog implements ActionListener, ChangeListener, Item
 				    } catch (Exception ex) { /* ignored */ }
 				}
 				elm.setEditValue(i, ei);
-				if (ei.text == null)
-				    setBar(ei);
+				//if (ei.text == null)
+				//    setBar(ei);
 				cframe.needAnalyze();
 		    }
 		}
@@ -197,7 +197,8 @@ class EditDialog extends JDialog implements ActionListener, ChangeListener, Item
 		    }
 		}
 		if (changed) {
-		    setVisible(false);
+			CirSim.editDialog.setVisible(false);
+		    CirSim.editDialog.dispose();
 		    CirSim.editDialog = new EditDialog(elm, cframe);
 		    CirSim.editDialog.setVisible(true);
 		}
