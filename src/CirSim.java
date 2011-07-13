@@ -18,6 +18,7 @@ import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.Vector;
 import javax.swing.*;
+import javax.swing.border.*;
 import javax.swing.event.*;
 
 public class CirSim extends JFrame
@@ -47,6 +48,7 @@ public class CirSim extends JFrame
     JButton resetButton, newScopeButton, dumpMatrixButton;
     JSlider speedBar, currentBar, powerBar;
     JLabel powerLabel, titleLabel;
+    JTextArea infoArea;
     
     JCheckBoxMenuItem dotsCheckItem, voltsCheckItem, powerCheckItem, smallGridCheckItem,
     showValuesCheckItem, conductanceCheckItem, euroResistorCheckItem, conventionCheckItem;
@@ -517,11 +519,11 @@ public class CirSim extends JFrame
 	    	calcCircuitBottom();
 	    String info[] = new String[10];
 	    if (mouseElm != null) {
-			if (mousePost == -1)
+			if (mousePost == -1) {
 			    mouseElm.getInfo(info);
-			else
-			    info[0] = "V = " +
-				CircuitElm.getUnitText(mouseElm.getPostVoltage(mousePost), "V");
+				info[0] = info[0].substring(0,1).toUpperCase() + info[0].substring(1);
+			} else
+			    info[0] = "V = " + CircuitElm.getUnitText(mouseElm.getPostVoltage(mousePost), "V");
 			/* //shownodes
 			for (i = 0; i != mouseElm.getPostCount(); i++)
 			    info[0] += " " + mouseElm.nodes[i];
@@ -558,8 +560,13 @@ public class CirSim extends JFrame
 	    int ybase = winSize.height-15*i-5;
 	    ybase = min(ybase, circuitArea.height);
 	    ybase = max(ybase, circuitBottom);
-	    for (i = 0; info[i] != null; i++)
-	    	g.drawString(info[i], x, ybase+15*(i+1));
+	    String infoStr = "";
+	    info[0] = String.format("%1$-15s", info[0]);
+	    for (i = 0; info[i] != null; i++) {
+	    	infoStr += info[i] + "\n";
+	    	//g.drawString(info[i], x, ybase+15*(i+1));
+	    }
+	    infoArea.setText(infoStr.trim());
 	}
 	if (selectedArea != null) {
 	    g.setColor(CircuitElm.selectColor);
@@ -1776,7 +1783,7 @@ public class CirSim extends JFrame
     }
     
     public void stateChanged(ChangeEvent e) {
-    	System.out.println( ((JSlider) e.getSource()).getValue() );
+    	//System.out.println( ((JSlider) e.getSource()).getValue() );
     }
 
     ByteArrayOutputStream readUrlData(URL url) throws java.io.IOException {
@@ -2972,6 +2979,13 @@ public class CirSim extends JFrame
 		main.add(new JLabel("www.falstad.com"));
 		main.add(new JLabel("Current Circuit",JLabel.RIGHT));
 		main.add(titleLabel);
+		
+		main.add(infoArea = new JTextArea("testing\n1..2..3.."));
+		Border margin = BorderFactory.createEmptyBorder(5,5,5,5);
+		Border border = BorderFactory.createLineBorder(Color.LIGHT_GRAY);
+		infoArea.setBorder(BorderFactory.createCompoundBorder(border, margin));
+		infoArea.setBackground(new Color(255,249,171));
+		infoArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
     }
     
     JMenuBar buildMenuBar() {
