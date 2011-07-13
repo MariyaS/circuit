@@ -170,7 +170,6 @@ public class CirSim extends JFrame
 	
 		CircuitElm.initClass(this);
 	
-		String runFromWebStr = null;
 		try {
 		    baseURL = applet.getDocumentBase().getFile();
 		    // look for circuit embedded in URL
@@ -185,9 +184,10 @@ public class CirSim extends JFrame
 		    startCircuit = applet.getParameter("startCircuit");
 		    startLabel   = applet.getParameter("startLabel");
 		    useFrameStr  = applet.getParameter("useFrame");
-		    runFromWebStr = applet.getParameter("applet");
 		    
 		} catch (Exception e) { }
+		
+		System.out.println(baseURL);
 		
 		useFrame = (useFrameStr == null || !useFrameStr.equalsIgnoreCase("false"));
 		if (useFrame) {
@@ -195,7 +195,7 @@ public class CirSim extends JFrame
 		}  else
 		    main = applet;
 		
-		runFromWeb = !(runFromWebStr == null);
+		runFromWeb = baseURL.subSequence(0,4).equals("http");
 		
 		String os = System.getProperty("os.name");
 		isMac = (os.indexOf("Mac ") == 0);
@@ -244,7 +244,8 @@ public class CirSim extends JFrame
 		transScopeMenu = buildScopeMenu(true);
 		main.add(transScopeMenu);
 		
-		fileChooser = new JFileChooser();
+		if ( !runFromWeb )
+			fileChooser = new JFileChooser();
 	
 		// Create main controls
 		setupMainControls();
@@ -373,7 +374,9 @@ public class CirSim extends JFrame
 		    dispose();
 		else
 		    applet.destroyFrame();
-		System.exit(0);
+		
+		if (!runFromWeb)
+			System.exit(0);
     }
     
     protected void processEvent(AWTEvent ev) {
@@ -381,14 +384,6 @@ public class CirSim extends JFrame
         	destroyFrame();
         super.processEvent(ev);
     }
-    
-    // When using Swing, must override paintComponent instead of paint
-    // because overriding paint removes the paintChildren call, which
-    // causes other elements not to be drawn
-    // http://java.sun.com/products/jfc/tsc/articles/painting/#callbacks
-    /*public void paintComponent(Graphics g) {
-    	cv.repaint();
-    }*/
 
     static final int resct = 6;
     long lastTime = 0, lastFrameTime, lastIterTime, secTime = 0;
@@ -3061,9 +3056,11 @@ public class CirSim extends JFrame
     	
     	JMenu m = new JMenu("File");
 	    mb.add(m);
-	    m.add(saveItem = getMenuItem("Save File"));
-	    m.add(loadItem = getMenuItem("Open File"));
-	    m.addSeparator();
+	    if ( !runFromWeb ) {
+		    m.add(saveItem = getMenuItem("Save File"));
+		    m.add(loadItem = getMenuItem("Open File"));
+		    m.addSeparator();
+	    }
 		m.add(importItem = getMenuItem("Import Text"));
 		m.add(exportItem = getMenuItem("Export Text"));
 		m.addSeparator();
