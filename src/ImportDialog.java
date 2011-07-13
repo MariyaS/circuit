@@ -10,15 +10,13 @@ class ImportDialog extends JDialog implements ActionListener {
     JTextArea text;
     boolean isURL;
 	
-    ImportDialog(CirSim f, String str, boolean url) {
+    ImportDialog(CirSim f, String str) {
 		super(f, (str.length() > 0) ? "Export" : "Import", false);
-		isURL = url;
 		cframe = f;
 		setLayout(new ImportDialogLayout());
 		add(new JScrollPane(text = new JTextArea(str, 10, 60)));
 		importButton = new JButton("Import");
-		if (!isURL)
-		    add(importButton);
+	    add(importButton);
 		importButton.addActionListener(this);
 		add(closeButton = new JButton("Close"));
 		closeButton.addActionListener(this);

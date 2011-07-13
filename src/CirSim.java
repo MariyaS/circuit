@@ -6,8 +6,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.*;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FilterInputStream;
+import java.io.*;
 import java.lang.Math;
 import java.lang.reflect.Constructor;
 import java.net.URL;
@@ -43,7 +42,8 @@ public class CirSim extends JFrame
 
     static Container main;
 
-    JMenuItem exportItem, exportLinkItem, importItem, exitItem;
+    JFileChooser fileChooser;
+    JMenuItem saveItem, loadItem, exportItem, importItem, exitItem;
     JMenuItem undoItem, redoItem, cutItem, copyItem, pasteItem, selectAllItem, optionsItem;
     JMenu circuitsMenu;
     
@@ -175,19 +175,7 @@ public class CirSim extends JFrame
 		    baseURL = applet.getDocumentBase().getFile();
 		    // look for circuit embedded in URL
 		    String doc = applet.getDocumentBase().toString();
-		    int in = doc.indexOf('#');
-		    if (in > 0) {
-				String x = null;
-				try {
-				    x = doc.substring(in+1);
-				    x = URLDecoder.decode(x);
-				    startCircuitText = x;
-				} catch (Exception e) {
-				    System.out.println("can't decode " + x);
-				    e.printStackTrace();
-				}
-		    }
-		    in = doc.lastIndexOf('/');
+		    int in = doc.lastIndexOf('/');
 		    if (in > 0)
 		    	baseURL = doc.substring(0, in+1);
 		    
@@ -207,7 +195,6 @@ public class CirSim extends JFrame
 		}  else
 		    main = applet;
 		
-		System.out.println(Circuit.class.getResource("Circuit.class"));
 		runFromWeb = !(runFromWebStr == null);
 		
 		String os = System.getProperty("os.name");
@@ -256,6 +243,8 @@ public class CirSim extends JFrame
 		main.add(scopeMenu);
 		transScopeMenu = buildScopeMenu(true);
 		main.add(transScopeMenu);
+		
+		fileChooser = new JFileChooser();
 	
 		// Create main controls
 		setupMainControls();
@@ -1613,14 +1602,16 @@ public class CirSim extends JFrame
 			scopes.add(new Oscilloscope(this));
 		if (e.getSource() == dumpMatrixButton)
 		    dumpMatrix = true;
+		if (e.getSource() == saveItem)
+			doSave();
+		if (e.getSource() == loadItem)
+			doLoad();
 		if (e.getSource() == exportItem)
-		    doImport(false, false);
+		    doExport();
 		if (e.getSource() == optionsItem)
 		    doEdit(new EditOptions(this));
 		if (e.getSource() == importItem)
-		    doImport(true, false);
-		if (e.getSource() == exportLinkItem)
-		    doImport(false, true);
+		    doImport();
 		if (e.getSource() == undoItem)
 		    doUndo();
 		if (e.getSource() == redoItem)
@@ -1746,19 +1737,60 @@ public class CirSim extends JFrame
 		editDialog.setVisible(true);
 		
     }
+    
+    void doSave() {
+    	int ret = fileChooser.showSaveDialog(this);
+    	if ( ret == JFileChooser.APPROVE_OPTION) {
+    		File saveFile = fileChooser.getSelectedFile();
+    		System.out.println(saveFile.getPath());
+    		try {
+    			FileWriter fstream = new FileWriter(saveFile.getPath());
+    			BufferedWriter out = new BufferedWriter(fstream);
+    			out.write(dumpCircuit());
+    			out.close();
+    		} catch (Exception e) {}
+    	}
+    }
+    
+    void doLoad() {
+    	int ret = fileChooser.showOpenDialog(this);
+    	if ( ret == JFileChooser.APPROVE_OPTION) {
+    		File loadFile = fileChooser.getSelectedFile();
+    		System.out.println(loadFile.getPath());
+    		try {
+	    		FileInputStream fstream = new FileInputStream(loadFile.getPath());
+	    		DataInputStream instream = new DataInputStream(fstream);
+	    		BufferedReader in = new BufferedReader(new InputStreamReader(instream));
+	    		String dumpText = "";
+	    		String line;
+	    		while ( (line = in.readLine()) != null )
+	    			dumpText += line + "\n";
+	    		instream.close();
+	    		readSetup(dumpText);
+    		} catch (Exception e) {}
+    	}
+    }
 
-    void doImport(boolean imp, boolean url) {
+    void doImport() {
 		if (impDialog != null) {
 		    requestFocus();
 		    impDialog.setVisible(false);
 		    impDialog = null;
 		}
-		String dump = (imp) ? "" : dumpCircuit();
-		if (url)
-		    dump = baseURL + "#" + URLEncoder.encode(dump);
-		impDialog = new ImportDialog(this, dump, url);
+		impDialog = new ImportDialog(this, "");
 		impDialog.setVisible(true);
 		pushUndo();
+    }
+    
+    void doExport() {
+    	if (impDialog != null) {
+    		requestFocus();
+    		impDialog.setVisible(false);
+    		impDialog = null;
+    	}
+    	impDialog = new ImportDialog(this, dumpCircuit());
+    	impDialog.setVisible(true);
+    	pushUndo();
     }
     
     String dumpCircuit() {
@@ -3029,9 +3061,11 @@ public class CirSim extends JFrame
     	
     	JMenu m = new JMenu("File");
 	    mb.add(m);
-		m.add(importItem = getMenuItem("Import"));
-		m.add(exportItem = getMenuItem("Export"));
-		m.add(exportLinkItem = getMenuItem("Export Link"));
+	    m.add(saveItem = getMenuItem("Save File"));
+	    m.add(loadItem = getMenuItem("Open File"));
+	    m.addSeparator();
+		m.add(importItem = getMenuItem("Import Text"));
+		m.add(exportItem = getMenuItem("Export Text"));
 		m.addSeparator();
 		m.add(exitItem   = getMenuItem("Exit"));
 	
