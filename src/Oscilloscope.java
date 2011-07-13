@@ -67,6 +67,8 @@ class Oscilloscope extends JFrame implements
 	static final String[] transistor_value_units = { "V", "V", "V", "A", "A", "A", "W" };
 	private static final double[] default_range = { 5, 0.1, 0.5 };
 	
+	private boolean fit_needed;
+	
 	
 	private JMenuItem reset;
 	private JMenuItem t_scale_up, t_scale_down;
@@ -124,6 +126,7 @@ class Oscilloscope extends JFrame implements
 		range = new double[Value.values().length];
 		for ( Value v : Value.values() )
 			range[v.ordinal()] = default_range[v.ordinal()];
+		fit_needed = false;
 				
 		// Show window
 		setVisible(true);
@@ -505,6 +508,11 @@ class Oscilloscope extends JFrame implements
 	public void timeStep() {
 		for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); )
 			wfi.next().timeStep();
+		
+		if ( fit_needed ) {
+			fitRanges();
+			fit_needed = false;
+		}
 					
 		if( scope_type == ScopeType.X_VS_Y && x_elm_no != -1 && y_elm_no != -1 ) {
 			int current_x, current_y;
@@ -648,6 +656,9 @@ class Oscilloscope extends JFrame implements
 		}
 		
 		waveforms.add(new OscilloscopeWaveform(elm, this));
+		
+		if ( waveforms.size() == 1 )
+			fit_needed = true;
 		
 		if ( stack_scopes.getState() )
 			resetGraph();
