@@ -67,7 +67,7 @@ class Oscilloscope extends JFrame implements
 	static final String[] transistor_value_units = { "V", "V", "V", "A", "A", "A", "W" };
 	private static final double[] default_range = { 5, 0.1, 0.5 };
 	
-	private boolean fit_needed;
+	boolean fit_needed;
 	
 	
 	private JMenuItem reset;

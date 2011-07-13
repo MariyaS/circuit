@@ -189,6 +189,7 @@ class LegacyScopeSupport {
 			}
 			int show_flags = (lsi.show_v ? 2 : 0) | (lsi.show_i ? 1 : 0);
 			o.addElement(sim.getElm(lsi.elm_no), show_flags);
+			o.fit_needed = false;
 			if ( o.getType() == Oscilloscope.ScopeType.X_VS_Y ) {
 				o.addElement(sim.getElm(lsi.y_elm_no));
 				o.setXElm(lsi.elm_no);
