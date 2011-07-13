@@ -8,7 +8,7 @@ class OscilloscopeLayout implements LayoutManager {
 	
 	public OscilloscopeLayout() {}
 	
-	public Dimension preferredLayoutSize(Container target) { return new Dimension(600,450); }
+	public Dimension preferredLayoutSize(Container target) { return new Dimension(650,450); }
 	public Dimension minimumLayoutSize(Container target) { return new Dimension(500,300); }
 	
 	public void addLayoutComponent(String name, Component c) {}
@@ -26,13 +26,19 @@ class OscilloscopeLayout implements LayoutManager {
 		
 		// Layout component labels
 		int x = insets.left + 5;
+		int label_no = 0;
 		for ( int i = 1; i < window.getComponentCount(); i++ ) {
 			Component c = window.getComponent(i);
 			if ( c instanceof JLabel ) {
-				int y = insets.top;
-				c.setLocation(x, y);
-				x += c.getPreferredSize().width + 20;
-				c.setSize(c.getPreferredSize());
+				if ( label_no < 9 ) {
+					c.setLocation(insets.left+3, insets.top + window_height - INFO_AREA_HEIGHT + 16 * (label_no / 3));
+					c.setSize(window_width-6, 15);
+				} else {
+					c.setLocation(x, insets.top);
+					x += c.getPreferredSize().width + 20;
+					c.setSize(c.getPreferredSize());
+				}
+				label_no++;
 			}
 		}
 	}

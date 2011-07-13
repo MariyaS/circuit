@@ -35,7 +35,7 @@ class Oscilloscope extends JFrame implements
 	private static final Font grid_label_font = label_font.deriveFont(9.0f);
 	private static final Font info_font = label_font.deriveFont(10.0f);
 	private static final NumberFormat display_format = DecimalFormat.getInstance();
-	static { display_format.setMinimumFractionDigits(2); }
+	static { display_format.setMinimumFractionDigits(2); display_format.setMaximumFractionDigits(2); }
 	
 	private OscilloscopeCanvas canvas;
 	Dimension canvas_size;
@@ -48,10 +48,7 @@ class Oscilloscope extends JFrame implements
 	private MemoryImageSource xy_img_src;
 	private Point xy_last_pt;
 	
-	private BufferedImage info_img;
-	private Graphics2D info_img_gfx;
-	
-	private Graphics2D info_window_gfx;
+	private JLabel[] info_line;
 
 	/**
 	 * Number of time steps per scope pixel.
@@ -111,6 +108,17 @@ class Oscilloscope extends JFrame implements
 		addComponentListener(this);
 		canvas = new OscilloscopeCanvas(this);
 		add(canvas);
+		
+		info_line = new JLabel[9];
+		System.out.println(info_line.length);
+		for ( int i = 0; i < info_line.length; i++ ) {
+			switch ( i % 3 ) {
+			case 0:	add(info_line[i] = new JLabel(""));	break;
+			case 1: add(info_line[i] = new JLabel("", JLabel.CENTER));	break;
+			case 2: add(info_line[i] = new JLabel("", JLabel.RIGHT));	break;
+			}
+			info_line[i].setFont(info_font);
+		}
 		
 		// Initialize scales
 		time_scale = DEFAULT_TIME_SCALE;
@@ -368,30 +376,21 @@ class Oscilloscope extends JFrame implements
 	 * Also displays +/- peak values and frequency.
 	 * @param gfx The graphics object to draw on.
 	 */
-	private void drawElementInfo(Graphics gfx) {
+	private void drawElementInfo() {
 		if ( scope_type == ScopeType.VIP_VS_T || scope_type == ScopeType.I_VS_V ) {
 			String info[] = new String[10];
 			selected_wf.elm.getInfo(info);
 			if ( info[0] != null )
 				info[0] = info[0].substring(0,1).toUpperCase() + info[0].substring(1);
 			
-			FontMetrics fm = gfx.getFontMetrics();
-			int font_height = fm.getHeight();
-			
-			// Draw all strings in info
-			// Put 10px spacing between strings, wrap to next line after 5 strings
-			int x = 3;
-			for ( int i = 0; i < 10 && info[i] != null; i++ ) {
-				gfx.drawString(info[i], x, font_height*(1+(int)(i/5)));
-				if ( i == 4 )
-					x = 3;
-				else
-					x += Math.round(fm.getStringBounds(info[i], gfx).getWidth()) + 10;
-			}
+			String info_str = "";
+			for ( int i = 0; i < 10 && info[i] != null; i++ )
+				info_str += info[i] + "     ";
+			info_line[0].setText(info_str);
 			
 			// +/- peak values, frequency
+			String peak_str = "", npeak_str = "", freq_str = "";
 			if ( (selected_wf.isShowing(Value.VOLTAGE) || selected_wf.isShowing(Value.CURRENT) || selected_wf.isShowing(Value.POWER)) && ! (selected_wf.elm instanceof TransistorElm) ) {
-				String peak_str = "";
 				if ( show_peak.getState() ) {
 					peak_str += "Peak: ";
 					for ( Value v : Value.values() ) {
@@ -401,7 +400,6 @@ class Oscilloscope extends JFrame implements
 					peak_str = peak_str.substring(0, peak_str.length()-3);
 				}
 				
-				String npeak_str = "";
 				if ( show_n_peak.getState() ) {
 					npeak_str += "Neg Peak: ";
 					for ( Value v : Value.values() ) {
@@ -411,7 +409,6 @@ class Oscilloscope extends JFrame implements
 					npeak_str = npeak_str.substring(0, npeak_str.length()-3);
 				}
 				
-				String freq_str = "";
 				if ( show_freq.getState() ) {
 					freq_str += "Freq: ";
 					for ( Value v : Value.values() ) {
@@ -426,21 +423,10 @@ class Oscilloscope extends JFrame implements
 					}
 					freq_str = freq_str.substring(0, freq_str.length()-3);
 				}
-				
-				x = 3;
-				if ( !peak_str.isEmpty() ) {
-					gfx.drawString(peak_str, x, font_height*3);
-					x += Math.round(fm.getStringBounds(peak_str, gfx).getWidth()) + 15;
-				}
-				if ( !npeak_str.isEmpty() ) {
-					gfx.drawString(npeak_str, x, font_height*3);
-					x += Math.round(fm.getStringBounds(npeak_str, gfx).getWidth()) + 15;
-				}
-				if ( !freq_str.isEmpty() ) {
-					gfx.drawString(freq_str, x, font_height*3);
-					x += Math.round(fm.getStringBounds(freq_str, gfx).getWidth()) + 15;
-				}
 			}
+			info_line[6].setText(peak_str);
+			info_line[7].setText(npeak_str);
+			info_line[8].setText(freq_str);
 		}
 		else { // type == X_VS_Y
 			String plot_elements = "";
@@ -455,14 +441,14 @@ class Oscilloscope extends JFrame implements
 				String value;
 				if ( elm instanceof TransistorElm ) {
 					value = x_tvalue.name();
-					value = value.substring(0,1) + value.substring(2).toLowerCase();
+					value = value.substring(0,1) + "<sub>" + value.substring(2) + "</sub>";
 					plot_values += getUnitText( getElementValue(elm,x_tvalue), transistor_value_units[x_tvalue.ordinal()] );
 				} else {
 					value = x_value.name();
 					value = value.substring(0,1) + value.substring(1).toLowerCase();
 					plot_values += getUnitText( getElementValue(elm,x_value), value_units[x_value.ordinal()] );
 				}
-				plot_elements += "(" + value + ")";
+				plot_elements += value;
 				
 				if ( y_elm_no != -1 ) {
 					plot_elements += "  |  ";
@@ -479,29 +465,26 @@ class Oscilloscope extends JFrame implements
 				String value;
 				if ( elm instanceof TransistorElm ) {
 					value = y_tvalue.name();
-					value = value.substring(0,1) + value.substring(2).toLowerCase();
+					value = value.substring(0,1) + "<sub>" + value.substring(2) + "</sub>";
 					plot_values += getUnitText( getElementValue(elm,y_tvalue), transistor_value_units[y_tvalue.ordinal()] );
 				} else {
 					value = y_value.name();
 					value = value.substring(0,1) + value.substring(1).toLowerCase();
 					plot_values += getUnitText( getElementValue(elm,y_value), value_units[y_value.ordinal()] );
 				}
-				plot_elements += "(" + value + ")";
+				plot_elements += value;
 			}
-			gfx.drawString(plot_elements, 3, gfx.getFontMetrics().getHeight());
-			gfx.drawString(plot_values, 3, 2*gfx.getFontMetrics().getHeight());
+			info_line[0].setText("<html>" + plot_elements);
+			info_line[3].setText(plot_values);
 		}
-		
 	}
 	
 	/**
 	 * Displays current time of scope.  Equal to sim.t.
 	 * @param gfx The graphics object to draw on.
 	 */
-	private void drawCurrentTime(Graphics gfx) {
-		String time = getUnitText(sim.t, "s");
-		FontMetrics fm = gfx.getFontMetrics();
-		gfx.drawString(time, canvas_size.width-(int)fm.getStringBounds(time, gfx).getWidth()-3, fm.getHeight());
+	private void drawCurrentTime() {
+		info_line[2].setText("t = " + getUnitText(sim.t, "s"));
 	}
 	
 	private double getElementValue(CircuitElm elm, Value value) {
@@ -634,17 +617,13 @@ class Oscilloscope extends JFrame implements
 		if ( show_labels.getState() )
 			drawGridLabels(main_img_gfx);
 		
-		// Clear info area
-		info_img_gfx.clearRect(0, 0, info_img.getWidth(), info_img.getHeight());
-		
 		// Draw element info and current time
 		if ( selected_wf != null || scope_type == ScopeType.X_VS_Y )
-			drawElementInfo(info_img_gfx);
-		drawCurrentTime(info_img_gfx);
+			drawElementInfo();
+		drawCurrentTime();
 		
 		// Update window
 		canvas_gfx.drawImage(main_img, 0, 0, null);
-		info_window_gfx.drawImage(info_img, 0, 0, null);
 
 		canvas.repaint();
 	}
@@ -768,14 +747,6 @@ class Oscilloscope extends JFrame implements
 		xy_img_src.setFullBufferUpdates(true);
 		xy_img = createImage(xy_img_src);
 		xy_last_pt = new Point(-1,-1);
-		
-		info_img = new BufferedImage(canvas_size.width, OscilloscopeLayout.INFO_AREA_HEIGHT, BufferedImage.TYPE_INT_ARGB);
-		info_img_gfx = (Graphics2D) info_img.getGraphics();
-		info_img_gfx.setColor(Color.BLACK);
-		info_img_gfx.setFont(info_font);
-		info_img_gfx.setBackground(bg_color);
-		
-		info_window_gfx = (Graphics2D) this.getGraphics().create(this.getInsets().left, this.getHeight()-this.getInsets().bottom-OscilloscopeLayout.INFO_AREA_HEIGHT, canvas_size.width, OscilloscopeLayout.INFO_AREA_HEIGHT);
 	}
 	
 	/**
@@ -890,6 +861,8 @@ class Oscilloscope extends JFrame implements
 		}
 		for ( Iterator<OscilloscopeWaveform> wfi = waveforms.iterator(); wfi.hasNext(); )
 			wfi.next().setType(new_type);
+		for ( JLabel l : info_line )
+			l.setText("");
 		resetGraph();
 	}
 	
