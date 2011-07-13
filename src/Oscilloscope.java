@@ -796,10 +796,10 @@ class Oscilloscope extends JFrame implements
 				}
 				double r = default_range[v.ordinal()];
 				if ( r < max_abs_value && max_abs_value != Double.MIN_VALUE ) {
-					while ( r < max_abs_value )
+					while ( r <= max_abs_value )
 						r *= 2;
 				} else {
-					while ( r >= max_abs_value && max_abs_value != Double.MIN_VALUE )
+					while ( r > max_abs_value && max_abs_value != Double.MIN_VALUE )
 						r /= 2;
 					r *= 2;
 				}
@@ -832,7 +832,7 @@ class Oscilloscope extends JFrame implements
 					while ( x_range <= x_max )
 						x_range *= 2;
 				} else {
-					while ( x_range >= x_max && x_max != Double.MIN_VALUE )
+					while ( x_range > x_max && x_max != Double.MIN_VALUE )
 						x_range /= 2;
 					x_range *= 2;
 				}
@@ -842,10 +842,10 @@ class Oscilloscope extends JFrame implements
 				else
 					y_range = default_range[y_value.ordinal()];
 				if ( y_range < y_max && y_max != Double.MIN_VALUE ) {
-					while ( y_range < y_max )
+					while ( y_range <= y_max )
 						y_range *= 2;
 				} else {
-					while ( y_range >= y_max && y_max != Double.MIN_VALUE )
+					while ( y_range > y_max && y_max != Double.MIN_VALUE )
 						y_range /= 2;
 					y_range *= 2;
 				}
