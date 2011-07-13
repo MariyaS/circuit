@@ -3167,11 +3167,13 @@ public class CirSim extends JFrame
     	JPopupMenu m = new JPopupMenu();
     	
     	m.add(elmEditMenuItem = getMenuItem("Edit"));
-		m.add(elmScopeMenuItem = getMenuItem("View in Scope"));
+    	m.add(addToScope = getMenuItem("View in Scope"));
+    	elmScopeMenuItem = getMenuItem("View in Original Scope");
+    	if ( showOriginalScopes )
+    		m.add(elmScopeMenuItem);
 		m.add(elmCutMenuItem = getMenuItem("Cut"));
 		m.add(elmCopyMenuItem = getMenuItem("Copy"));
 		m.add(elmDeleteMenuItem = getMenuItem("Delete"));
-		m.add(addToScope = getMenuItem("Add to new Scope"));
 		
 		return m;
     }
