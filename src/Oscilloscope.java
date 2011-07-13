@@ -110,7 +110,6 @@ class Oscilloscope extends JFrame implements
 		add(canvas);
 		
 		info_line = new JLabel[9];
-		System.out.println(info_line.length);
 		for ( int i = 0; i < info_line.length; i++ ) {
 			switch ( i % 3 ) {
 			case 0:	add(info_line[i] = new JLabel(""));	break;

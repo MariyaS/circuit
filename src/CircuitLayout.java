@@ -43,7 +43,7 @@ class CircuitLayout implements LayoutManager {
 		// 8	power brightness scrollbar
 		// 9	www.falstad.com label
 		// 10	current circuit label
-		Point[] componentLocations = new Point[13];
+		Point[] componentLocations = new Point[14];
 		componentLocations[0] = new Point(0,0); // circuit canvas
 		componentLocations[1] = new Point(topleft.x+3, topleft.y+3); // stopped checkbox
 		componentLocations[2] = new Point(topleft.x+43,topleft.y+3); // reset button
@@ -57,9 +57,9 @@ class CircuitLayout implements LayoutManager {
 		componentLocations[10] = new Point(topleft.x+targetw,topleft.y+targeth); // www.falstad.com label
 		componentLocations[11] = new Point(topleft.x+targetw-(sbarwidth+5),topleft.y); // "Current Circuit" label
 		componentLocations[12] = new Point(topleft.x+targetw-(sbarwidth+5),topleft.y+15); // circuit title label
+		componentLocations[13] = new Point(topleft.x+3,topleft.y+36);
 		
 		// Set positions and sizes of all GUI elements belonging to the container
-		System.out.println(target.getComponentCount());
 		Point p = new Point(topleft.x, topleft.y+targeth-30);
 		for (int i = 1; i < target.getComponentCount(); i++) {
 		    Component m = target.getComponent(i);
@@ -73,7 +73,7 @@ class CircuitLayout implements LayoutManager {
 					d.width = sbarwidth;
 				}
 				
-				if ( i < 13 ) {
+				if ( i < componentLocations.length ) {
 					m.setLocation(componentLocations[i]);
 					m.setSize(d);
 				} else {
