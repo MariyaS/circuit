@@ -27,6 +27,8 @@ public class CirSim extends JFrame
     
 	private static final long serialVersionUID = 8695504609720370005L;
 
+	static final boolean showOriginalScopes = false;
+	
 	Thread engine = null;
 
     Dimension winSize;
@@ -332,7 +334,9 @@ public class CirSim extends JFrame
 		dbimage = new BufferedImage(winSize.width, winSize.height, BufferedImage.TYPE_INT_ARGB);
 		
 		// h = area set aside for scopes
-		int h = winSize.height / 5;
+		int h = 0;
+		if ( showOriginalScopes )
+			h = winSize.height / 5;
 		/*if (h < 128 && winSize.height > 300)
 		  h = 128;*/
 		circuitArea = new Rectangle(0, 0, winSize.width, winSize.height-h);
@@ -509,8 +513,10 @@ public class CirSim extends JFrame
 	int ct = scopeCount;
 	if (stopMessage != null)
 	    ct = 0;
-	for (i = 0; i != ct; i++)
-	    original_scopes[i].draw(g);
+	if ( showOriginalScopes ) {
+		for (i = 0; i != ct; i++)
+		    original_scopes[i].draw(g);
+	}
 	g.setColor(CircuitElm.whiteColor);
 	if (stopMessage != null) {
 	    g.drawString(stopMessage, 10, circuitArea.height);
