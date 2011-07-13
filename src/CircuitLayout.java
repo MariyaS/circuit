@@ -74,6 +74,10 @@ class CircuitLayout implements LayoutManager {
 				}
 				
 				if ( i < componentLocations.length ) {
+					if ( i == 10 ) {
+						d = m.getPreferredSize();
+						componentLocations[i].translate(-d.width, -d.height);
+					}	
 					m.setLocation(componentLocations[i]);
 					m.setSize(d);
 				} else {
