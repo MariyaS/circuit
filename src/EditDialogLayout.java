@@ -54,7 +54,7 @@ class EditDialogLayout implements LayoutManager {
 			    x += d.width;
 	    }
 	}
-	CirSim.editDialog.setSize(pw + insets.right, h + insets.bottom);
+	CirSim.editDialog.setSize(pw + insets.right, h + 40 + insets.bottom);
 
     }
 };

@@ -56,10 +56,11 @@ class EditDialog extends JDialog implements ActionListener, ChangeListener, Item
 		    }
 		}
 		einfocount = i;
-		add(applyButton = new JButton("Apply"));
+		/*add(applyButton = new JButton("Apply"));
 		applyButton.addActionListener(this);
 		add(okButton = new JButton("OK"));
-		okButton.addActionListener(this);
+		okButton.addActionListener(this);*/
+		
 		validate();
 		Point x = CirSim.main.getLocationOnScreen();
 		Dimension d = getSize();
