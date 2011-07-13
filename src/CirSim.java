@@ -160,7 +160,7 @@ public class CirSim extends JFrame
     String startCircuit = null;
     String startLabel = null;
     String startCircuitText = null;
-    String baseURL = "http://www.falstad.com/circuit/";
+    String baseURL = "http://people.clemson.edu/~nwatts/circuit/";
     
     public void init() {
 		String useFrameStr = null;
@@ -198,7 +198,7 @@ public class CirSim extends JFrame
 		
 		useFrame = (useFrameStr == null || !useFrameStr.equalsIgnoreCase("false"));
 		if (useFrame) {
-		    main = this;
+		    main = this.getContentPane();
 		}  else
 		    main = applet;
 		
@@ -2919,17 +2919,21 @@ public class CirSim extends JFrame
      * *****************************************************************/
     void setupMainControls() {
     	stoppedCheck = new JCheckBox();
-		ImageIcon pauseIcon = new ImageIcon("images/Pause.png");
+    	try {
+		ImageIcon pauseIcon = new ImageIcon(new URL(baseURL + "images/Pause.png"));
 		stoppedCheck.setIcon(pauseIcon);
-		ImageIcon playIcon = new ImageIcon("images/Play.png");
+		ImageIcon playIcon = new ImageIcon(new URL(baseURL + "images/Play.png"));
 		stoppedCheck.setSelectedIcon(playIcon);
+    	} catch (Exception e) {}
 		stoppedCheck.setToolTipText("Pause Simulation");
 		stoppedCheck.setSize(20,20);
 		stoppedCheck.addItemListener(this);
 		
 		resetButton = new JButton();
-		ImageIcon resetIcon = new ImageIcon("images/Reset.png");
+		try {
+		ImageIcon resetIcon = new ImageIcon(new URL(baseURL + "images/Reset.png"));
 		resetButton.setIcon(resetIcon);
+		} catch (Exception e) {}
 		resetButton.setToolTipText("Reset Circuit");
 		resetButton.setFocusPainted(false);
 		resetButton.setBorderPainted(false);
@@ -2937,8 +2941,10 @@ public class CirSim extends JFrame
 		resetButton.addActionListener(this);
 		
 		newScopeButton = new JButton();
-		ImageIcon newScopeIcon = new ImageIcon("images/Scope.png");
+		try {
+		ImageIcon newScopeIcon = new ImageIcon(new URL(baseURL + "images/Scope.png"));
 		newScopeButton.setIcon(newScopeIcon);
+		} catch (Exception e) {}
 		newScopeButton.setToolTipText("New Scope");
 		newScopeButton.setFocusPainted(false);
 		newScopeButton.setBorderPainted(false);
