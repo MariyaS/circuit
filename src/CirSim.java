@@ -28,6 +28,7 @@ public class CirSim extends JFrame
 	private static final long serialVersionUID = 8695504609720370005L;
 
 	static final boolean showOriginalScopes = false;
+	boolean runFromWeb;
 	
 	Thread engine = null;
 
@@ -169,6 +170,7 @@ public class CirSim extends JFrame
 	
 		CircuitElm.initClass(this);
 	
+		String runFromWebStr = null;
 		try {
 		    baseURL = applet.getDocumentBase().getFile();
 		    // look for circuit embedded in URL
@@ -195,6 +197,7 @@ public class CirSim extends JFrame
 		    startCircuit = applet.getParameter("startCircuit");
 		    startLabel   = applet.getParameter("startLabel");
 		    useFrameStr  = applet.getParameter("useFrame");
+		    runFromWebStr = applet.getParameter("applet");
 		    
 		} catch (Exception e) { }
 		
@@ -203,6 +206,9 @@ public class CirSim extends JFrame
 		    main = this.getContentPane();
 		}  else
 		    main = applet;
+		
+		System.out.println(Circuit.class.getResource("Circuit.class"));
+		runFromWeb = !(runFromWebStr == null);
 		
 		String os = System.getProperty("os.name");
 		isMac = (os.indexOf("Mac ") == 0);
@@ -2925,21 +2931,33 @@ public class CirSim extends JFrame
      * *****************************************************************/
     void setupMainControls() {
     	stoppedCheck = new JCheckBox();
-    	try {
-		ImageIcon pauseIcon = new ImageIcon(new URL(baseURL + "images/Pause.png"));
-		stoppedCheck.setIcon(pauseIcon);
-		ImageIcon playIcon = new ImageIcon(new URL(baseURL + "images/Play.png"));
-		stoppedCheck.setSelectedIcon(playIcon);
-    	} catch (Exception e) {}
+    	if (runFromWeb) {
+	    	try {
+				ImageIcon pauseIcon = new ImageIcon(new URL(baseURL + "images/Pause.png"));
+				stoppedCheck.setIcon(pauseIcon);
+				ImageIcon playIcon = new ImageIcon(new URL(baseURL + "images/Play.png"));
+				stoppedCheck.setSelectedIcon(playIcon);
+	    	} catch (Exception e) {}
+    	} else {
+    		ImageIcon pauseIcon = new ImageIcon("images/Pause.png");
+			stoppedCheck.setIcon(pauseIcon);
+			ImageIcon playIcon = new ImageIcon("images/Play.png");
+			stoppedCheck.setSelectedIcon(playIcon);
+    	}
 		stoppedCheck.setToolTipText("Pause Simulation");
 		stoppedCheck.setSize(20,20);
 		stoppedCheck.addItemListener(this);
 		
 		resetButton = new JButton();
-		try {
-		ImageIcon resetIcon = new ImageIcon(new URL(baseURL + "images/Reset.png"));
-		resetButton.setIcon(resetIcon);
-		} catch (Exception e) {}
+		if (runFromWeb) {
+			try {
+				ImageIcon resetIcon = new ImageIcon(new URL(baseURL + "images/Reset.png"));
+				resetButton.setIcon(resetIcon);
+			} catch (Exception e) {}
+		} else {
+			ImageIcon resetIcon = new ImageIcon("images/Reset.png");
+			resetButton.setIcon(resetIcon);
+		}
 		resetButton.setToolTipText("Reset Circuit");
 		resetButton.setFocusPainted(false);
 		resetButton.setBorderPainted(false);
@@ -2947,10 +2965,15 @@ public class CirSim extends JFrame
 		resetButton.addActionListener(this);
 		
 		newScopeButton = new JButton();
-		try {
-		ImageIcon newScopeIcon = new ImageIcon(new URL(baseURL + "images/Scope.png"));
-		newScopeButton.setIcon(newScopeIcon);
-		} catch (Exception e) {}
+		if (runFromWeb) {
+			try {
+				ImageIcon newScopeIcon = new ImageIcon(new URL(baseURL + "images/Scope.png"));
+				newScopeButton.setIcon(newScopeIcon);
+			} catch (Exception e) {}
+		} else {
+			ImageIcon newScopeIcon = new ImageIcon("images/Scope.png");
+			newScopeButton.setIcon(newScopeIcon);
+		}
 		newScopeButton.setToolTipText("New Scope");
 		newScopeButton.setFocusPainted(false);
 		newScopeButton.setBorderPainted(false);
@@ -2988,7 +3011,8 @@ public class CirSim extends JFrame
 		main.add(currentBar);
 		main.add(powerLabel);
 		main.add(powerBar);
-		main.add(new JLabel("www.falstad.com"));
+		//main.add(new JLabel("www.falstad.com"));
+		main.add(new JLabel());
 		main.add(new JLabel("Current Circuit",JLabel.RIGHT));
 		main.add(titleLabel);
 		
