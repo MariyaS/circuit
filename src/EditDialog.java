@@ -3,14 +3,13 @@ import java.awt.event.*;
 import java.text.NumberFormat;
 import java.text.DecimalFormat;
 import javax.swing.*;
-import javax.swing.event.*;
 
 interface Editable {
     EditInfo getEditInfo(int n);
     void setEditValue(int n, EditInfo ei);
 }
 
-class EditDialog extends JDialog implements ActionListener, ChangeListener, ItemListener {
+class EditDialog extends JDialog implements ActionListener, ItemListener {
 	private static final long serialVersionUID = -5191214945517294319L;
 	
 	Editable elm;
@@ -18,7 +17,6 @@ class EditDialog extends JDialog implements ActionListener, ChangeListener, Item
     JButton applyButton, okButton;
     EditInfo einfos[];
     int einfocount;
-    final int barmax = 1000;
     NumberFormat noCommaFormat;
 
     EditDialog(Editable ce, CirSim f) {
@@ -48,18 +46,12 @@ class EditDialog extends JDialog implements ActionListener, ChangeListener, Item
 				if (ei.text != null)
 				    ei.textf.setText(ei.text);
 				ei.textf.addActionListener(this);
-				if (ei.text == null) {
-				    //add(ei.bar = new JSlider(JSlider.HORIZONTAL, 0, barmax+2, 50));
-				    //setBar(ei);
-				    //ei.bar.addChangeListener(this);
-				}
 		    }
 		}
 		einfocount = i;
-		/*add(applyButton = new JButton("Apply"));
-		applyButton.addActionListener(this);
 		add(okButton = new JButton("OK"));
-		okButton.addActionListener(this);*/
+		this.getRootPane().setDefaultButton(okButton);
+		okButton.addActionListener(this);
 		
 		validate();
 		Point x = CirSim.main.getLocationOnScreen();
@@ -126,8 +118,6 @@ class EditDialog extends JDialog implements ActionListener, ChangeListener, Item
 				} catch (Exception ex) { /* ignored */ }
 			}
 		    elm.setEditValue(i, ei);
-		    if (ei.text == null)
-		    	setBar(ei);
 		}
 		cframe.needAnalyze();
     }
@@ -140,13 +130,11 @@ class EditDialog extends JDialog implements ActionListener, ChangeListener, Item
 		    if (src == ei.textf) {
 				if (ei.text == null) {
 				    try {
-					double d = parseUnits(ei);
-					ei.value = d;
+				    	double d = parseUnits(ei);
+				    	ei.value = d;
 				    } catch (Exception ex) { /* ignored */ }
 				}
 				elm.setEditValue(i, ei);
-				//if (ei.text == null)
-				//    setBar(ei);
 				cframe.needAnalyze();
 		    }
 		}
@@ -155,32 +143,6 @@ class EditDialog extends JDialog implements ActionListener, ChangeListener, Item
 		    CirSim.main.requestFocus();
 		    setVisible(false);
 		    CirSim.editDialog = null;
-		}
-		if (e.getSource() == applyButton)
-		    apply();
-    }
-    
-    public void stateChanged(ChangeEvent e) {
-    	Object src = e.getSource();
-		int i;
-		for (i = 0; i != einfocount; i++) {
-		    EditInfo ei = einfos[i];
-		    if (ei.bar == src) {
-				double v = ei.bar.getValue() / 1000.;
-				if (v < 0)
-				    v = 0;
-				if (v > 1)
-				    v = 1;
-				ei.value = (ei.maxval-ei.minval)*v + ei.minval;
-				/*if (ei.maxval-ei.minval > 100)
-				    ei.value = Math.round(ei.value);
-				else
-				ei.value = Math.round(ei.value*100)/100.;*/
-				ei.value = Math.round(ei.value/ei.minval)*ei.minval;
-				elm.setEditValue(i, ei);
-				ei.textf.setText(unitString(ei));
-				cframe.needAnalyze();
-		    }
 		}
     }
 
@@ -212,11 +174,6 @@ class EditDialog extends JDialog implements ActionListener, ChangeListener, Item
 		    CirSim.editDialog = null;
 		}
 		super.processEvent(ev);
-    }
-
-    void setBar(EditInfo ei) {
-    	int x = (int) (barmax*(ei.value-ei.minval)/(ei.maxval-ei.minval));
-    	ei.bar.setValue(x);
     }
 }
 
