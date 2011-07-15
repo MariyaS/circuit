@@ -99,33 +99,43 @@ class VoltageElm extends CircuitElm {
 	calcLeads((waveform == WF_DC || waveform == WF_VAR) ? 8 : circleSize*2);
     }
     void draw(Graphics g) {
-	setBbox(x, y, x2, y2);
-	draw2Leads(g);
-	if (waveform == WF_DC) {
-	    setPowerColor(g, false);
-	    setVoltageColor(g, volts[0]);
-	    interpPoint2(lead1, lead2, ps1, ps2, 0, 10);
-	    drawThickLine(g, ps1, ps2);
-	    setVoltageColor(g, volts[1]);
-	    int hs = 16;
-	    setBbox(point1, point2, hs);
-	    interpPoint2(lead1, lead2, ps1, ps2, 1, hs);
-	    drawThickLine(g, ps1, ps2);
-	} else {
-	    setBbox(point1, point2, circleSize);
-	    interpPoint(lead1, lead2, ps1, .5);
-	    drawWaveform(g, ps1);
-	}
-	updateDotCount();
-	if (sim.dragElm != this) {
-	    if (waveform == WF_DC)
-		drawDots(g, point1, point2, curcount);
-	    else {
-		drawDots(g, point1, lead1, curcount);
-		drawDots(g, point2, lead2, -curcount);
-	    }
-	}
-	drawPosts(g);
+		setBbox(x, y, x2, y2);
+		draw2Leads(g);
+		if (waveform == WF_DC) {
+		    setPowerColor(g, false);
+		    setVoltageColor(g, volts[0]);
+		    interpPoint2(lead1, lead2, ps1, ps2, 0, 10);
+		    drawThickLine(g, ps1, ps2);
+		    setVoltageColor(g, volts[1]);
+		    int hs = 16;
+		    setBbox(point1, point2, hs);
+		    interpPoint2(lead1, lead2, ps1, ps2, 1, hs);
+		    drawThickLine(g, ps1, ps2);
+		} else {
+		    setBbox(point1, point2, circleSize);
+		    interpPoint(lead1, lead2, ps1, .5);
+		    drawWaveform(g, ps1);
+		}
+		updateDotCount();
+		if (sim.dragElm != this) {
+		    if (waveform == WF_DC)
+		    	drawDots(g, point1, point2, curcount);
+		    else {
+				drawDots(g, point1, lead1, curcount);
+				drawDots(g, point2, lead2, -curcount);
+		    }
+		}
+		drawPosts(g);
+		String s = getUnitText(getVoltageDiff(), "V");
+
+		// Draw to right of center
+		// Vertical alignment isn't great, text is overlapping the leads sometimes
+		int xc = (x + x2) / 2;
+		int yc = (y + y2) / 2;
+		
+		g.setFont(CircuitElm.unitsFont);
+		g.setColor(Color.BLACK);
+		g.drawString(s, xc+20, yc+10);
     }
 	
     void drawWaveform(Graphics g, Point center) {
