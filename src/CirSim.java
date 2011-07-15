@@ -163,39 +163,34 @@ public class CirSim extends JFrame
     String startCircuit = null;
     String startLabel = null;
     String startCircuitText = null;
-    String baseURL = "http://people.clemson.edu/~nwatts/circuit/";
+    URL baseURL = null;
     
     public void init() {
 		String useFrameStr = null;
 	
 		CircuitElm.initClass(this);
-	
-		try {
-		    baseURL = applet.getDocumentBase().getFile();
-		    // look for circuit embedded in URL
-		    String doc = applet.getDocumentBase().toString();
-		    int in = doc.lastIndexOf('/');
-		    if (in > 0)
-		    	baseURL = doc.substring(0, in+1);
-		    
+		
+		if ( applet != null ) {
+			baseURL = applet.getCodeBase();
+			
 		    String param = applet.getParameter("PAUSE");
 		    if (param != null)
 		    	pause = Integer.parseInt(param);
 		    startCircuit = applet.getParameter("startCircuit");
 		    startLabel   = applet.getParameter("startLabel");
 		    useFrameStr  = applet.getParameter("useFrame");
-		    
-		} catch (Exception e) { }
-		
-		System.out.println(baseURL);
+		}    
 		
 		useFrame = (useFrameStr == null || !useFrameStr.equalsIgnoreCase("false"));
-		if (useFrame) {
+		if (useFrame)
 		    main = this.getContentPane();
-		}  else
+		else
 		    main = applet;
 		
-		runFromWeb = baseURL.subSequence(0,4).equals("http");
+		if ( baseURL != null && baseURL.getProtocol().equalsIgnoreCase("http") )
+			runFromWeb = true;
+		else
+			runFromWeb = false;
 		
 		String os = System.getProperty("os.name");
 		isMac = (os.indexOf("Mac ") == 0);
