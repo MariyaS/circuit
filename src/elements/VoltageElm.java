@@ -135,7 +135,9 @@ class VoltageElm extends CircuitElm {
 		
 		g.setFont(CircuitElm.unitsFont);
 		g.setColor(Color.BLACK);
-		g.drawString(s, xc+20, yc+10);
+		g.drawString(s, xc+20, yc-2);
+		if ( waveform != WF_DC )
+			g.drawString(getUnitText(frequency, "Hz"), xc+20, yc+12);
     }
 	
     void drawWaveform(Graphics g, Point center) {
