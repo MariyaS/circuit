@@ -126,8 +126,7 @@ class VoltageElm extends CircuitElm {
 		    }
 		}
 		drawPosts(g);
-		String s = getUnitText(getVoltageDiff(), "V");
-
+		
 		// Draw to right of center
 		// Vertical alignment isn't great, text is overlapping the leads sometimes
 		int xc = (x + x2) / 2;
@@ -135,7 +134,7 @@ class VoltageElm extends CircuitElm {
 		
 		g.setFont(CircuitElm.unitsFont);
 		g.setColor(Color.BLACK);
-		g.drawString(s, xc+20, yc-2);
+		g.drawString(getUnitText(maxVoltage, "V"), xc+20, yc-2);
 		if ( waveform != WF_DC )
 			g.drawString(getUnitText(frequency, "Hz"), xc+20, yc+12);
     }
