@@ -209,7 +209,8 @@ public class CirSim extends JFrame
 		dumpTypes[(int)'%'] = Scope.class;
 		dumpTypes[(int)'?'] = Scope.class;
 		dumpTypes[(int)'B'] = Scope.class;
-	
+		
+		main.setBackground(Color.WHITE);
 		main.setLayout(new CircuitLayout());
 		cv = new CircuitCanvas(this);
 		cv.addComponentListener(this);
@@ -419,6 +420,14 @@ public class CirSim extends JFrame
 	g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.CLEAR, 0.0f));
 	g2d.fill( new Rectangle(0, 0, winSize.width, winSize.height) );
 	g2d.setComposite(cmp); // Restore old composite, otherwise everything will be transparent
+	
+	// Draw dots for grid
+	g.setColor(Color.CYAN);
+	for ( int y = 0; y < dbimage.getHeight(); y += gridSize ) {
+		for ( int x = 0; x < dbimage.getWidth(); x += gridSize ) {
+			g.fillOval(x-1, y-1, 3, 3);
+		}
+	}
 	
 	if (!stoppedCheck.isSelected()) {
 	    try {
