@@ -422,10 +422,10 @@ public class CirSim extends JFrame
 	g2d.setComposite(cmp); // Restore old composite, otherwise everything will be transparent
 	
 	// Draw dots for grid
-	g.setColor(Color.CYAN);
+	g.setColor(new Color(0x66,0x66,0x66));
 	for ( int y = 0; y < dbimage.getHeight(); y += gridSize ) {
 		for ( int x = 0; x < dbimage.getWidth(); x += gridSize ) {
-			g.fillOval(x-1, y-1, 3, 3);
+			g.drawLine(x,y,x,y);
 		}
 	}
 	
