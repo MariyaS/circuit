@@ -422,10 +422,13 @@ public class CirSim extends JFrame
 	g2d.setComposite(cmp); // Restore old composite, otherwise everything will be transparent
 	
 	// Draw dots for grid
+	Rectangle infoBounds = infoArea.getBounds();
+	infoBounds.translate(-cv.getX(), -cv.getY());
 	g.setColor(new Color(0x66,0x66,0x66));
 	for ( int y = 0; y < dbimage.getHeight(); y += gridSize ) {
 		for ( int x = 0; x < dbimage.getWidth(); x += gridSize ) {
-			g.drawLine(x,y,x,y);
+			if ( !infoBounds.contains(x,y) ) // Do not draw dots inside infoArea
+				g.drawLine(x,y,x,y);
 		}
 	}
 	
