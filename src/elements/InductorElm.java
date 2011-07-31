@@ -33,6 +33,8 @@ import javax.swing.*;
 	    int hs = 8;
 	    setBbox(point1, point2, hs);
 	    draw2Leads(g);
+	    if ( sim.showPolarityCheckItem.getState() )
+	    	drawPolarities(g, lead1, lead2);
 	    setPowerColor(g, false);
 	    drawCoil(g, 8, lead1, lead2, v1, v2);
 	    if (sim.showValuesCheckItem.getState()) {

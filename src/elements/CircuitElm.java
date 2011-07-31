@@ -191,6 +191,20 @@ public abstract class CircuitElm implements Editable {
 		drawThickLine(g, lead2, point2);
     }
     
+    void drawPolarities(Graphics g, Point lead1, Point lead2) {
+    	double elmInvSlope = Math.atan2(Math.abs(point2.x - point1.x), point2.y - point1.y);
+	    double m = (Math.signum(point2.x - point1.x) != 0) ? Math.signum(point2.x - point1.x) : 1;
+	    Point sp1 = new Point( (int) Math.round(lead1.x - m*20*Math.cos(elmInvSlope)), (int) Math.round(lead1.y + 20*Math.sin(elmInvSlope)));
+	    Point sp2 = new Point( (int) Math.round(lead2.x - m*20*Math.cos(elmInvSlope)), (int) Math.round(lead2.y + 20*Math.sin(elmInvSlope)));
+	    int xmod = 3 * sign(point2.x - point1.x);
+	    
+	    Color c = g.getColor();
+	    g.setColor(Color.BLACK);
+	    g.drawString("+", sp1.x - xmod, sp1.y);
+	    g.drawString("-", sp2.x - xmod, sp2.y);
+	    g.setColor(c);
+    }
+    
     Point [] newPointArray(int n) {
 	
     	Point a[] = new Point[n];

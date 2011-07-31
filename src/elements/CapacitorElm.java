@@ -48,6 +48,11 @@ import javax.swing.*;
 	    int hs = 12;
 	    setBbox(point1, point2, hs);
 	    
+	    if ( sim.showPolarityCheckItem.getState() ) {
+	    	int sign = (int) Math.signum(lead2.x - lead1.x);
+	    	drawPolarities(g, new Point(lead1.x-6*sign, lead1.y), new Point(lead2.x+6*sign, lead2.y));
+	    }
+	    
 	    // draw first lead and plate
 	    setVoltageColor(g, volts[0]);
 	    drawThickLine(g, point1, lead1);

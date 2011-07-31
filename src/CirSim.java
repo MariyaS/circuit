@@ -52,7 +52,7 @@ public class CirSim extends JFrame
     JTextArea infoArea;
     
     JCheckBoxMenuItem dotsCheckItem, voltsCheckItem, powerCheckItem, smallGridCheckItem,
-    showValuesCheckItem, conductanceCheckItem, euroResistorCheckItem, conventionCheckItem;
+    showValuesCheckItem, showPolarityCheckItem, conductanceCheckItem, euroResistorCheckItem, conventionCheckItem;
     
     JPopupMenu mainMenu;
     
@@ -3095,6 +3095,7 @@ public class CirSim extends JFrame
 		m.add(voltsCheckItem = getCheckItem("Show Voltage", true));
 		m.add(powerCheckItem = getCheckItem("Show Power"));
 		m.add(showValuesCheckItem = getCheckItem("Show Values", true));
+		m.add(showPolarityCheckItem = getCheckItem("Show Polarities", true));
 		//m.add(conductanceCheckItem = getCheckItem("Show Conductance"));
 		m.add(smallGridCheckItem = getCheckItem("Small Grid"));
 		String euroResistor = null;

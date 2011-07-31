@@ -45,6 +45,8 @@ class MemristorElm extends CircuitElm {
 	int hs = 2+(int) (8*(1-dopeWidth/totalWidth));
 	setBbox(point1, point2, hs);
 	draw2Leads(g);
+	if ( sim.showPolarityCheckItem.getState() )
+    	drawPolarities(g, lead1, lead2);
 	setPowerColor(g, true);
 	double segf = 1./segments;
 
