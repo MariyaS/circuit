@@ -732,14 +732,20 @@ class OscilloscopeWaveform implements MouseListener, ActionListener {
 	@Override public void mouseExited(MouseEvent e) {}
 	@Override public void mousePressed(MouseEvent e) {
 		// Right clicking shows popup menu
-		if ( e.isPopupTrigger() )
+		if (e.isPopupTrigger()) {
 			menu.show(e.getComponent(), e.getX(), e.getY());
+		}
 		
 		// Left clicking displays instantaneous info about this element
 		else if ( e.getButton() == MouseEvent.BUTTON1 && scope.getType() != Oscilloscope.ScopeType.X_VS_Y )
 			scope.setSelectedWaveform(this);
 	}
-	@Override public void mouseReleased(MouseEvent e) {}
+	@Override public void mouseReleased(MouseEvent e) {
+		// Right clicking shows popup menu
+		if (e.isPopupTrigger()) {
+			menu.show(e.getComponent(), e.getX(), e.getY());
+		}
+	}
 
 	/* ******************************************************************************************
 	 * * ActionListener implementation                                                          *
