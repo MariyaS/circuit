@@ -51,7 +51,7 @@ public class CirSim extends JFrame
     JLabel powerLabel, titleLabel;
     JTextArea infoArea;
     
-    JCheckBoxMenuItem dotsCheckItem, voltsCheckItem, powerCheckItem, smallGridCheckItem,
+    JCheckBoxMenuItem dotsCheckItem, voltsCheckItem, powerCheckItem, showGridCheckItem, smallGridCheckItem,
     showValuesCheckItem, showPolarityCheckItem, conductanceCheckItem, euroResistorCheckItem, conventionCheckItem;
     
     JPopupMenu mainMenu;
@@ -422,13 +422,15 @@ public class CirSim extends JFrame
 	g2d.setComposite(cmp); // Restore old composite, otherwise everything will be transparent
 	
 	// Draw dots for grid
-	Rectangle infoBounds = infoArea.getBounds();
-	infoBounds.translate(-cv.getX(), -cv.getY());
-	g.setColor(new Color(0x66,0x66,0x66));
-	for ( int y = 0; y < dbimage.getHeight(); y += gridSize ) {
-		for ( int x = 0; x < dbimage.getWidth(); x += gridSize ) {
-			if ( !infoBounds.contains(x,y) ) // Do not draw dots inside infoArea
-				g.drawLine(x,y,x,y);
+	if ( showGridCheckItem.getState() ) {
+		Rectangle infoBounds = infoArea.getBounds();
+		infoBounds.translate(-cv.getX(), -cv.getY());
+		g.setColor(new Color(0x66,0x66,0x66));
+		for ( int y = 0; y < dbimage.getHeight(); y += gridSize ) {
+			for ( int x = 0; x < dbimage.getWidth(); x += gridSize ) {
+				if ( !infoBounds.contains(x,y) ) // Do not draw dots inside infoArea
+					g.drawLine(x,y,x,y);
+			}
 		}
 	}
 	
@@ -1945,6 +1947,7 @@ public class CirSim extends JFrame
 		    hintType = -1;
 		    timeStep = 5e-6;
 		    dotsCheckItem.setState(true);
+		    showGridCheckItem.setState(true);
 		    smallGridCheckItem.setState(false);
 		    powerCheckItem.setState(false);
 		    voltsCheckItem.setState(true);
@@ -3097,6 +3100,7 @@ public class CirSim extends JFrame
 		m.add(showValuesCheckItem = getCheckItem("Show Values", true));
 		m.add(showPolarityCheckItem = getCheckItem("Show Polarities", true));
 		//m.add(conductanceCheckItem = getCheckItem("Show Conductance"));
+		m.add(showGridCheckItem = getCheckItem("Show Grid"));
 		m.add(smallGridCheckItem = getCheckItem("Small Grid"));
 		String euroResistor = null;
 		try {
